@@ -388,24 +388,18 @@ def create_tables(db: DatabaseManager) -> None:
     )
 
     # Loot indices
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_item_name ON items(item_name)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_item_name ON items(item_name)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_item_level ON items(item_level, quality)"
     )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_item_type ON items(item_type, subtype)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_item_type ON items(item_type, subtype)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_loot_encounter ON loot_drops(encounter_id)"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_loot_character ON loot_drops(character_id)"
     )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_loot_item ON loot_drops(item_id)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_loot_item ON loot_drops(item_id)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_loot_timestamp ON loot_drops(drop_timestamp)"
     )
@@ -436,6 +430,8 @@ def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
         "event_blocks",
         "character_metrics",
         "spell_summary",
+        "items",
+        "loot_drops",
     ]
     for table in tables:
         cursor = db.execute(f"SELECT COUNT(*) FROM {table}")
