@@ -6,7 +6,7 @@ from typing import Dict, Optional, Set
 import logging
 
 from .events import BaseEvent, DamageEvent, HealEvent, AuraEvent, CombatantInfo
-from models.character_events import CharacterEventStream, DeathEvent, CastEvent
+from src.models.character_events import CharacterEventStream, DeathEvent, CastEvent
 
 logger = logging.getLogger(__name__)
 
