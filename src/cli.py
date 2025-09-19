@@ -363,34 +363,36 @@ def test_connection(host, port):
 @click.option("--port", default=8000, help="Server port")
 def server_status(host, port):
     """Get detailed server status and statistics."""
-    import requests
+    import urllib.request
+    import json
 
     try:
-        response = requests.get(f"http://{host}:{port}/stats", timeout=5)
-        if response.status_code == 200:
-            stats = response.json()
-            console.print(f"[bold green]Server Status - {host}:{port}[/bold green]")
+        url = f"http://{host}:{port}/stats"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            if response.getcode() == 200:
+                stats = json.loads(response.read().decode())
+                console.print(f"[bold green]Server Status - {host}:{port}[/bold green]")
 
-            # Server info
-            server_stats = stats.get("server", {})
-            uptime = server_stats.get("uptime_seconds", 0)
-            console.print(f"[cyan]Uptime:[/cyan] {uptime:.1f}s")
-            console.print(
-                f"[cyan]Active WebSockets:[/cyan] {server_stats.get('active_websockets', 0)}"
-            )
+                # Server info
+                server_stats = stats.get("server", {})
+                uptime = server_stats.get("uptime_seconds", 0)
+                console.print(f"[cyan]Uptime:[/cyan] {uptime:.1f}s")
+                console.print(
+                    f"[cyan]Active WebSockets:[/cyan] {server_stats.get('active_websockets', 0)}"
+                )
 
-            # Database stats
-            db_stats = stats.get("database", {}).get("database", {})
-            console.print(f"[cyan]Total Encounters:[/cyan] {db_stats.get('total_encounters', 0)}")
-            console.print(f"[cyan]Total Events:[/cyan] {db_stats.get('total_events', 0)}")
+                # Database stats
+                db_stats = stats.get("database", {}).get("database", {})
+                console.print(f"[cyan]Total Encounters:[/cyan] {db_stats.get('total_encounters', 0)}")
+                console.print(f"[cyan]Total Events:[/cyan] {db_stats.get('total_events', 0)}")
 
-            # Processing stats
-            proc_stats = stats.get("processing", {})
-            console.print(f"[cyan]Events/sec:[/cyan] {proc_stats.get('events_per_second', 0):.1f}")
+                # Processing stats
+                proc_stats = stats.get("processing", {})
+                console.print(f"[cyan]Events/sec:[/cyan] {proc_stats.get('events_per_second', 0):.1f}")
 
-        else:
-            console.print(f"[red]✗ Failed to get status: HTTP {response.status_code}[/red]")
-    except requests.exceptions.RequestException as e:
+            else:
+                console.print(f"[red]✗ Failed to get status: HTTP {response.getcode()}[/red]")
+    except Exception as e:
         console.print(f"[red]✗ Failed to connect: {e}[/red]")
 
 
