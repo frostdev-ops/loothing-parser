@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
-from ..parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent
+from parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent
 
 
 class ResourceType(Enum):
