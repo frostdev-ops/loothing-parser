@@ -385,7 +385,7 @@ class EventCompressor:
             Reconstructed event object
         """
         # Import here to avoid circular imports
-        from parser.events import (
+        from src.parser.events import (
             BaseEvent,
             DamageEvent,
             HealEvent,
