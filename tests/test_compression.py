@@ -331,7 +331,7 @@ class TestCompressionPerformance:
 
         # Time compression
         start_time = time.time()
-        compressed_data = compressor.compress_events(large_event_list)
+        compressed_data, metadata = compressor.compress_events(large_event_list)
         compression_time = time.time() - start_time
 
         # Time decompression
