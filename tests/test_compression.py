@@ -214,14 +214,15 @@ class TestEventCompressor:
     def test_compression_ratio_calculation(self, compressor, sample_events):
         """Test compression ratio calculation."""
         # Test with known data
-        compressed_data = compressor.compress_events(sample_events)
+        compressed_data, metadata = compressor.compress_events(sample_events)
 
-        # Calculate sizes
-        uncompressed_size = compressor._estimate_uncompressed_size(sample_events)
-        compressed_size = len(compressed_data)
-
-        ratio = compressed_size / uncompressed_size
+        # Check metadata
+        ratio = metadata["compression_ratio"]
         assert 0.0 < ratio <= 1.0  # Should be between 0 and 1
+
+        # Verify metadata consistency
+        assert metadata["compressed_size"] == len(compressed_data)
+        assert metadata["event_count"] == len(sample_events)
 
     def test_error_handling_invalid_data(self, compressor):
         """Test error handling with invalid compressed data."""
