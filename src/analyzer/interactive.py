@@ -13,6 +13,7 @@ from .navigation import NavigationState, ViewMode
 from .displays import DisplayBuilder
 from .metrics import MetricsCalculator
 from ..segmentation.encounters import Fight, FightType
+from ..parser.events import BaseEvent
 from ..models.encounter_models import RaidEncounter, MythicPlusRun
 from ..models.character_events import CharacterEventStream
 
@@ -392,7 +393,9 @@ class InteractiveAnalyzer:
 
         return None
 
-    def _populate_character_metrics_from_events(self, characters: Dict[str, CharacterEventStream], events: List[BaseEvent], duration: float):
+    def _populate_character_metrics_from_events(
+        self, characters: Dict[str, CharacterEventStream], events: List[BaseEvent], duration: float
+    ):
         """
         Populate character metrics by parsing fight events.
 
@@ -408,12 +411,16 @@ class InteractiveAnalyzer:
             if isinstance(event, DamageEvent) and event.source_guid in characters:
                 characters[event.source_guid].total_damage_done += event.amount
                 # Add to all_events for chronological tracking
-                characters[event.source_guid].all_events.append((event.timestamp, "damage", event.amount))
+                characters[event.source_guid].all_events.append(
+                    (event.timestamp, "damage", event.amount)
+                )
 
             # Track healing done
             elif isinstance(event, HealEvent) and event.source_guid in characters:
                 characters[event.source_guid].total_healing_done += event.amount
-                characters[event.source_guid].all_events.append((event.timestamp, "heal", event.amount))
+                characters[event.source_guid].all_events.append(
+                    (event.timestamp, "heal", event.amount)
+                )
 
             # Track damage taken
             elif isinstance(event, DamageEvent) and event.dest_guid in characters:
