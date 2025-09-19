@@ -585,7 +585,25 @@ class EventFactory:
     @classmethod
     def _add_damage_info(cls, event: BaseEvent, params: List[Any]) -> DamageEvent:
         """Add damage-specific information to event."""
-        damage_event = DamageEvent(**event.__dict__)
+        # Handle different event types properly
+        if event.event_type.startswith("SWING_"):
+            # SWING events use BaseEvent as base, create DamageEvent manually
+            damage_event = DamageEvent(
+                timestamp=event.timestamp,
+                event_type=event.event_type,
+                raw_line=event.raw_line,
+                source_guid=event.source_guid,
+                source_name=event.source_name,
+                source_flags=event.source_flags,
+                source_raid_flags=event.source_raid_flags,
+                dest_guid=event.dest_guid,
+                dest_name=event.dest_name,
+                dest_flags=event.dest_flags,
+                dest_raid_flags=event.dest_raid_flags,
+            )
+        else:
+            # SPELL_ events and others use event.__dict__
+            damage_event = DamageEvent(**event.__dict__)
 
         # Damage parameters: amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing
         if len(params) >= 6:
