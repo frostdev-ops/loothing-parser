@@ -6,7 +6,7 @@ from typing import Dict, Optional, Set
 import logging
 
 from .events import BaseEvent, DamageEvent, HealEvent, AuraEvent, CombatantInfo
-from ..models.character_events import CharacterEventStream, DeathEvent, CastEvent
+from models.character_events import CharacterEventStream, DeathEvent, CastEvent
 
 logger = logging.getLogger(__name__)
 
@@ -27,44 +27,34 @@ class EventCategorizer:
         "SPELL_DAMAGE",
         "SPELL_PERIODIC_DAMAGE",
         "RANGE_DAMAGE",
-        "ENVIRONMENTAL_DAMAGE"
+        "ENVIRONMENTAL_DAMAGE",
     }
 
     # Event types that represent healing
-    HEALING_EVENTS = {
-        "SPELL_HEAL",
-        "SPELL_PERIODIC_HEAL"
-    }
+    HEALING_EVENTS = {"SPELL_HEAL", "SPELL_PERIODIC_HEAL"}
 
     # Event types for aura application
     AURA_APPLY_EVENTS = {
         "SPELL_AURA_APPLIED",
         "SPELL_AURA_APPLIED_DOSE",
-        "SPELL_AURA_REFRESH"
+        "SPELL_AURA_REFRESH",
     }
 
     # Event types for aura removal
-    AURA_REMOVE_EVENTS = {
-        "SPELL_AURA_REMOVED",
-        "SPELL_AURA_REMOVED_DOSE"
-    }
+    AURA_REMOVE_EVENTS = {"SPELL_AURA_REMOVED", "SPELL_AURA_REMOVED_DOSE"}
 
     # Event types for spell casts
-    CAST_EVENTS = {
-        "SPELL_CAST_START",
-        "SPELL_CAST_SUCCESS",
-        "SPELL_CAST_FAILED"
-    }
+    CAST_EVENTS = {"SPELL_CAST_START", "SPELL_CAST_SUCCESS", "SPELL_CAST_FAILED"}
 
     # Common buff spell IDs (heroism, power infusion, etc.)
     MAJOR_BUFFS = {
         32182,  # Heroism
         80353,  # Time Warp
-        2825,   # Bloodlust
+        2825,  # Bloodlust
         90355,  # Ancient Hysteria
-        160452, # Netherwinds
-        264667, # Primal Rage
-        390386, # Fury of the Aspects
+        160452,  # Netherwinds
+        264667,  # Primal Rage
+        390386,  # Fury of the Aspects
         10060,  # Power Infusion
     }
 
@@ -254,7 +244,7 @@ class EventCategorizer:
                 death = DeathEvent(
                     timestamp=event.timestamp.timestamp(),
                     datetime=event.timestamp,
-                    killing_blow=event
+                    killing_blow=event,
                 )
                 self.character_streams[dest_guid].add_death(death)
 
@@ -306,7 +296,9 @@ class EventCategorizer:
             # Source summons dest - track pet ownership
             if event.source_guid.startswith("Player-"):
                 self.pet_owners[event.dest_guid] = event.source_guid
-                logger.debug(f"Tracked pet {event.dest_name} -> owner {event.source_name}")
+                logger.debug(
+                    f"Tracked pet {event.dest_name} -> owner {event.source_name}"
+                )
 
     def _handle_combatant_info(self, event: BaseEvent):
         """Handle combatant info events for character metadata."""
@@ -359,7 +351,7 @@ class EventCategorizer:
             return event.aura_type == "BUFF"
 
         # Check if it's a known major buff
-        if hasattr(event, 'spell_id') and event.spell_id in self.MAJOR_BUFFS:
+        if hasattr(event, "spell_id") and event.spell_id in self.MAJOR_BUFFS:
             return True
 
         # Check source/dest relationship
@@ -379,8 +371,8 @@ class EventCategorizer:
     def get_stats(self) -> Dict[str, int]:
         """Get categorization statistics."""
         return {
-            'events_processed': self.processed_count,
-            'categorization_errors': self.categorization_errors,
-            'tracked_characters': len(self.character_streams),
-            'tracked_pets': len(self.pet_owners)
+            "events_processed": self.processed_count,
+            "categorization_errors": self.categorization_errors,
+            "tracked_characters": len(self.character_streams),
+            "tracked_pets": len(self.pet_owners),
         }
