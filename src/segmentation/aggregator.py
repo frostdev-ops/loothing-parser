@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from parser.events import BaseEvent, DamageEvent, HealEvent
+from src.parser.events import BaseEvent, DamageEvent, HealEvent
 
 
 @dataclass
