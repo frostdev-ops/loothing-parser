@@ -10,6 +10,7 @@ from enum import Enum
 
 class EventType(Enum):
     """Enumeration of known event types."""
+
     # Combat events
     SWING_DAMAGE = "SWING_DAMAGE"
     SWING_MISSED = "SWING_MISSED"
@@ -57,6 +58,7 @@ class EventType(Enum):
 @dataclass
 class BaseEvent:
     """Base class for all combat log events."""
+
     timestamp: datetime
     event_type: str
     raw_line: str
@@ -94,6 +96,7 @@ class BaseEvent:
 @dataclass
 class SpellEvent(BaseEvent):
     """Base class for spell-related events."""
+
     spell_id: Optional[int] = None
     spell_name: Optional[str] = None
     spell_school: Optional[int] = None
@@ -102,6 +105,7 @@ class SpellEvent(BaseEvent):
 @dataclass
 class DamageEvent(SpellEvent):
     """Event for damage dealing."""
+
     amount: int = 0
     overkill: int = 0
     school: int = 0
@@ -116,6 +120,7 @@ class DamageEvent(SpellEvent):
 @dataclass
 class HealEvent(SpellEvent):
     """Event for healing."""
+
     amount: int = 0
     overhealing: int = 0
     absorbed: int = 0
@@ -130,6 +135,7 @@ class HealEvent(SpellEvent):
 @dataclass
 class AuraEvent(SpellEvent):
     """Event for buff/debuff application or removal."""
+
     aura_type: Optional[str] = None  # BUFF or DEBUFF
     stacks: int = 1
 
@@ -137,18 +143,20 @@ class AuraEvent(SpellEvent):
 @dataclass
 class EncounterEvent(BaseEvent):
     """Event for raid encounter start/end."""
+
     encounter_id: int = 0
     encounter_name: str = ""
     difficulty_id: int = 0
     group_size: int = 0
     instance_id: int = 0
     success: Optional[bool] = None  # Only for ENCOUNTER_END
-    duration: Optional[int] = None   # Only for ENCOUNTER_END (in ms)
+    duration: Optional[int] = None  # Only for ENCOUNTER_END (in ms)
 
 
 @dataclass
 class ChallengeModeEvent(BaseEvent):
     """Event for Mythic+ dungeon start/end."""
+
     zone_name: str = ""
     instance_id: int = 0
     challenge_id: int = 0
@@ -161,6 +169,7 @@ class ChallengeModeEvent(BaseEvent):
 @dataclass
 class CombatantInfo(BaseEvent):
     """Event containing detailed combatant information."""
+
     player_guid: str = ""
     player_name: str = ""
     faction: int = 0
@@ -246,20 +255,22 @@ class EventFactory:
         event = BaseEvent(
             timestamp=parsed_line.timestamp,
             event_type=parsed_line.event_type,
-            raw_line=parsed_line.raw_line
+            raw_line=parsed_line.raw_line,
         )
 
         # Add base parameters if available
-        if len(parsed_line.base_params) >= 10:
-            event.hide_caster = parsed_line.base_params[0]
-            event.source_guid = parsed_line.base_params[1]
-            event.source_name = parsed_line.base_params[2]
-            event.source_flags = parsed_line.base_params[3]
-            event.source_raid_flags = parsed_line.base_params[4]
-            event.dest_guid = parsed_line.base_params[5]
-            event.dest_name = parsed_line.base_params[6]
-            event.dest_flags = parsed_line.base_params[7]
-            event.dest_raid_flags = parsed_line.base_params[8]
+        # Standard combat events have 8 core parameters (no hide_caster):
+        # sourceGUID, sourceName, sourceFlags, sourceRaidFlags,
+        # destGUID, destName, destFlags, destRaidFlags
+        if len(parsed_line.base_params) >= 8:
+            event.source_guid = parsed_line.base_params[0]
+            event.source_name = parsed_line.base_params[1]
+            event.source_flags = parsed_line.base_params[2]
+            event.source_raid_flags = parsed_line.base_params[3]
+            event.dest_guid = parsed_line.base_params[4]
+            event.dest_name = parsed_line.base_params[5]
+            event.dest_flags = parsed_line.base_params[6]
+            event.dest_raid_flags = parsed_line.base_params[7]
 
         # Create specific event type if it has spell data
         if parsed_line.event_type.startswith("SPELL_"):
@@ -273,7 +284,7 @@ class EventFactory:
         event = EncounterEvent(
             timestamp=parsed_line.timestamp,
             event_type=parsed_line.event_type,
-            raw_line=parsed_line.raw_line
+            raw_line=parsed_line.raw_line,
         )
 
         params = parsed_line.suffix_params
@@ -290,7 +301,7 @@ class EventFactory:
         # ENCOUNTER_END has additional parameters
         if parsed_line.event_type == "ENCOUNTER_END" and len(params) >= 6:
             event.success = params[4] == 1  # params[4] is the success field
-            event.duration = params[5]      # params[5] is the duration_ms field
+            event.duration = params[5]  # params[5] is the duration_ms field
 
         return event
 
@@ -300,7 +311,7 @@ class EventFactory:
         event = ChallengeModeEvent(
             timestamp=parsed_line.timestamp,
             event_type=parsed_line.event_type,
-            raw_line=parsed_line.raw_line
+            raw_line=parsed_line.raw_line,
         )
 
         params = parsed_line.suffix_params
@@ -330,7 +341,7 @@ class EventFactory:
         event = CombatantInfo(
             timestamp=parsed_line.timestamp,
             event_type=parsed_line.event_type,
-            raw_line=parsed_line.raw_line
+            raw_line=parsed_line.raw_line,
         )
 
         # COMBATANT_INFO has a complex structure
