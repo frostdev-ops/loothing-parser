@@ -614,14 +614,6 @@ class EventFactory:
             damage_event.blocked = cls._safe_int(params[4])
             damage_event.absorbed = cls._safe_int(params[5])
 
-            # Debug: check if we're getting actual damage values (show first few)
-            import random
-            if random.random() < 0.001:  # Show ~0.1% of damage events
-                print(f"DEBUG DAMAGE: {damage_event.event_type} params={params[:6]} -> amount={damage_event.amount}")
-        else:
-            import random
-            if random.random() < 0.01:  # Show more frequently for insufficient params
-                print(f"DEBUG: Not enough damage params: {len(params)} for {damage_event.event_type}")
 
         if len(params) >= 9:
             damage_event.critical = bool(params[6])
