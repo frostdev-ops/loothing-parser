@@ -33,7 +33,7 @@ from src.database.schema import DatabaseManager, create_tables
 import os
 db_path = os.environ.get('DB_PATH', '/app/data/combat_logs.db')
 db_manager = DatabaseManager(db_path)
-create_tables(db_manager.engine)
+create_tables(db_manager)
 db_manager.close()
 print('Database initialized successfully')
 "
@@ -44,7 +44,7 @@ from src.database.schema import DatabaseManager, create_tables
 import os
 db_path = os.environ.get('DB_PATH', '/app/data/combat_logs.db')
 db_manager = DatabaseManager(db_path)
-create_tables(db_manager.engine)
+create_tables(db_manager)
 db_manager.close()
 print('Basic database created')
 "
