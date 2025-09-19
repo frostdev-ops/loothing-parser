@@ -16,8 +16,8 @@ import threading
 
 from .schema import DatabaseManager
 from .compression import EventCompressor, compression_stats
-from models.character_events import TimestampedEvent, CharacterEventStream
-from models.encounter_models import RaidEncounter, MythicPlusRun
+from src.models.character_events import TimestampedEvent, CharacterEventStream
+from src.models.encounter_models import RaidEncounter, MythicPlusRun
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CharacterMetrics:
     """Character performance metrics for a single encounter."""
+
     character_name: str
     character_guid: str
     class_name: Optional[str]
@@ -43,6 +44,7 @@ class CharacterMetrics:
 @dataclass
 class EncounterSummary:
     """Summary information for an encounter."""
+
     encounter_id: int
     encounter_type: str
     boss_name: str
@@ -58,6 +60,7 @@ class EncounterSummary:
 @dataclass
 class SpellUsage:
     """Spell usage statistics for a character."""
+
     spell_id: int
     spell_name: str
     cast_count: int
@@ -188,14 +191,17 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        cursor = self.db.execute("""
+        cursor = self.db.execute(
+            """
             SELECT
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
             FROM encounters e
             WHERE encounter_id = ?
-        """, (encounter_id,))
+        """,
+            (encounter_id,),
+        )
 
         row = cursor.fetchone()
         if not row:
@@ -211,7 +217,7 @@ class QueryAPI:
             success=bool(row[6]),
             combat_length=row[7],
             raid_size=row[8],
-            character_count=row[9]
+            character_count=row[9],
         )
 
         query_time = time.time() - start_time
@@ -240,7 +246,8 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        cursor = self.db.execute("""
+        cursor = self.db.execute(
+            """
             SELECT
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
@@ -248,7 +255,9 @@ class QueryAPI:
             FROM encounters e
             ORDER BY created_at DESC
             LIMIT ?
-        """, (limit,))
+        """,
+            (limit,),
+        )
 
         encounters = []
         for row in cursor:
@@ -262,7 +271,7 @@ class QueryAPI:
                 success=bool(row[6]),
                 combat_length=row[7],
                 raid_size=row[8],
-                character_count=row[9]
+                character_count=row[9],
             )
             encounters.append(encounter)
 
@@ -281,7 +290,7 @@ class QueryAPI:
         success: Optional[bool] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        limit: int = 50
+        limit: int = 50,
     ) -> List[EncounterSummary]:
         """
         Search encounters with filters.
@@ -339,7 +348,8 @@ class QueryAPI:
         where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
         params.append(limit)
 
-        cursor = self.db.execute(f"""
+        cursor = self.db.execute(
+            f"""
             SELECT
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
@@ -348,7 +358,9 @@ class QueryAPI:
             {where_clause}
             ORDER BY start_time DESC
             LIMIT ?
-        """, params)
+        """,
+            params,
+        )
 
         encounters = []
         for row in cursor:
@@ -362,7 +374,7 @@ class QueryAPI:
                 success=bool(row[6]),
                 combat_length=row[7],
                 raid_size=row[8],
-                character_count=row[9]
+                character_count=row[9],
             )
             encounters.append(encounter)
 
@@ -374,9 +386,7 @@ class QueryAPI:
         return encounters
 
     def get_character_metrics(
-        self,
-        encounter_id: int,
-        character_name: Optional[str] = None
+        self, encounter_id: int, character_name: Optional[str] = None
     ) -> List[CharacterMetrics]:
         """
         Get character performance metrics for an encounter.
@@ -432,7 +442,7 @@ class QueryAPI:
                 hps=row[9],
                 activity_percentage=row[10],
                 time_alive=row[11],
-                total_events=row[12]
+                total_events=row[12],
             )
             metrics.append(metric)
 
@@ -449,7 +459,7 @@ class QueryAPI:
         encounter_type: Optional[str] = None,
         boss_name: Optional[str] = None,
         days: int = 7,
-        limit: int = 10
+        limit: int = 10,
     ) -> List[CharacterMetrics]:
         """
         Get top performing characters by metric.
@@ -474,7 +484,13 @@ class QueryAPI:
         self.stats["queries_executed"] += 1
 
         # Validate metric name for security
-        valid_metrics = {"dps", "hps", "damage_done", "healing_done", "activity_percentage"}
+        valid_metrics = {
+            "dps",
+            "hps",
+            "damage_done",
+            "healing_done",
+            "activity_percentage",
+        }
         if metric not in valid_metrics:
             raise ValueError(f"Invalid metric: {metric}")
 
@@ -498,7 +514,8 @@ class QueryAPI:
         where_clause = "WHERE " + " AND ".join(conditions)
         params.append(limit)
 
-        cursor = self.db.execute(f"""
+        cursor = self.db.execute(
+            f"""
             SELECT
                 c.character_name, c.character_guid, c.class_name, c.spec_name,
                 m.damage_done, m.healing_done, m.damage_taken, m.death_count,
@@ -509,7 +526,9 @@ class QueryAPI:
             {where_clause}
             ORDER BY m.{metric} DESC
             LIMIT ?
-        """, params)
+        """,
+            params,
+        )
 
         performers = []
         for row in cursor:
@@ -526,7 +545,7 @@ class QueryAPI:
                 hps=row[9],
                 activity_percentage=row[10],
                 time_alive=row[11],
-                total_events=row[12]
+                total_events=row[12],
             )
             performers.append(performer)
 
@@ -543,7 +562,7 @@ class QueryAPI:
         encounter_id: int,
         start_time: Optional[float] = None,
         end_time: Optional[float] = None,
-        event_types: Optional[List[str]] = None
+        event_types: Optional[List[str]] = None,
     ) -> List[TimestampedEvent]:
         """
         Get detailed events for a character in an encounter.
@@ -570,7 +589,7 @@ class QueryAPI:
         # Get character ID
         cursor = self.db.execute(
             "SELECT character_id FROM characters WHERE character_name = ?",
-            (character_name,)
+            (character_name,),
         )
         row = cursor.fetchone()
         if not row:
@@ -620,15 +639,15 @@ class QueryAPI:
 
         if start_time is not None or end_time is not None:
             filtered_events = [
-                e for e in filtered_events
-                if (start_time is None or e.timestamp >= start_time) and
-                   (end_time is None or e.timestamp <= end_time)
+                e
+                for e in filtered_events
+                if (start_time is None or e.timestamp >= start_time)
+                and (end_time is None or e.timestamp <= end_time)
             ]
 
         if event_types:
             filtered_events = [
-                e for e in filtered_events
-                if e.event.event_type in event_types
+                e for e in filtered_events if e.event.event_type in event_types
             ]
 
         # Sort by timestamp
@@ -650,7 +669,7 @@ class QueryAPI:
         character_name: str,
         encounter_id: Optional[int] = None,
         spell_name: Optional[str] = None,
-        days: int = 30
+        days: int = 30,
     ) -> List[SpellUsage]:
         """
         Get spell usage statistics for a character.
@@ -717,7 +736,7 @@ class QueryAPI:
                 total_healing=row[6],
                 max_damage=row[7],
                 max_healing=row[8],
-                crit_percentage=crit_percentage
+                crit_percentage=crit_percentage,
             )
             spell_usages.append(usage)
 
@@ -730,7 +749,8 @@ class QueryAPI:
 
     def get_database_stats(self) -> Dict[str, Any]:
         """Get comprehensive database and query statistics."""
-        cursor = self.db.execute("""
+        cursor = self.db.execute(
+            """
             SELECT
                 (SELECT COUNT(*) FROM encounters) as total_encounters,
                 (SELECT COUNT(*) FROM characters) as total_characters,
@@ -738,7 +758,8 @@ class QueryAPI:
                 (SELECT SUM(event_count) FROM event_blocks) as total_events,
                 (SELECT SUM(compressed_size) FROM event_blocks) as total_compressed_bytes,
                 (SELECT SUM(uncompressed_size) FROM event_blocks) as total_uncompressed_bytes
-        """)
+        """
+        )
         row = cursor.fetchone()
 
         compression_ratio = 0.0
