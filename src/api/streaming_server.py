@@ -1,0 +1,518 @@
+"""
+FastAPI streaming server for WoW combat log processing.
+
+Provides WebSocket endpoints for real-time log streaming and REST APIs
+for querying processed data.
+"""
+
+import asyncio
+import json
+import time
+import uuid
+import logging
+from typing import Dict, List, Optional, Any
+from datetime import datetime
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
+
+from .models import (
+    StreamMessage, StreamResponse, SessionStart, ErrorResponse,
+    EncounterUpdate, StreamStats
+)
+from .auth import auth_manager, authenticate_api_key, AuthResponse
+from streaming.processor import StreamProcessor
+from streaming.session import SessionManager, StreamSession, SessionStatus
+from database.schema import DatabaseManager, create_tables
+from database.query import QueryAPI
+
+logger = logging.getLogger(__name__)
+
+
+class StreamingServer:
+    """
+    Main streaming server class.
+
+    Coordinates WebSocket connections, authentication, stream processing,
+    and database operations for real-time combat log analysis.
+    """
+
+    def __init__(self, db_path: str = "combat_logs.db"):
+        """
+        Initialize streaming server.
+
+        Args:
+            db_path: Path to SQLite database
+        """
+        # Core components
+        self.db = DatabaseManager(db_path)
+        self.session_manager = SessionManager()
+        self.stream_processor = StreamProcessor(
+            self.db,
+            on_encounter_update=self._handle_encounter_update
+        )
+        self.query_api = QueryAPI(self.db)
+
+        # Connection tracking
+        self._websocket_connections: Dict[str, WebSocket] = {}
+
+        # Server state
+        self._running = False
+        self._start_time = time.time()
+
+        # Initialize database
+        create_tables(self.db)
+
+    async def start(self):
+        """Start all server components."""
+        if self._running:
+            return
+
+        self._running = True
+        await self.session_manager.start()
+        await self.stream_processor.start()
+
+        logger.info("Streaming server started")
+
+    async def stop(self):
+        """Stop all server components."""
+        if not self._running:
+            return
+
+        self._running = False
+
+        # Stop processing first
+        await self.stream_processor.stop()
+        await self.session_manager.stop()
+
+        # Close database
+        self.query_api.close()
+        self.db.close()
+
+        logger.info("Streaming server stopped")
+
+    async def handle_websocket_connection(self, websocket: WebSocket, api_key: str):
+        """
+        Handle a new WebSocket connection.
+
+        Args:
+            websocket: WebSocket connection
+            api_key: Client API key
+        """
+        # Authenticate
+        auth_response = authenticate_api_key(api_key)
+        if not auth_response.authenticated:
+            await websocket.close(code=4001, reason="Authentication failed")
+            return
+
+        client_id = auth_response.client_id
+        session_id = str(uuid.uuid4())
+
+        # Check rate limits
+        allowed, reason = auth_manager.check_rate_limit(client_id, is_connection=True)
+        if not allowed:
+            await websocket.close(code=4029, reason=f"Rate limited: {reason}")
+            return
+
+        # Accept connection
+        await websocket.accept()
+
+        try:
+            # Create session
+            session = self.session_manager.create_session(
+                client_id=client_id,
+                session_id=session_id,
+                api_key=api_key
+            )
+
+            session.websocket_connected = True
+            session.remote_address = websocket.client.host if websocket.client else "unknown"
+
+            # Track connection
+            auth_manager.track_connection(client_id, session_id)
+            self._websocket_connections[session_id] = websocket
+
+            # Create processing context
+            context_id = await self.stream_processor.create_processing_context(session)
+
+            # Send welcome message
+            welcome = StreamResponse(
+                type="status",
+                message="Connected successfully",
+                data={
+                    "session_id": session_id,
+                    "rate_limits": auth_response.rate_limit,
+                    "permissions": auth_response.permissions
+                }
+            )
+            await websocket.send_text(welcome.model_dump_json())
+
+            logger.info(f"WebSocket connected: {client_id} (session: {session_id})")
+
+            # Handle messages
+            await self._handle_websocket_messages(websocket, session, context_id)
+
+        except WebSocketDisconnect:
+            logger.info(f"WebSocket disconnected: {client_id} (session: {session_id})")
+
+        except Exception as e:
+            logger.error(f"WebSocket error for {client_id}: {e}")
+
+        finally:
+            # Cleanup
+            await self._cleanup_websocket_connection(session_id, context_id)
+
+    async def _handle_websocket_messages(
+        self,
+        websocket: WebSocket,
+        session: StreamSession,
+        context_id: str
+    ):
+        """Handle incoming WebSocket messages."""
+        while True:
+            try:
+                # Receive message
+                raw_message = await websocket.receive_text()
+                message = StreamMessage.model_validate_json(raw_message)
+
+                # Update session activity
+                session.update_activity()
+
+                # Process message based on type
+                if message.type == "log_line":
+                    await self._handle_log_line(websocket, session, context_id, message)
+
+                elif message.type == "start_session":
+                    await self._handle_session_start(websocket, session, message)
+
+                elif message.type == "end_session":
+                    await self._handle_session_end(websocket, session, context_id)
+                    break
+
+                elif message.type == "heartbeat":
+                    await self._handle_heartbeat(websocket, session)
+
+                elif message.type == "checkpoint":
+                    await self._handle_checkpoint(websocket, session, message)
+
+                else:
+                    logger.warning(f"Unknown message type: {message.type}")
+
+            except WebSocketDisconnect:
+                break
+            except json.JSONDecodeError as e:
+                error_response = StreamResponse(
+                    type="error",
+                    message=f"Invalid JSON: {e}"
+                )
+                await websocket.send_text(error_response.model_dump_json())
+            except Exception as e:
+                logger.error(f"Error handling message: {e}")
+                error_response = StreamResponse(
+                    type="error",
+                    message=f"Processing error: {e}"
+                )
+                await websocket.send_text(error_response.model_dump_json())
+
+    async def _handle_log_line(
+        self,
+        websocket: WebSocket,
+        session: StreamSession,
+        context_id: str,
+        message: StreamMessage
+    ):
+        """Handle a log line message."""
+        if not message.line:
+            return
+
+        # Process the line
+        success = await self.stream_processor.process_line(
+            context_id=context_id,
+            line=message.line,
+            timestamp=message.timestamp,
+            sequence=message.sequence
+        )
+
+        if success:
+            # Send acknowledgment
+            if message.sequence is not None:
+                ack = StreamResponse(
+                    type="ack",
+                    sequence_ack=message.sequence,
+                    data={"processed": True}
+                )
+                await websocket.send_text(ack.model_dump_json())
+        else:
+            # Send error
+            error = StreamResponse(
+                type="error",
+                message="Failed to process line",
+                data={"sequence": message.sequence}
+            )
+            await websocket.send_text(error.model_dump_json())
+
+    async def _handle_session_start(
+        self,
+        websocket: WebSocket,
+        session: StreamSession,
+        message: StreamMessage
+    ):
+        """Handle session start message."""
+        if message.metadata:
+            try:
+                session_start = SessionStart(**message.metadata)
+                session.client_version = session_start.client_version
+                session.character_name = session_start.character_name
+                session.realm = session_start.realm
+            except Exception as e:
+                logger.warning(f"Invalid session start metadata: {e}")
+
+        session.status = SessionStatus.ACTIVE
+
+        response = StreamResponse(
+            type="status",
+            message="Session started",
+            data={"session_id": session.session_id}
+        )
+        await websocket.send_text(response.model_dump_json())
+
+    async def _handle_session_end(
+        self,
+        websocket: WebSocket,
+        session: StreamSession,
+        context_id: str
+    ):
+        """Handle session end message."""
+        session.status = SessionStatus.DISCONNECTED
+
+        # Stop processing context
+        await self.stream_processor.stop_processing_context(context_id)
+
+        response = StreamResponse(
+            type="status",
+            message="Session ended"
+        )
+        await websocket.send_text(response.model_dump_json())
+
+    async def _handle_heartbeat(self, websocket: WebSocket, session: StreamSession):
+        """Handle heartbeat message."""
+        session.update_heartbeat()
+
+        response = StreamResponse(
+            type="status",
+            message="Heartbeat received",
+            data={"server_time": time.time()}
+        )
+        await websocket.send_text(response.model_dump_json())
+
+    async def _handle_checkpoint(
+        self,
+        websocket: WebSocket,
+        session: StreamSession,
+        message: StreamMessage
+    ):
+        """Handle checkpoint message."""
+        if message.sequence is not None:
+            session.acknowledge_sequence(message.sequence)
+
+        response = StreamResponse(
+            type="ack",
+            sequence_ack=message.sequence,
+            message="Checkpoint acknowledged"
+        )
+        await websocket.send_text(response.model_dump_json())
+
+    async def _cleanup_websocket_connection(
+        self,
+        session_id: str,
+        context_id: Optional[str] = None
+    ):
+        """Clean up WebSocket connection resources."""
+        # Remove from tracking
+        if session_id in self._websocket_connections:
+            del self._websocket_connections[session_id]
+
+        # Get session info for cleanup
+        session = self.session_manager.get_session(session_id)
+        if session:
+            # Untrack connection for rate limiting
+            auth_manager.untrack_connection(session.client_id, session_id)
+
+        # Stop processing context
+        if context_id:
+            await self.stream_processor.stop_processing_context(context_id)
+
+        # Remove session
+        await self.session_manager.remove_session(session_id)
+
+    async def _handle_encounter_update(self, encounter_update: EncounterUpdate):
+        """Handle encounter state updates (broadcast to relevant clients)."""
+        # For now, just log the update
+        # In the future, this could broadcast to Discord or other services
+        logger.info(f"Encounter update: {encounter_update.boss_name} - {encounter_update.status}")
+
+    def get_server_stats(self) -> Dict[str, Any]:
+        """Get comprehensive server statistics."""
+        uptime = time.time() - self._start_time
+
+        return {
+            "server": {
+                "uptime_seconds": uptime,
+                "running": self._running,
+                "start_time": self._start_time,
+                "active_websockets": len(self._websocket_connections),
+            },
+            "authentication": auth_manager.get_all_stats(),
+            "sessions": self.session_manager.get_stats(),
+            "processing": self.stream_processor.get_global_stats(),
+            "database": self.query_api.get_database_stats(),
+        }
+
+
+# Global server instance
+_server_instance: Optional[StreamingServer] = None
+
+
+def create_app(db_path: str = "combat_logs.db") -> FastAPI:
+    """
+    Create FastAPI application with streaming endpoints.
+
+    Args:
+        db_path: Path to SQLite database
+
+    Returns:
+        Configured FastAPI app
+    """
+    global _server_instance
+
+    app = FastAPI(
+        title="WoW Combat Log Streaming API",
+        description="Real-time combat log processing and analysis",
+        version="1.0.0"
+    )
+
+    # CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Configure appropriately for production
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Initialize server
+    _server_instance = StreamingServer(db_path)
+
+    @app.on_event("startup")
+    async def startup_event():
+        await _server_instance.start()
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        await _server_instance.stop()
+
+    # WebSocket endpoint for streaming
+    @app.websocket("/stream")
+    async def websocket_endpoint(websocket: WebSocket, api_key: str):
+        """Main streaming WebSocket endpoint."""
+        await _server_instance.handle_websocket_connection(websocket, api_key)
+
+    # REST API endpoints
+    @app.get("/health")
+    async def health_check():
+        """Health check endpoint."""
+        return {"status": "healthy", "timestamp": time.time()}
+
+    @app.get("/stats")
+    async def get_stats():
+        """Get server statistics."""
+        return _server_instance.get_server_stats()
+
+    @app.get("/encounters/recent")
+    async def get_recent_encounters(limit: int = Query(10, ge=1, le=100)):
+        """Get recent encounters."""
+        encounters = _server_instance.query_api.get_recent_encounters(limit)
+        return [encounter.model_dump() for encounter in encounters]
+
+    @app.get("/encounters/{encounter_id}")
+    async def get_encounter(encounter_id: int):
+        """Get specific encounter details."""
+        encounter = _server_instance.query_api.get_encounter(encounter_id)
+        if not encounter:
+            raise HTTPException(status_code=404, detail="Encounter not found")
+        return encounter.model_dump()
+
+    @app.get("/characters/{character_name}/metrics")
+    async def get_character_metrics(
+        character_name: str,
+        encounter_id: Optional[int] = Query(None)
+    ):
+        """Get character performance metrics."""
+        if encounter_id:
+            metrics = _server_instance.query_api.get_character_metrics(encounter_id, character_name)
+        else:
+            # Get recent metrics
+            metrics = _server_instance.query_api.get_top_performers(limit=1)
+            metrics = [m for m in metrics if m.character_name.lower() == character_name.lower()]
+
+        return [metric.model_dump() for metric in metrics]
+
+    @app.post("/auth/generate-key")
+    async def generate_api_key(
+        client_id: str,
+        description: str,
+        admin_key: str = "admin_secret"  # Simple admin auth for demo
+    ):
+        """Generate a new API key."""
+        if admin_key != "admin_secret":
+            raise HTTPException(status_code=403, detail="Invalid admin key")
+
+        key_id, api_key = auth_manager.generate_api_key(client_id, description)
+        return {
+            "key_id": key_id,
+            "api_key": api_key,
+            "client_id": client_id,
+            "description": description
+        }
+
+    return app
+
+
+def run_server(
+    host: str = "0.0.0.0",
+    port: int = 8000,
+    db_path: str = "combat_logs.db",
+    log_level: str = "info"
+):
+    """
+    Run the streaming server.
+
+    Args:
+        host: Host to bind to
+        port: Port to bind to
+        db_path: Database file path
+        log_level: Logging level
+    """
+    # Configure logging
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper()),
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
+    # Create app
+    app = create_app(db_path)
+
+    # Run with uvicorn
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level=log_level,
+        access_log=True
+    )
+
+
+if __name__ == "__main__":
+    run_server()
