@@ -42,9 +42,8 @@ class EventCompressor:
         self.reverse_string_cache: Dict[int, str] = {}
         self.next_string_id = 0
 
-        # Initialize compression context with dictionary
-        self.compressor = zstd.ZstdCompressor(level=self.COMPRESSION_LEVEL)
-        self.decompressor = zstd.ZstdDecompressor()
+        # Store compression level for direct API usage
+        self.compression_level = self.COMPRESSION_LEVEL
 
     def compress_events(
         self, events: List[TimestampedEvent]
@@ -78,7 +77,7 @@ class EventCompressor:
         serialized = self._serialize_columnar(columnar_data)
 
         # Compress with zstd
-        compressed = self.compressor.compress(serialized)
+        compressed = zstd.compress(serialized, self.compression_level)
 
         # Calculate metrics
         compression_time = time.time() - start_time
