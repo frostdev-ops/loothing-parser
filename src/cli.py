@@ -229,48 +229,126 @@ def export_csv(fights, output_file):
 
 @cli.command()
 @click.argument("log_file", type=click.Path(exists=True))
-@click.option("--lines", "-n", default=100, help="Number of lines to analyze")
-def analyze(log_file, lines):
-    """Analyze the structure of a combat log file."""
+@click.option("--interactive/--summary", default=True, help="Launch interactive analyzer (default) or show summary")
+def analyze(log_file, interactive):
+    """Analyze a combat log file with interactive exploration."""
+    from .analyzer import InteractiveAnalyzer
+    from .segmentation.enhanced import EnhancedSegmenter
+
     log_path = Path(log_file)
-    console.print(f"[bold cyan]Analyzing:[/bold cyan] {log_path.name}")
 
-    parser = CombatLogParser()
-    event_types = Counter()
+    if interactive:
+        # Full interactive analysis
+        console.print(f"[bold green]Parsing combat log:[/bold green] {log_path.name}")
+        console.print("[cyan]This may take a moment for large files...[/cyan]\n")
 
-    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-        sample_lines = []
-        for i, line in enumerate(f):
-            if i >= lines:
-                break
-            sample_lines.append(line)
+        # Parse the full log file using existing parser infrastructure
+        parser = CombatLogParser()
+        segmenter = EncounterSegmenter()
+        enhanced_segmenter = EnhancedSegmenter()
 
-    # Parse sample
-    events = parser.parse_lines(sample_lines)
+        # Statistics tracking
+        total_events = 0
+        start_time = datetime.now()
 
-    # Analyze events
-    for event in events:
-        event_types[event.event_type] += 1
+        # Parse with progress indication
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("[cyan]Processing events...", total=None)
 
-    # Display analysis
-    table = Table(title="Event Type Distribution")
-    table.add_column("Event Type", width=30)
-    table.add_column("Count", width=10)
+            with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line_num, line in enumerate(f, 1):
+                    if line.strip():
+                        try:
+                            parsed_line = parser.tokenizer.parse_line(line)
+                            event = parser.event_factory.create_event(parsed_line)
+                            segmenter.process_event(event)
+                            enhanced_segmenter.process_event(event)
+                            total_events += 1
 
-    for event_type, count in event_types.most_common():
-        table.add_row(event_type, str(count))
+                            # Update progress every 10k events
+                            if total_events % 10000 == 0:
+                                progress.update(task, description=f"[cyan]Processed {total_events:,} events...")
 
-    console.print(table)
+                        except Exception as e:
+                            parser.parse_errors.append(f"Line {line_num}: {str(e)}")
 
-    # Show sample events
-    if events:
-        console.print(f"\n[bold]Sample Events:[/bold]")
-        for event in events[:5]:
-            console.print(f"  • {event.timestamp.strftime('%H:%M:%S')} - {event.event_type}")
-            if hasattr(event, "spell_name") and event.spell_name:
-                console.print(f"    Spell: {event.spell_name}")
-            if event.source_name and event.dest_name:
-                console.print(f"    {event.source_name} → {event.dest_name}")
+            progress.update(task, description="[green]Finalizing encounters...")
+
+        # Finalize data
+        fights = segmenter.finalize()
+        raid_encounters, mythic_plus_runs = enhanced_segmenter.finalize()
+
+        # Parsing summary
+        processing_time = (datetime.now() - start_time).total_seconds()
+        console.print(f"\n[bold green]✓ Parsing Complete[/bold green]")
+        console.print(f"  Events: {total_events:,}")
+        console.print(f"  Time: {processing_time:.1f}s")
+        console.print(f"  Encounters: {len(fights)}")
+        if parser.parse_errors:
+            console.print(f"  [yellow]Warnings: {len(parser.parse_errors)}[/yellow]")
+
+        # Prepare enhanced data for analyzer
+        enhanced_data = {
+            "raid_encounters": raid_encounters,
+            "mythic_plus_runs": mythic_plus_runs,
+            "stats": enhanced_segmenter.get_stats()
+        }
+
+        # Launch interactive analyzer
+        console.print("\n[bold cyan]Launching Interactive Analyzer...[/bold cyan]")
+        analyzer = InteractiveAnalyzer(fights, enhanced_data)
+        analyzer.run()
+
+    else:
+        # Simple summary mode (old behavior but improved)
+        console.print(f"[bold cyan]Analyzing:[/bold cyan] {log_path.name}")
+
+        parser = CombatLogParser()
+        event_types = Counter()
+        sample_size = 1000  # Analyze more events for better summary
+
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            sample_lines = []
+            for i, line in enumerate(f):
+                if i >= sample_size:
+                    break
+                sample_lines.append(line)
+
+        # Parse sample
+        events = parser.parse_lines(sample_lines)
+
+        # Analyze events
+        for event in events:
+            event_types[event.event_type] += 1
+
+        # Display analysis
+        table = Table(title="Event Type Distribution (First 1,000 events)")
+        table.add_column("Event Type", width=30)
+        table.add_column("Count", width=10)
+        table.add_column("Percentage", width=12)
+
+        total_events = len(events)
+        for event_type, count in event_types.most_common():
+            percentage = (count / total_events * 100) if total_events > 0 else 0
+            table.add_row(event_type, str(count), f"{percentage:.1f}%")
+
+        console.print(table)
+
+        # Show sample events
+        if events:
+            console.print(f"\n[bold]Sample Events:[/bold]")
+            for event in events[:5]:
+                console.print(f"  • {event.timestamp.strftime('%H:%M:%S')} - {event.event_type}")
+                if hasattr(event, "spell_name") and event.spell_name:
+                    console.print(f"    Spell: {event.spell_name}")
+                if event.source_name and event.dest_name:
+                    console.print(f"    {event.source_name} → {event.dest_name}")
+
+        console.print(f"\n[dim]Use --interactive for full analysis and exploration[/dim]")
 
 
 @cli.command()
@@ -383,12 +461,16 @@ def server_status(host, port):
 
                 # Database stats
                 db_stats = stats.get("database", {}).get("database", {})
-                console.print(f"[cyan]Total Encounters:[/cyan] {db_stats.get('total_encounters', 0)}")
+                console.print(
+                    f"[cyan]Total Encounters:[/cyan] {db_stats.get('total_encounters', 0)}"
+                )
                 console.print(f"[cyan]Total Events:[/cyan] {db_stats.get('total_events', 0)}")
 
                 # Processing stats
                 proc_stats = stats.get("processing", {})
-                console.print(f"[cyan]Events/sec:[/cyan] {proc_stats.get('events_per_second', 0):.1f}")
+                console.print(
+                    f"[cyan]Events/sec:[/cyan] {proc_stats.get('events_per_second', 0):.1f}"
+                )
 
             else:
                 console.print(f"[red]✗ Failed to get status: HTTP {response.getcode()}[/red]")
