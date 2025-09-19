@@ -314,5 +314,83 @@ def test():
     console.print(f"Total Errors: {total_errors}")
 
 
-if __name__ == '__main__':
+@cli.group()
+def stream():
+    """Streaming server commands for real-time log processing."""
+    pass
+
+
+@stream.command('start')
+@click.option('--host', default='localhost', help='Host to bind to')
+@click.option('--port', default=8000, help='Port to bind to')
+@click.option('--db-path', default='data/combat_logs.db', help='Database path')
+def start_server(host, port, db_path):
+    """Start the streaming server."""
+    console.print(f"[bold green]Starting streaming server on {host}:{port}[/bold green]")
+    console.print(f"[cyan]Database:[/cyan] {db_path}")
+    console.print(f"[cyan]WebSocket endpoint:[/cyan] ws://{host}:{port}/ws")
+    console.print(f"[cyan]API docs:[/cyan] http://{host}:{port}/docs")
+    console.print(f"[yellow]Note: Use docker-compose up for production deployment[/yellow]")
+
+
+@stream.command('test')
+@click.option('--host', default='localhost', help='Server host')
+@click.option('--port', default=8000, help='Server port')
+def test_connection(host, port):
+    """Test connection to streaming server."""
+    import requests
+
+    try:
+        response = requests.get(f"http://{host}:{port}/health", timeout=5)
+        if response.status_code == 200:
+            console.print(f"[bold green]✓ Server is responding at {host}:{port}[/bold green]")
+            health_data = response.json()
+            console.print(f"[cyan]Status:[/cyan] {health_data.get('status', 'unknown')}")
+        else:
+            console.print(f"[red]✗ Server responded with status {response.status_code}[/red]")
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]✗ Failed to connect to {host}:{port}[/red]")
+        console.print(f"[red]Error: {e}[/red]")
+
+
+@stream.command('status')
+@click.option('--host', default='localhost', help='Server host')
+@click.option('--port', default=8000, help='Server port')
+def server_status(host, port):
+    """Get detailed server status and statistics."""
+    import requests
+
+    try:
+        response = requests.get(f"http://{host}:{port}/stats", timeout=5)
+        if response.status_code == 200:
+            stats = response.json()
+            console.print(f"[bold green]Server Status - {host}:{port}[/bold green]")
+
+            # Server info
+            server_stats = stats.get('server', {})
+            uptime = server_stats.get('uptime_seconds', 0)
+            console.print(f"[cyan]Uptime:[/cyan] {uptime:.1f}s")
+            console.print(f"[cyan]Active WebSockets:[/cyan] {server_stats.get('active_websockets', 0)}")
+
+            # Database stats
+            db_stats = stats.get('database', {}).get('database', {})
+            console.print(f"[cyan]Total Encounters:[/cyan] {db_stats.get('total_encounters', 0)}")
+            console.print(f"[cyan]Total Events:[/cyan] {db_stats.get('total_events', 0)}")
+
+            # Processing stats
+            proc_stats = stats.get('processing', {})
+            console.print(f"[cyan]Events/sec:[/cyan] {proc_stats.get('events_per_second', 0):.1f}")
+
+        else:
+            console.print(f"[red]✗ Failed to get status: HTTP {response.status_code}[/red]")
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]✗ Failed to connect: {e}[/red]")
+
+
+def main():
+    """Entry point for the loothing-parser command."""
     cli()
+
+
+if __name__ == '__main__':
+    main()
