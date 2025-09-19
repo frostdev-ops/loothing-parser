@@ -371,14 +371,22 @@ class InteractiveAnalyzer:
                     ):
                         return getattr(segment, "characters", {})
 
-        # Fallback: create basic character streams from fight participants
+        # Enhanced fallback: create character streams from fight events and participants
         if fight.participants:
             characters = {}
+
+            # Initialize character streams for players
             for guid, participant in fight.participants.items():
                 if participant["is_player"]:
                     characters[guid] = CharacterEventStream(
-                        character_guid=guid, character_name=participant["name"] or "Unknown"
+                        character_guid=guid,
+                        character_name=participant["name"] or "Unknown"
                     )
+
+            # Process fight events to populate metrics
+            if characters and fight.events:
+                self._populate_character_metrics_from_events(characters, fight.events, fight.duration or 0)
+
             return characters if characters else None
 
         return None
