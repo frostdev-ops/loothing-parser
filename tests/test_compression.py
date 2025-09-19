@@ -386,7 +386,7 @@ class TestCompressionPerformance:
             large_event_list.append(event)
 
         # Compress
-        compressed_data = compressor.compress_events(large_event_list)
+        compressed_data, metadata = compressor.compress_events(large_event_list)
 
         # Should achieve significant compression
         uncompressed_estimate = compressor._estimate_uncompressed_size(large_event_list)
