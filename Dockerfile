@@ -43,7 +43,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN groupadd -g $GROUP_ID appuser && useradd -u $USER_ID -g $GROUP_ID -r appuser
 
 # Set working directory
 WORKDIR /app
@@ -56,9 +58,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src/ ./src/
 COPY migrations/ ./migrations/
 
-# Create directories for data and logs
+# Create directories for data and logs with proper permissions
 RUN mkdir -p /app/data /app/logs && \
-    chown -R appuser:appuser /app
+    chown -R appuser:appuser /app && \
+    chmod 755 /app/data /app/logs
 
 # Copy Docker entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
