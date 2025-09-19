@@ -624,7 +624,25 @@ class EventFactory:
     @classmethod
     def _add_heal_info(cls, event: BaseEvent, params: List[Any]) -> HealEvent:
         """Add heal-specific information to event."""
-        heal_event = HealEvent(**event.__dict__)
+        # Handle different event types properly
+        if event.event_type.startswith("SWING_"):
+            # SWING events use BaseEvent as base, create HealEvent manually
+            heal_event = HealEvent(
+                timestamp=event.timestamp,
+                event_type=event.event_type,
+                raw_line=event.raw_line,
+                source_guid=event.source_guid,
+                source_name=event.source_name,
+                source_flags=event.source_flags,
+                source_raid_flags=event.source_raid_flags,
+                dest_guid=event.dest_guid,
+                dest_name=event.dest_name,
+                dest_flags=event.dest_flags,
+                dest_raid_flags=event.dest_raid_flags,
+            )
+        else:
+            # SPELL_ events and others use event.__dict__
+            heal_event = HealEvent(**event.__dict__)
 
         # Heal parameters: amount, overhealing, absorbed, critical
         if len(params) >= 3:
