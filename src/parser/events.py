@@ -353,15 +353,11 @@ class EventFactory:
         elif event_type == "COMBATANT_INFO":
             return cls._create_combatant_info(parsed_line)
 
-        # Handle combat events
-        event = cls._create_base_event(parsed_line)
-
-        # Add spell information if present
-        if parsed_line.prefix_params and event_type.startswith("SPELL_"):
-            if len(parsed_line.prefix_params) >= 3:
-                event.spell_id = parsed_line.prefix_params[0]
-                event.spell_name = parsed_line.prefix_params[1]
-                event.spell_school = parsed_line.prefix_params[2]
+        # Handle combat events - create correct base type first
+        if event_type.startswith("SPELL_"):
+            event = cls._create_spell_base_event(parsed_line)
+        else:
+            event = cls._create_base_event(parsed_line)
 
         # Add suffix-specific data
         if "_DAMAGE" in event_type:
