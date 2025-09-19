@@ -249,6 +249,68 @@ class CombatantInfo(BaseEvent):
     items_array: List[Any] = field(default_factory=list)
     auras_array: List[Any] = field(default_factory=list)
 
+    def get_flask(self) -> Optional[ActiveAura]:
+        """Get active flask if any."""
+        # Common flask spell IDs (updated for current expansion)
+        flask_ids = {431972, 431973, 431974, 431975, 431976, 431977}  # Algari flasks
+        for aura in self.active_auras:
+            if aura.spell_id in flask_ids:
+                return aura
+        return None
+
+    def get_food_buff(self) -> Optional[ActiveAura]:
+        """Get active food buff if any."""
+        # Common food buff spell IDs
+        food_ids = {
+            462854,  # Skyfury (Haste food)
+            462855,  # Blessed Recovery (Versatility food)
+            # Add more food IDs as needed
+        }
+        for aura in self.active_auras:
+            if aura.spell_id in food_ids:
+                return aura
+        return None
+
+    def get_weapon_enchants(self) -> List[int]:
+        """Get enchant IDs from weapons."""
+        enchants = []
+        # Weapons are typically in first few slots
+        for item in self.equipped_items[:2]:  # Main hand and off hand
+            if item.has_enchant():
+                enchants.extend([e for e in item.enchants if e != 0])
+        return enchants
+
+    def get_total_gems(self) -> int:
+        """Get total number of gems across all equipment."""
+        return sum(item.get_gem_count() for item in self.equipped_items)
+
+    def get_average_item_level(self) -> float:
+        """Calculate average item level of equipped gear."""
+        if not self.equipped_items:
+            return 0.0
+        valid_items = [item for item in self.equipped_items if item.item_level > 0]
+        if not valid_items:
+            return 0.0
+        return sum(item.item_level for item in valid_items) / len(valid_items)
+
+    def has_consumables(self) -> bool:
+        """Check if player has any consumables active."""
+        return bool(self.get_flask() or self.get_food_buff())
+
+    def get_talent_build_string(self) -> str:
+        """Get a compact representation of talent choices."""
+        if not self.talents:
+            return ""
+        return ",".join(str(talent.talent_id) for talent in self.talents[:10])  # First 10 talents
+
+    def is_fully_enchanted(self) -> bool:
+        """Check if all enchantable items have enchants."""
+        # Check main hand, off hand, rings, cloak, etc.
+        enchantable_slots = self.equipped_items[:8]  # First 8 slots typically enchantable
+        if not enchantable_slots:
+            return False
+        return all(item.has_enchant() for item in enchantable_slots if item.item_id > 0)
+
 
 class EventFactory:
     """Factory for creating specific event objects from parsed lines."""
