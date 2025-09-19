@@ -443,6 +443,7 @@ class TestCompressionPerformance:
                 event=DamageEvent(
                     event_type="SPELL_DAMAGE",
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
+                    raw_line="mock_line",
                     source_guid=f"Player-{random.randint(1000, 9999)}-567890AB",
                     source_name=f"Player{random.randint(1, 100)}",
                     source_flags=0x512,
@@ -463,7 +464,6 @@ class TestCompressionPerformance:
                     critical=random.choice([True, False]),
                     glancing=random.choice([True, False]),
                     crushing=random.choice([True, False]),
-                    is_off_hand=random.choice([True, False]),
                 ),
             )
             random_events.append(event)
