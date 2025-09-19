@@ -149,12 +149,13 @@ class TestRealDataParser:
                     events_from_line = list(parser._process_line(line))
                     if events_from_line:
                         # Convert to timestamped events for compression
-                        timestamped_event = {
-                            "timestamp": event.timestamp,
-                            "event_type": event.event_type,
-                            "data": event.__dict__,
-                        }
-                        events.append(timestamped_event)
+                        for event in events_from_line:
+                            timestamped_event = {
+                                "timestamp": event.timestamp,
+                                "event_type": event.event_type,
+                                "data": event.__dict__,
+                            }
+                            events.append(timestamped_event)
 
         if events:
             # Test compression
