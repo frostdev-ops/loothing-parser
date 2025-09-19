@@ -73,10 +73,20 @@ class EnhancedSegmenter:
 
         # Handle encounter boundaries
         if event.event_type == "ENCOUNTER_START":
-            self._start_raid_encounter(event)
+            if self.current_mythic_plus:
+                # In M+ context, start a boss segment
+                self._start_m_plus_segment(event)
+            else:
+                # Otherwise, it's a raid encounter
+                self._start_raid_encounter(event)
 
         elif event.event_type == "ENCOUNTER_END":
-            self._end_raid_encounter(event)
+            if self.current_mythic_plus and self.current_m_plus_segment:
+                # End M+ segment
+                self._end_m_plus_segment(event.timestamp)
+            else:
+                # End raid encounter
+                self._end_raid_encounter(event)
 
         elif event.event_type == "CHALLENGE_MODE_START":
             self._start_mythic_plus(event)
