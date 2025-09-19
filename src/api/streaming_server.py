@@ -414,6 +414,75 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
         """Health check endpoint."""
         return {"status": "healthy", "timestamp": time.time()}
 
+    @app.get("/health/live")
+    async def liveness_probe():
+        """Kubernetes liveness probe."""
+        return {"status": "alive", "timestamp": time.time()}
+
+    @app.get("/health/ready")
+    async def readiness_probe():
+        """Kubernetes readiness probe."""
+        # Check if critical components are ready
+        try:
+            # Test database connection
+            _server_instance.db.execute("SELECT 1")
+
+            # Check if server is running
+            if not _server_instance._running:
+                raise Exception("Server not running")
+
+            return {"status": "ready", "timestamp": time.time()}
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Not ready: {str(e)}")
+
+    @app.get("/metrics")
+    async def get_metrics():
+        """Prometheus-compatible metrics endpoint."""
+        stats = _server_instance.get_server_stats()
+
+        # Convert to Prometheus format
+        metrics = []
+
+        # Server metrics
+        server_stats = stats["server"]
+        metrics.append(f"loothing_server_uptime_seconds {server_stats['uptime_seconds']}")
+        metrics.append(f"loothing_server_running {int(server_stats['running'])}")
+        metrics.append(f"loothing_websocket_connections_active {server_stats['active_websockets']}")
+
+        # Processing metrics
+        processing_stats = stats["processing"]
+        metrics.append(f"loothing_processing_contexts_active {processing_stats['active_contexts']}")
+        metrics.append(f"loothing_processing_lines_total {processing_stats['total_lines_processed']}")
+        metrics.append(f"loothing_processing_events_total {processing_stats['total_events_generated']}")
+        metrics.append(f"loothing_processing_errors_total {processing_stats['total_parse_errors']}")
+        metrics.append(f"loothing_processing_lines_per_second {processing_stats['lines_per_second']}")
+        metrics.append(f"loothing_processing_events_per_second {processing_stats['events_per_second']}")
+        metrics.append(f"loothing_processing_error_rate_percent {processing_stats['error_rate']}")
+
+        # Database metrics
+        db_stats = stats["database"]
+        metrics.append(f"loothing_database_encounters_total {db_stats['total_encounters']}")
+        metrics.append(f"loothing_database_characters_total {db_stats['total_characters']}")
+        metrics.append(f"loothing_database_blocks_total {db_stats['total_blocks']}")
+        metrics.append(f"loothing_database_events_total {db_stats['total_events']}")
+        metrics.append(f"loothing_database_compressed_bytes {db_stats['total_compressed_bytes']}")
+        metrics.append(f"loothing_database_uncompressed_bytes {db_stats['total_uncompressed_bytes']}")
+
+        # Authentication metrics
+        auth_stats = stats["authentication"]
+        metrics.append(f"loothing_auth_api_keys_total {auth_stats['total_api_keys']}")
+        metrics.append(f"loothing_auth_api_keys_active {auth_stats['active_api_keys']}")
+        metrics.append(f"loothing_auth_connections_total {auth_stats['total_active_connections']}")
+        metrics.append(f"loothing_auth_clients_unique {auth_stats['unique_clients']}")
+
+        # Session metrics
+        session_stats = stats["sessions"]
+        metrics.append(f"loothing_sessions_total {session_stats['total_sessions']}")
+        metrics.append(f"loothing_sessions_events_total {session_stats['total_events_processed']}")
+        metrics.append(f"loothing_sessions_events_per_second_avg {session_stats['average_events_per_second']}")
+
+        return "\n".join(metrics) + "\n"
+
     @app.get("/stats")
     async def get_stats():
         """Get server statistics."""
@@ -525,7 +594,9 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
 
     @app.get("/performance/top")
     async def get_top_performers(
-        metric: str = Query("dps", regex="^(dps|hps|damage_done|healing_done|activity_percentage)$"),
+        metric: str = Query(
+            "dps", regex="^(dps|hps|damage_done|healing_done|activity_percentage)$"
+        ),
         encounter_type: Optional[str] = Query(None),
         boss_name: Optional[str] = Query(None),
         days: int = Query(7, ge=1, le=365),
@@ -554,13 +625,18 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
 
         try:
             from database.schema import optimize_database
+
             optimize_database(_server_instance.db)
             return {"status": "success", "message": "Database optimization completed"}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Optimization failed: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Optimization failed: {str(e)}"
+            )
 
     @app.get("/export/encounters/{encounter_id}")
-    async def export_encounter(encounter_id: int, format: str = Query("json", regex="^(json|csv)$")):
+    async def export_encounter(
+        encounter_id: int, format: str = Query("json", regex="^(json|csv)$")
+    ):
         """Export encounter data in specified format."""
         encounter = _server_instance.query_api.get_encounter(encounter_id)
         if not encounter:
@@ -582,34 +658,51 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
             writer = csv.writer(output)
 
             # Write encounter header
-            writer.writerow(["encounter_id", "boss_name", "difficulty", "success", "combat_length"])
-            writer.writerow([
-                encounter.encounter_id,
-                encounter.boss_name,
-                encounter.difficulty,
-                encounter.success,
-                encounter.combat_length,
-            ])
+            writer.writerow(
+                ["encounter_id", "boss_name", "difficulty", "success", "combat_length"]
+            )
+            writer.writerow(
+                [
+                    encounter.encounter_id,
+                    encounter.boss_name,
+                    encounter.difficulty,
+                    encounter.success,
+                    encounter.combat_length,
+                ]
+            )
 
             # Write metrics
             writer.writerow([])  # Empty row
-            writer.writerow(["character_name", "dps", "hps", "damage_done", "healing_done", "death_count"])
+            writer.writerow(
+                [
+                    "character_name",
+                    "dps",
+                    "hps",
+                    "damage_done",
+                    "healing_done",
+                    "death_count",
+                ]
+            )
 
             for metric in metrics:
-                writer.writerow([
-                    metric.character_name,
-                    metric.dps,
-                    metric.hps,
-                    metric.damage_done,
-                    metric.healing_done,
-                    metric.death_count,
-                ])
+                writer.writerow(
+                    [
+                        metric.character_name,
+                        metric.dps,
+                        metric.hps,
+                        metric.damage_done,
+                        metric.healing_done,
+                        metric.death_count,
+                    ]
+                )
 
             output.seek(0)
             return StreamingResponse(
                 io.StringIO(output.getvalue()),
                 media_type="text/csv",
-                headers={"Content-Disposition": f"attachment; filename=encounter_{encounter_id}.csv"},
+                headers={
+                    "Content-Disposition": f"attachment; filename=encounter_{encounter_id}.csv"
+                },
             )
 
     @app.post("/auth/generate-key")
