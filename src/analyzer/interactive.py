@@ -1193,6 +1193,517 @@ class InteractiveAnalyzer:
             elif choice.lower() == "n" and current_page < max_pages - 1:
                 current_page += 1
 
+    def _handle_search(self) -> bool:
+        """Handle search functionality."""
+        self.console.clear()
+
+        # Get search query from user
+        self.console.print("[bold cyan]Search Combat Log Data[/bold cyan]\n")
+        self.console.print("Search for players, spells, encounters, or events.")
+        self.console.print("Examples: 'Fireball', 'John', 'Mythic+', 'SPELL_DAMAGE'\n")
+
+        query = Prompt.ask("Enter search term (or 'back' to return)", default="")
+
+        if query.lower() in ["back", "b", ""]:
+            self.navigation.go_back()
+            return True
+
+        if len(query) < 2:
+            self.console.print("[red]Search term must be at least 2 characters[/red]")
+            self._wait_for_key()
+            return True
+
+        # Perform search
+        results = self._perform_search(query)
+
+        if not results:
+            self.console.print(f"[yellow]No results found for '{query}'[/yellow]")
+            self._wait_for_key()
+            return True
+
+        # Display search results
+        self._display_search_results(query, results)
+        return True
+
+    def _perform_search(self, query: str) -> Dict[str, List[Dict[str, Any]]]:
+        """Perform search across all data."""
+        query_lower = query.lower()
+        results = {
+            'players': [],
+            'spells': [],
+            'encounters': [],
+            'events': []
+        }
+
+        # Search players
+        all_players = set()
+        for fight in self.fights:
+            characters = self._get_encounter_characters(fight)
+            if characters:
+                for char in characters.values():
+                    if char.character_name and query_lower in char.character_name.lower():
+                        all_players.add(char.character_name)
+
+        for player in all_players:
+            results['players'].append({
+                'name': player,
+                'type': 'Player',
+                'description': f"Player: {player}"
+            })
+
+        # Search encounters
+        for fight in self.fights:
+            if fight.encounter_name and query_lower in fight.encounter_name.lower():
+                results['encounters'].append({
+                    'name': fight.encounter_name,
+                    'type': fight.fight_type.value.title(),
+                    'description': f"{fight.fight_type.value.title()}: {fight.encounter_name}",
+                    'fight': fight
+                })
+
+        # Search spells/abilities
+        spell_matches = set()
+        for fight in self.fights:
+            characters = self._get_encounter_characters(fight)
+            if not characters:
+                continue
+
+            for char in characters.values():
+                # Search damage spells
+                for damage_event in char.damage_done:
+                    if hasattr(damage_event, 'spell_name') and damage_event.spell_name:
+                        if query_lower in damage_event.spell_name.lower():
+                            spell_matches.add((damage_event.spell_name, 'Damage Spell'))
+
+                # Search healing spells
+                for heal_event in char.healing_done:
+                    if hasattr(heal_event, 'spell_name') and heal_event.spell_name:
+                        if query_lower in heal_event.spell_name.lower():
+                            spell_matches.add((heal_event.spell_name, 'Healing Spell'))
+
+                # Search buffs
+                for buff in char.buffs_gained:
+                    if hasattr(buff, 'spell_name') and buff.spell_name:
+                        if query_lower in buff.spell_name.lower():
+                            spell_matches.add((buff.spell_name, 'Buff/Aura'))
+
+        for spell_name, spell_type in spell_matches:
+            results['spells'].append({
+                'name': spell_name,
+                'type': spell_type,
+                'description': f"{spell_type}: {spell_name}"
+            })
+
+        # Search event types
+        if query_lower in 'damage':
+            results['events'].append({
+                'name': 'Damage Events',
+                'type': 'Event Type',
+                'description': 'All damage-dealing events'
+            })
+        if query_lower in 'healing':
+            results['events'].append({
+                'name': 'Healing Events',
+                'type': 'Event Type',
+                'description': 'All healing events'
+            })
+        if query_lower in 'death':
+            results['events'].append({
+                'name': 'Death Events',
+                'type': 'Event Type',
+                'description': 'All player death events'
+            })
+
+        return results
+
+    def _display_search_results(self, query: str, results: Dict[str, List[Dict[str, Any]]]):
+        """Display search results with navigation."""
+        from rich.table import Table
+
+        self.console.clear()
+        self.console.print(f"[bold cyan]Search Results for '{query}'[/bold cyan]\n")
+
+        total_results = sum(len(category) for category in results.values())
+        if total_results == 0:
+            self.console.print("[yellow]No results found[/yellow]")
+            self._wait_for_key()
+            return
+
+        # Create combined results table
+        table = Table(title=f"Found {total_results} results")
+        table.add_column("#", width=4)
+        table.add_column("Category", width=15)
+        table.add_column("Type", width=15)
+        table.add_column("Name", width=30)
+        table.add_column("Description", width=40)
+
+        all_results = []
+        result_index = 1
+
+        # Add all results to the table
+        for category_name, category_results in results.items():
+            for result in category_results:
+                category_color = {
+                    'players': 'green',
+                    'spells': 'blue',
+                    'encounters': 'yellow',
+                    'events': 'magenta'
+                }.get(category_name, 'white')
+
+                table.add_row(
+                    str(result_index),
+                    f"[{category_color}]{category_name.title()}[/{category_color}]",
+                    result['type'],
+                    result['name'],
+                    result['description']
+                )
+
+                all_results.append(result)
+                result_index += 1
+
+        self.console.print(table)
+
+        # Show result summary by category
+        self.console.print("\n[bold]Results by Category:[/bold]")
+        for category, items in results.items():
+            if items:
+                self.console.print(f"  {category.title()}: {len(items)}")
+
+        # Navigation options
+        choices = ["s", "b", "q"]
+        nav_text = "[S]earch again | [B]ack | [Q]uit"
+
+        if total_results <= 20:
+            choices.extend([str(i) for i in range(1, min(21, total_results + 1))])
+            nav_text = "Enter number to view details | " + nav_text
+
+        self.console.print(f"\n{nav_text}")
+        choice = Prompt.ask("Select option", choices=choices, default="b")
+
+        if choice.lower() == "q":
+            return False
+        elif choice.lower() == "b":
+            self.navigation.go_back()
+            return True
+        elif choice.lower() == "s":
+            return self._handle_search()
+        elif choice.isdigit():
+            # Show details for selected result
+            index = int(choice) - 1
+            if 0 <= index < len(all_results):
+                self._show_search_result_details(all_results[index])
+
+        return True
+
+    def _show_search_result_details(self, result: Dict[str, Any]):
+        """Show detailed information about a search result."""
+        self.console.clear()
+        self.console.print(f"[bold cyan]Details: {result['name']}[/bold cyan]\n")
+
+        if 'fight' in result:
+            # Encounter details
+            fight = result['fight']
+            characters = self._get_encounter_characters(fight)
+            if characters:
+                panel = self.display_builder.create_encounter_detail(fight, characters)
+                self.console.print(panel)
+            else:
+                self.console.print(f"[yellow]No detailed data available for {result['name']}[/yellow]")
+        else:
+            # Generic result details
+            self.console.print(f"Name: {result['name']}")
+            self.console.print(f"Type: {result['type']}")
+            self.console.print(f"Description: {result['description']}")
+
+            # Show usage statistics if it's a spell
+            if result['type'] in ['Damage Spell', 'Healing Spell', 'Buff/Aura']:
+                usage_stats = self._get_spell_usage_stats(result['name'])
+                if usage_stats:
+                    self.console.print("\n[bold]Usage Statistics:[/bold]")
+                    for stat, value in usage_stats.items():
+                        self.console.print(f"  {stat}: {value}")
+
+        self.console.print("\n[dim]Press any key to return to search results...[/dim]")
+        self._wait_for_key()
+
+    def _get_spell_usage_stats(self, spell_name: str) -> Dict[str, Any]:
+        """Get usage statistics for a specific spell."""
+        stats = {
+            'Total Uses': 0,
+            'Total Damage': 0,
+            'Total Healing': 0,
+            'Users': set(),
+            'Encounters Used': set()
+        }
+
+        for fight in self.fights:
+            characters = self._get_encounter_characters(fight)
+            if not characters:
+                continue
+
+            encounter_used = False
+            for char in characters.values():
+                # Check damage events
+                for damage_event in char.damage_done:
+                    if hasattr(damage_event, 'spell_name') and damage_event.spell_name == spell_name:
+                        stats['Total Uses'] += 1
+                        stats['Total Damage'] += damage_event.amount
+                        stats['Users'].add(char.character_name)
+                        encounter_used = True
+
+                # Check healing events
+                for heal_event in char.healing_done:
+                    if hasattr(heal_event, 'spell_name') and heal_event.spell_name == spell_name:
+                        stats['Total Uses'] += 1
+                        stats['Total Healing'] += heal_event.amount
+                        stats['Users'].add(char.character_name)
+                        encounter_used = True
+
+                # Check buff events
+                for buff in char.buffs_gained:
+                    if hasattr(buff, 'spell_name') and buff.spell_name == spell_name:
+                        stats['Total Uses'] += 1
+                        stats['Users'].add(char.character_name)
+                        encounter_used = True
+
+            if encounter_used:
+                stats['Encounters Used'].add(fight.encounter_name or 'Unknown')
+
+        # Format for display
+        formatted_stats = {
+            'Total Uses': f"{stats['Total Uses']:,}",
+            'Unique Users': len(stats['Users']),
+            'Encounters': len(stats['Encounters Used'])
+        }
+
+        if stats['Total Damage'] > 0:
+            formatted_stats['Total Damage'] = f"{stats['Total Damage']:,}"
+        if stats['Total Healing'] > 0:
+            formatted_stats['Total Healing'] = f"{stats['Total Healing']:,}"
+
+        return formatted_stats if stats['Total Uses'] > 0 else {}
+
+    def _handle_export(self) -> bool:
+        """Handle export functionality."""
+        self.console.clear()
+        self.console.print("[bold cyan]Export Combat Log Analysis[/bold cyan]\n")
+
+        # Export options
+        from rich.table import Table
+        table = Table(title="Export Formats")
+        table.add_column("Option", width=8)
+        table.add_column("Format", width=15)
+        table.add_column("Description", width=50)
+
+        table.add_row("1", "JSON", "Complete data structure for external analysis")
+        table.add_row("2", "CSV", "Tabular data for spreadsheet applications")
+        table.add_row("3", "HTML", "Interactive web report with formatting")
+        table.add_row("4", "Markdown", "Documentation-friendly summary report")
+        table.add_row("5", "Summary", "Text-based encounter summary")
+
+        self.console.print(table)
+
+        choice = Prompt.ask(
+            "Select export format",
+            choices=["1", "2", "3", "4", "5", "b", "q"],
+            default="b"
+        )
+
+        if choice.lower() == "q":
+            return False
+        elif choice.lower() == "b":
+            self.navigation.go_back()
+            return True
+        else:
+            format_map = {
+                "1": "json",
+                "2": "csv",
+                "3": "html",
+                "4": "markdown",
+                "5": "summary"
+            }
+
+            if choice in format_map:
+                self._export_data(format_map[choice])
+
+        return True
+
+    def _export_data(self, format_type: str):
+        """Export data in the specified format."""
+        import json
+        import csv
+        from pathlib import Path
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base_filename = f"combat_log_analysis_{timestamp}"
+
+        try:
+            if format_type == "json":
+                filename = f"{base_filename}.json"
+                export_data = {
+                    'encounters': [],
+                    'players': {},
+                    'summary': {
+                        'total_encounters': len(self.fights),
+                        'successful_encounters': sum(1 for f in self.fights if f.success),
+                        'export_timestamp': timestamp
+                    }
+                }
+
+                # Add encounter data
+                for fight in self.fights:
+                    encounter_data = {
+                        'name': fight.encounter_name,
+                        'type': fight.fight_type.value,
+                        'success': fight.success,
+                        'duration': fight.duration,
+                        'player_count': fight.get_player_count()
+                    }
+
+                    characters = self._get_encounter_characters(fight)
+                    if characters:
+                        encounter_data['characters'] = {}
+                        for guid, char in characters.items():
+                            encounter_data['characters'][char.character_name] = {
+                                'total_damage': char.total_damage_done,
+                                'total_healing': char.total_healing_done,
+                                'deaths': char.death_count
+                            }
+
+                    export_data['encounters'].append(encounter_data)
+
+                with open(filename, 'w') as f:
+                    json.dump(export_data, f, indent=2, default=str)
+
+            elif format_type == "csv":
+                filename = f"{base_filename}.csv"
+                with open(filename, 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['Encounter', 'Type', 'Success', 'Duration', 'Players'])
+
+                    for fight in self.fights:
+                        writer.writerow([
+                            fight.encounter_name or 'Unknown',
+                            fight.fight_type.value,
+                            'Success' if fight.success else 'Wipe',
+                            fight.get_duration_str(),
+                            fight.get_player_count()
+                        ])
+
+            elif format_type == "html":
+                filename = f"{base_filename}.html"
+                html_content = self._generate_html_report()
+                with open(filename, 'w') as f:
+                    f.write(html_content)
+
+            elif format_type == "markdown":
+                filename = f"{base_filename}.md"
+                md_content = self._generate_markdown_report()
+                with open(filename, 'w') as f:
+                    f.write(md_content)
+
+            elif format_type == "summary":
+                filename = f"{base_filename}.txt"
+                summary_content = self._generate_text_summary()
+                with open(filename, 'w') as f:
+                    f.write(summary_content)
+
+            self.console.print(f"[green]✓ Data exported to: {filename}[/green]")
+
+        except Exception as e:
+            self.console.print(f"[red]Export failed: {str(e)}[/red]")
+
+        self.console.print("\n[dim]Press any key to continue...[/dim]")
+        self._wait_for_key()
+
+    def _generate_html_report(self) -> str:
+        """Generate HTML report."""
+        html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Combat Log Analysis Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        table {{ border-collapse: collapse; width: 100%; }}
+        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        th {{ background-color: #f2f2f2; }}
+        .success {{ color: green; }}
+        .wipe {{ color: red; }}
+    </style>
+</head>
+<body>
+    <h1>Combat Log Analysis Report</h1>
+    <h2>Summary</h2>
+    <p>Total Encounters: {len(self.fights)}</p>
+    <p>Successful: {sum(1 for f in self.fights if f.success)}</p>
+    <p>Wipes: {sum(1 for f in self.fights if not f.success)}</p>
+
+    <h2>Encounter Details</h2>
+    <table>
+        <tr><th>Encounter</th><th>Type</th><th>Result</th><th>Duration</th><th>Players</th></tr>
+"""
+
+        for fight in self.fights:
+            result_class = "success" if fight.success else "wipe"
+            result_text = "Success" if fight.success else "Wipe"
+
+            html += f"""
+        <tr>
+            <td>{fight.encounter_name or 'Unknown'}</td>
+            <td>{fight.fight_type.value}</td>
+            <td class="{result_class}">{result_text}</td>
+            <td>{fight.get_duration_str()}</td>
+            <td>{fight.get_player_count()}</td>
+        </tr>"""
+
+        html += """
+    </table>
+</body>
+</html>"""
+        return html
+
+    def _generate_markdown_report(self) -> str:
+        """Generate Markdown report."""
+        md = f"""# Combat Log Analysis Report
+
+## Summary
+- **Total Encounters**: {len(self.fights)}
+- **Successful**: {sum(1 for f in self.fights if f.success)}
+- **Wipes**: {sum(1 for f in self.fights if not f.success)}
+
+## Encounter Details
+
+| Encounter | Type | Result | Duration | Players |
+|-----------|------|--------|----------|----------|
+"""
+
+        for fight in self.fights:
+            result = "✅ Success" if fight.success else "❌ Wipe"
+            md += f"| {fight.encounter_name or 'Unknown'} | {fight.fight_type.value} | {result} | {fight.get_duration_str()} | {fight.get_player_count()} |\n"
+
+        return md
+
+    def _generate_text_summary(self) -> str:
+        """Generate text summary."""
+        summary = f"""COMBAT LOG ANALYSIS SUMMARY
+{'=' * 40}
+
+Total Encounters: {len(self.fights)}
+Successful: {sum(1 for f in self.fights if f.success)}
+Wipes: {sum(1 for f in self.fights if not f.success)}
+
+ENCOUNTER BREAKDOWN:
+{'-' * 20}
+"""
+
+        for fight in self.fights:
+            result = "SUCCESS" if fight.success else "WIPE"
+            summary += f"{fight.encounter_name or 'Unknown'} ({fight.fight_type.value}) - {result} - {fight.get_duration_str()}\n"
+
+        return summary
+
     def _wait_for_key(self):
         """Wait for user to press any key."""
         try:
