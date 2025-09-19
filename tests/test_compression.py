@@ -92,9 +92,10 @@ def sample_events():
         TimestampedEvent(
             timestamp=base_time + 2.0,
             sequence=2,
-            event=UnitDiedEvent(
-                event_type="UNIT_DIED",
+            event=BaseEvent(
                 timestamp=datetime.fromtimestamp(base_time + 2.0),
+                event_type="UNIT_DIED",
+                raw_line="test line",
                 source_guid="nil",
                 source_name="nil",
                 source_flags=0x0,
@@ -164,9 +165,10 @@ class TestEventCompressor:
             event = TimestampedEvent(
                 timestamp=base_time + i * 0.1,
                 sequence=i,
-                event=SpellDamageEvent(
-                    event_type="SPELL_DAMAGE",
+                event=DamageEvent(
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
+                    event_type="SPELL_DAMAGE",
+                    raw_line="test line",
                     source_guid="Player-1234-567890AB",
                     source_name="Testplayer",
                     source_flags=0x512,
@@ -187,7 +189,6 @@ class TestEventCompressor:
                     critical=i % 5 == 0,  # Some variation
                     glancing=False,
                     crushing=False,
-                    is_off_hand=False,
                 ),
             )
             large_event_list.append(event)
