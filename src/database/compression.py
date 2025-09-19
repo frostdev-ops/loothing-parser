@@ -322,7 +322,7 @@ class EventCompressor:
         """
         import msgpack
 
-        return msgpack.unpackb(data, raw=False)
+        return msgpack.unpackb(data, raw=False, strict_map_key=False)
 
     def _intern_string(self, s: Optional[str]) -> int:
         """
