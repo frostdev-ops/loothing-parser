@@ -6,6 +6,7 @@ and connection management.
 """
 
 import pytest
+import pytest_asyncio
 import time
 from unittest.mock import AsyncMock
 
