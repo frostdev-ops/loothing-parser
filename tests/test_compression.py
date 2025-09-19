@@ -471,7 +471,9 @@ class TestCompressionPerformance:
             random_events.append(event)
 
         # Compress both
-        repetitive_compressed, rep_metadata = compressor.compress_events(repetitive_events)
+        repetitive_compressed, rep_metadata = compressor.compress_events(
+            repetitive_events
+        )
         random_compressed, rand_metadata = compressor.compress_events(random_events)
 
         # Calculate ratios
@@ -495,7 +497,7 @@ class TestCompressionStats:
         compression_stats.clear()
 
         # Perform compression operations
-        compressed_data = compressor.compress_events(sample_events)
+        compressed_data, metadata = compressor.compress_events(sample_events)
         decompressed_events = compressor.decompress_events(compressed_data)
 
         # Check that stats were collected
