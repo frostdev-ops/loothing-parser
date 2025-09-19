@@ -387,6 +387,29 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_segment_run ON combat_segments(run_id, segment_index)"
     )
 
+    # Loot indices
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_item_name ON items(item_name)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_item_level ON items(item_level, quality)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_item_type ON items(item_type, subtype)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_loot_encounter ON loot_drops(encounter_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_loot_character ON loot_drops(character_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_loot_item ON loot_drops(item_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_loot_timestamp ON loot_drops(drop_timestamp)"
+    )
+
     # Set schema version
     db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (1)")
 
