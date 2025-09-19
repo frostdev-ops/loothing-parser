@@ -407,6 +407,7 @@ class TestCompressionPerformance:
                 event=DamageEvent(
                     event_type="SPELL_DAMAGE",
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
+                    raw_line="mock_line",
                     source_guid="Player-1234-567890AB",
                     source_name="Testplayer",
                     source_flags=0x512,
@@ -427,7 +428,6 @@ class TestCompressionPerformance:
                     critical=False,
                     glancing=False,
                     crushing=False,
-                    is_off_hand=False,
                 ),
             )
             repetitive_events.append(event)
