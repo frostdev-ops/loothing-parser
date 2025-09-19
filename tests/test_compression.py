@@ -37,9 +37,10 @@ def sample_events():
         TimestampedEvent(
             timestamp=base_time,
             sequence=0,
-            event=SpellCastStartEvent(
-                event_type="SPELL_CAST_START",
+            event=SpellEvent(
                 timestamp=datetime.fromtimestamp(base_time),
+                event_type="SPELL_CAST_START",
+                raw_line="test line",
                 source_guid="Player-1234-567890AB",
                 source_name="Testplayer",
                 source_flags=0x512,
@@ -59,9 +60,10 @@ def sample_events():
         TimestampedEvent(
             timestamp=base_time + 1.0,
             sequence=1,
-            event=SpellDamageEvent(
-                event_type="SPELL_DAMAGE",
+            event=DamageEvent(
                 timestamp=datetime.fromtimestamp(base_time + 1.0),
+                event_type="SPELL_DAMAGE",
+                raw_line="test line",
                 source_guid="Player-1234-567890AB",
                 source_name="Testplayer",
                 source_flags=0x512,
@@ -82,7 +84,6 @@ def sample_events():
                 critical=True,
                 glancing=False,
                 crushing=False,
-                is_off_hand=False,
             ),
         )
     )
