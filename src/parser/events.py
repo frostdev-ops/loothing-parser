@@ -443,19 +443,19 @@ class EventFactory:
         if parsed_line.event_type == "CHALLENGE_MODE_START":
             if len(params) >= 4:
                 event.zone_name = params[0]
-                event.instance_id = params[1]
-                event.challenge_id = params[2]
-                event.keystone_level = params[3]
+                event.instance_id = cls._safe_int(params[1])
+                event.challenge_id = cls._safe_int(params[2])
+                event.keystone_level = cls._safe_int(params[3])
                 # Affix IDs are in an array at params[4]
                 if len(params) > 4 and isinstance(params[4], list):
-                    event.affix_ids = params[4]
+                    event.affix_ids = [cls._safe_int(affix_id) for affix_id in params[4]]
 
         elif parsed_line.event_type == "CHALLENGE_MODE_END":
             if len(params) >= 6:
-                event.instance_id = params[0]
-                event.success = params[1] == 1
-                event.keystone_level = params[2]
-                event.duration = params[3] / 1000.0  # Convert to seconds
+                event.instance_id = cls._safe_int(params[0])
+                event.success = cls._safe_int(params[1]) == 1
+                event.keystone_level = cls._safe_int(params[2])
+                event.duration = cls._safe_int(params[3]) / 1000.0  # Convert to seconds
 
         return event
 
