@@ -337,19 +337,63 @@ class EventFactory:
 
     @classmethod
     def _create_combatant_info(cls, parsed_line) -> CombatantInfo:
-        """Create combatant info event."""
+        """Create combatant info event with detailed character data."""
         event = CombatantInfo(
             timestamp=parsed_line.timestamp,
             event_type=parsed_line.event_type,
             raw_line=parsed_line.raw_line,
         )
 
-        # COMBATANT_INFO has a complex structure
-        # This is a simplified version - full parsing would be more complex
+        # COMBATANT_INFO format: playerGUID, faction, strength, agility, stamina, intelligence,
+        # dodge, parry, block, crit_melee, crit_ranged, crit_spell, speed, lifesteal,
+        # haste_melee, haste_ranged, haste_spell, avoidance, mastery, versatility_damage,
+        # versatility_heal, versatility_taken, armor, spec_id, talents[], pvp_talents[],
+        # items[], interesting_auras[], unknown_fields...
         params = parsed_line.suffix_params
-        if len(params) >= 2:
-            event.player_guid = params[0]
-            event.player_name = params[1] if params[1] else "Unknown"
+
+        if len(params) >= 24:
+            event.player_guid = params[0] or ""
+            event.faction = params[1] or 0
+            event.strength = params[2] or 0
+            event.agility = params[3] or 0
+            event.stamina = params[4] or 0
+            event.intelligence = params[5] or 0
+            event.dodge = params[6] or 0.0
+            event.parry = params[7] or 0.0
+            event.block = params[8] or 0.0
+            event.crit_melee = params[9] or 0.0
+            event.crit_ranged = params[10] or 0.0
+            event.crit_spell = params[11] or 0.0
+            event.speed = params[12] or 0.0
+            event.lifesteal = params[13] or 0.0
+            event.haste_melee = params[14] or 0.0
+            event.haste_ranged = params[15] or 0.0
+            event.haste_spell = params[16] or 0.0
+            event.avoidance = params[17] or 0.0
+            event.mastery = params[18] or 0.0
+            event.versatility_damage = params[19] or 0.0
+            # params[20] = versatility_heal, params[21] = versatility_taken
+            event.armor = params[22] or 0
+            event.spec_id = params[23] or 0
+
+            # Parse arrays (talents, pvp_talents, items) if present
+            if len(params) >= 27:
+                # Talents array
+                if isinstance(params[24], list):
+                    event.talents = [t[0] if isinstance(t, tuple) and len(t) > 0 else t for t in params[24]]
+
+                # PvP talents array
+                if isinstance(params[25], list):
+                    event.pvp_talents = params[25]
+
+                # Items array
+                if isinstance(params[26], list):
+                    event.items = params[26]
+
+        # Extract player name from GUID if not provided elsewhere
+        if event.player_guid and not hasattr(event, 'player_name'):
+            # We'll need to track this from other events or set from display name
+            event.player_name = "Unknown"
 
         return event
 
