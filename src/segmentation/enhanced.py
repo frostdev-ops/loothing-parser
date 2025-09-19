@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
 import logging
 
-from parser.events import (
+from src.parser.events import (
     BaseEvent,
     EncounterEvent,
     ChallengeModeEvent,
@@ -14,8 +14,8 @@ from parser.events import (
     HealEvent,
     AuraEvent,
 )
-from parser.categorizer import EventCategorizer
-from models.encounter_models import (
+from src.parser.categorizer import EventCategorizer
+from src.models.encounter_models import (
     RaidEncounter,
     MythicPlusRun,
     CombatSegment,
@@ -151,9 +151,11 @@ class EnhancedSegmenter:
             self.categorizer.route_event(event)
 
             # Track mob deaths for progress
-            if (event.event_type == "UNIT_DIED" and
-                event.dest_guid and
-                not event.dest_guid.startswith("Player-")):
+            if (
+                event.event_type == "UNIT_DIED"
+                and event.dest_guid
+                and not event.dest_guid.startswith("Player-")
+            ):
                 self.current_m_plus_segment.mob_deaths.append(event.dest_guid)
                 self.current_m_plus_segment.mob_count += 1
 
