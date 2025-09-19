@@ -396,31 +396,12 @@ class InteractiveAnalyzer:
                             character_guid=guid, character_name=participant["name"] or "Unknown"
                         )
 
-            # Debug logging - uncomment to debug player detection
-            if player_count == 0:
-                print(
-                    f"DEBUG: Fight {fight.encounter_name}: Found {player_count} players from {len(fight.participants)} participants"
-                )
-                print(f"DEBUG: Participants: {debug_participants[:3]}")  # Show first 3
-
             # Process fight events to populate metrics
             if characters and fight.events:
-                print(
-                    f"DEBUG: Processing {len(fight.events)} events for {len(characters)} characters"
-                )
                 self._populate_character_metrics_from_events(
                     characters, fight.events, fight.duration or 0
                 )
-                print(f"DEBUG: After processing, characters dict has {len(characters)} entries")
-                # Show damage totals
-                for guid, char in list(characters.items())[:2]:
-                    print(
-                        f"DEBUG: {char.character_name}: {char.total_damage_done} damage, {char.total_healing_done} healing"
-                    )
 
-            print(
-                f"DEBUG: Returning characters dict with {len(characters) if characters else 0} entries"
-            )
             return characters if characters else None
 
         return None
