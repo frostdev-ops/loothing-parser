@@ -8,6 +8,7 @@ including event processing, segmentation, and compression.
 import asyncio
 import json
 import pytest
+import pytest_asyncio
 import tempfile
 import time
 from pathlib import Path
@@ -15,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.api.streaming_server import StreamingServer
 from src.streaming.client import CombatLogStreamer
