@@ -327,8 +327,14 @@ class InteractiveAnalyzer:
 
     def _get_encounter_characters(self, fight: Fight) -> Optional[Dict[str, CharacterEventStream]]:
         """Get character data for an encounter if available."""
+        print(f"DEBUG: _get_encounter_characters called for {fight.encounter_name}")
+        print(f"DEBUG: enhanced_data is {'available' if self.enhanced_data else 'None'}")
+
         if not self.enhanced_data:
-            return None
+            print("DEBUG: No enhanced_data, proceeding to fallback")
+        else:
+            print("DEBUG: Enhanced data available, checking for matches...")
+            # Keep the existing enhanced data logic here...
 
         # Get enhanced data from raid encounters or mythic plus runs
         raid_encounters = self.enhanced_data.get("raid_encounters", [])
@@ -407,16 +413,22 @@ class InteractiveAnalyzer:
 
             # Process fight events to populate metrics
             if characters and fight.events:
-                print(f"DEBUG: Processing {len(fight.events)} events for {len(characters)} characters")
+                print(
+                    f"DEBUG: Processing {len(fight.events)} events for {len(characters)} characters"
+                )
                 self._populate_character_metrics_from_events(
                     characters, fight.events, fight.duration or 0
                 )
                 print(f"DEBUG: After processing, characters dict has {len(characters)} entries")
                 # Show damage totals
                 for guid, char in list(characters.items())[:2]:
-                    print(f"DEBUG: {char.character_name}: {char.total_damage_done} damage, {char.total_healing_done} healing")
+                    print(
+                        f"DEBUG: {char.character_name}: {char.total_damage_done} damage, {char.total_healing_done} healing"
+                    )
 
-            print(f"DEBUG: Returning characters dict with {len(characters) if characters else 0} entries")
+            print(
+                f"DEBUG: Returning characters dict with {len(characters) if characters else 0} entries"
+            )
             return characters if characters else None
 
         return None
