@@ -560,6 +560,7 @@ class InteractiveAnalyzer:
 
         # Create players summary table
         from rich.table import Table
+
         table = Table(title="Player Performance Summary")
         table.add_column("Player", width=20)
         table.add_column("Encounters", width=10, justify="center")
@@ -570,40 +571,54 @@ class InteractiveAnalyzer:
         table.add_column("Avg iLevel", width=10, justify="right")
 
         # Sort by average DPS
-        sorted_players = sorted(player_stats.items(),
-                               key=lambda x: x[1]['avg_dps'], reverse=True)
+        sorted_players = sorted(player_stats.items(), key=lambda x: x[1]["avg_dps"], reverse=True)
 
         for player_name, stats in sorted_players:
-            success_rate = (stats['successful_encounters'] / stats['total_encounters'] * 100) if stats['total_encounters'] > 0 else 0
-            success_color = "green" if success_rate >= 80 else "yellow" if success_rate >= 60 else "red"
-            death_color = "red" if stats['total_deaths'] > 5 else "yellow" if stats['total_deaths'] > 2 else "green"
+            success_rate = (
+                (stats["successful_encounters"] / stats["total_encounters"] * 100)
+                if stats["total_encounters"] > 0
+                else 0
+            )
+            success_color = (
+                "green" if success_rate >= 80 else "yellow" if success_rate >= 60 else "red"
+            )
+            death_color = (
+                "red"
+                if stats["total_deaths"] > 5
+                else "yellow" if stats["total_deaths"] > 2 else "green"
+            )
 
             table.add_row(
                 player_name,
-                str(stats['total_encounters']),
+                str(stats["total_encounters"]),
                 f"{stats['avg_dps']:,.0f}",
                 f"{stats['avg_hps']:,.0f}",
                 f"[{death_color}]{stats['total_deaths']}[/{death_color}]",
                 f"[{success_color}]{success_rate:.1f}%[/{success_color}]",
-                f"{stats['avg_item_level']:.0f}" if stats['avg_item_level'] > 0 else "N/A"
+                f"{stats['avg_item_level']:.0f}" if stats["avg_item_level"] > 0 else "N/A",
             )
 
         self.console.print(table)
 
         # Summary stats
         total_players = len(player_stats)
-        avg_success_rate = sum(stats['successful_encounters'] / stats['total_encounters'] for stats in player_stats.values() if stats['total_encounters'] > 0) / total_players if total_players > 0 else 0
+        avg_success_rate = (
+            sum(
+                stats["successful_encounters"] / stats["total_encounters"]
+                for stats in player_stats.values()
+                if stats["total_encounters"] > 0
+            )
+            / total_players
+            if total_players > 0
+            else 0
+        )
 
         self.console.print(f"\n[bold]Summary:[/bold]")
         self.console.print(f"  Total unique players: {total_players}")
         self.console.print(f"  Average success rate: {avg_success_rate * 100:.1f}%")
 
         # Get user input
-        choice = Prompt.ask(
-            "Select action",
-            choices=["1", "2", "3", "s", "b", "q"],
-            default="b"
-        )
+        choice = Prompt.ask("Select action", choices=["1", "2", "3", "s", "b", "q"], default="b")
 
         if choice.lower() == "q":
             return False
@@ -632,7 +647,9 @@ class InteractiveAnalyzer:
         player_data = self._get_player_detailed_data(self.navigation.selected_player_guid)
 
         if not player_data:
-            self.console.print(f"[red]No data found for player: {self.navigation.selected_player_guid}[/red]")
+            self.console.print(
+                f"[red]No data found for player: {self.navigation.selected_player_guid}[/red]"
+            )
             self.navigation.go_back()
             return True
 
@@ -641,6 +658,7 @@ class InteractiveAnalyzer:
 
         # Performance across encounters
         from rich.table import Table
+
         encounters_table = Table(title="Performance by Encounter")
         encounters_table.add_column("Encounter", width=25)
         encounters_table.add_column("Result", width=10)
@@ -649,17 +667,17 @@ class InteractiveAnalyzer:
         encounters_table.add_column("Deaths", width=8, justify="center")
         encounters_table.add_column("Duration", width=10)
 
-        for encounter in player_data['encounters']:
-            result_color = "green" if encounter['success'] else "red"
-            death_color = "red" if encounter['deaths'] > 0 else "green"
+        for encounter in player_data["encounters"]:
+            result_color = "green" if encounter["success"] else "red"
+            death_color = "red" if encounter["deaths"] > 0 else "green"
 
             encounters_table.add_row(
-                encounter['name'],
+                encounter["name"],
                 f"[{result_color}]{'Kill' if encounter['success'] else 'Wipe'}[/{result_color}]",
                 f"{encounter['dps']:,.0f}",
                 f"{encounter['hps']:,.0f}",
                 f"[{death_color}]{encounter['deaths']}[/{death_color}]",
-                encounter['duration']
+                encounter["duration"],
             )
 
         self.console.print(encounters_table)
@@ -692,43 +710,43 @@ class InteractiveAnalyzer:
 
                 if char.character_name not in player_stats:
                     player_stats[char.character_name] = {
-                        'total_encounters': 0,
-                        'successful_encounters': 0,
-                        'total_dps': 0,
-                        'total_hps': 0,
-                        'total_deaths': 0,
-                        'total_item_level': 0,
-                        'encounters_with_gear': 0,
-                        'avg_dps': 0,
-                        'avg_hps': 0,
-                        'avg_item_level': 0
+                        "total_encounters": 0,
+                        "successful_encounters": 0,
+                        "total_dps": 0,
+                        "total_hps": 0,
+                        "total_deaths": 0,
+                        "total_item_level": 0,
+                        "encounters_with_gear": 0,
+                        "avg_dps": 0,
+                        "avg_hps": 0,
+                        "avg_item_level": 0,
                     }
 
                 stats = player_stats[char.character_name]
-                stats['total_encounters'] += 1
+                stats["total_encounters"] += 1
 
                 if fight.success:
-                    stats['successful_encounters'] += 1
+                    stats["successful_encounters"] += 1
 
                 if fight.duration and fight.duration > 0:
                     dps = char.total_damage_done / fight.duration
                     hps = char.total_healing_done / fight.duration
-                    stats['total_dps'] += dps
-                    stats['total_hps'] += hps
+                    stats["total_dps"] += dps
+                    stats["total_hps"] += hps
 
-                stats['total_deaths'] += char.death_count
+                stats["total_deaths"] += char.death_count
 
                 if char.item_level and char.item_level > 0:
-                    stats['total_item_level'] += char.item_level
-                    stats['encounters_with_gear'] += 1
+                    stats["total_item_level"] += char.item_level
+                    stats["encounters_with_gear"] += 1
 
         # Calculate averages
         for stats in player_stats.values():
-            if stats['total_encounters'] > 0:
-                stats['avg_dps'] = stats['total_dps'] / stats['total_encounters']
-                stats['avg_hps'] = stats['total_hps'] / stats['total_encounters']
-            if stats['encounters_with_gear'] > 0:
-                stats['avg_item_level'] = stats['total_item_level'] / stats['encounters_with_gear']
+            if stats["total_encounters"] > 0:
+                stats["avg_dps"] = stats["total_dps"] / stats["total_encounters"]
+                stats["avg_hps"] = stats["total_hps"] / stats["total_encounters"]
+            if stats["encounters_with_gear"] > 0:
+                stats["avg_item_level"] = stats["total_item_level"] / stats["encounters_with_gear"]
 
         return player_stats
 
@@ -755,17 +773,27 @@ class InteractiveAnalyzer:
             if not player_char:
                 continue
 
-            dps = player_char.total_damage_done / fight.duration if fight.duration and fight.duration > 0 else 0
-            hps = player_char.total_healing_done / fight.duration if fight.duration and fight.duration > 0 else 0
+            dps = (
+                player_char.total_damage_done / fight.duration
+                if fight.duration and fight.duration > 0
+                else 0
+            )
+            hps = (
+                player_char.total_healing_done / fight.duration
+                if fight.duration and fight.duration > 0
+                else 0
+            )
 
-            encounters.append({
-                'name': fight.encounter_name or 'Unknown',
-                'success': fight.success or False,
-                'dps': dps,
-                'hps': hps,
-                'deaths': player_char.death_count,
-                'duration': fight.get_duration_str()
-            })
+            encounters.append(
+                {
+                    "name": fight.encounter_name or "Unknown",
+                    "success": fight.success or False,
+                    "dps": dps,
+                    "hps": hps,
+                    "deaths": player_char.death_count,
+                    "duration": fight.get_duration_str(),
+                }
+            )
 
             total_dps += dps
             total_hps += hps
@@ -777,20 +805,190 @@ class InteractiveAnalyzer:
             return None
 
         return {
-            'name': player_name,
-            'encounters': encounters,
-            'success_rate': (successful / len(encounters) * 100) if encounters else 0,
-            'avg_dps': total_dps / len(encounters) if encounters else 0,
-            'avg_hps': total_hps / len(encounters) if encounters else 0,
-            'total_deaths': total_deaths
+            "name": player_name,
+            "encounters": encounters,
+            "success_rate": (successful / len(encounters) * 100) if encounters else 0,
+            "avg_dps": total_dps / len(encounters) if encounters else 0,
+            "avg_hps": total_hps / len(encounters) if encounters else 0,
+            "total_deaths": total_deaths,
         }
 
     def _show_events_timeline(
         self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
     ):
         """Show events timeline."""
-        self.console.print("[yellow]Events timeline not yet implemented[/yellow]")
+        self.console.clear()
+
+        if not characters:
+            self.console.print("[red]No character data available for timeline[/red]")
+            self._wait_for_key()
+            return
+
+        # Generate timeline events
+        timeline_events = self._generate_timeline_events(fight, characters)
+
+        if not timeline_events:
+            self.console.print("[yellow]No notable events found in this encounter[/yellow]")
+            self._wait_for_key()
+            return
+
+        # Display timeline
+        from rich.table import Table
+        table = Table(title=f"Events Timeline - {fight.encounter_name or 'Unknown'}")
+        table.add_column("Time", width=8)
+        table.add_column("Event Type", width=15)
+        table.add_column("Player", width=20)
+        table.add_column("Description", width=40)
+        table.add_column("Impact", width=15)
+
+        for event in timeline_events[:50]:  # Show first 50 events
+            time_color = "cyan"
+            type_color = {
+                "Death": "red",
+                "Resurrection": "green",
+                "Major Cooldown": "yellow",
+                "Damage Spike": "orange",
+                "Healing Spike": "blue",
+                "Boss Ability": "magenta",
+                "Phase Change": "cyan"
+            }.get(event['type'], "white")
+
+            impact_color = {
+                "Critical": "red",
+                "High": "yellow",
+                "Medium": "blue",
+                "Low": "dim"
+            }.get(event['impact'], "white")
+
+            table.add_row(
+                f"[{time_color}]{event['time']}[/{time_color}]",
+                f"[{type_color}]{event['type']}[/{type_color}]",
+                event['player'],
+                event['description'],
+                f"[{impact_color}]{event['impact']}[/{impact_color}]"
+            )
+
+        self.console.print(table)
+
+        # Summary of key events
+        deaths = [e for e in timeline_events if e['type'] == 'Death']
+        resurrections = [e for e in timeline_events if e['type'] == 'Resurrection']
+        major_cds = [e for e in timeline_events if e['type'] == 'Major Cooldown']
+
+        self.console.print(f"\n[bold]Timeline Summary:[/bold]")
+        self.console.print(f"  Deaths: {len(deaths)}")
+        self.console.print(f"  Battle Resurrections: {len(resurrections)}")
+        self.console.print(f"  Major Cooldowns Used: {len(major_cds)}")
+        self.console.print(f"  Total events shown: {min(50, len(timeline_events))} / {len(timeline_events)}")
+
+        self.console.print("\n[dim]Press any key to return...[/dim]")
         self._wait_for_key()
+
+    def _generate_timeline_events(self, fight: Fight, characters: Dict[str, CharacterEventStream]) -> List[Dict[str, Any]]:
+        """Generate a chronological list of important events."""
+        events = []
+        fight_start = fight.start_time
+
+        # Major cooldown spell IDs
+        major_cooldowns = {
+            32182: "Heroism",
+            80353: "Time Warp",
+            2825: "Bloodlust",
+            90355: "Ancient Hysteria",
+            264667: "Primal Rage",
+            10060: "Power Infusion",
+            47536: "Rapture",
+            31821: "Aura Mastery",
+            64843: "Divine Favor",
+            498: "Divine Protection",
+            642: "Divine Shield"
+        }
+
+        for guid, char in characters.items():
+            # Track deaths
+            for death in char.deaths:
+                relative_time = death.datetime - fight_start
+                minutes = int(relative_time.total_seconds() // 60)
+                seconds = int(relative_time.total_seconds() % 60)
+
+                events.append({
+                    'timestamp': death.timestamp,
+                    'time': f"{minutes}:{seconds:02d}",
+                    'type': 'Death',
+                    'player': char.character_name,
+                    'description': f"{char.character_name} died",
+                    'impact': 'Critical'
+                })
+
+            # Track major damage spikes (top 10% of damage events)
+            if char.damage_done:
+                damage_amounts = [event.amount for event in char.damage_done]
+                if damage_amounts:
+                    high_damage_threshold = sorted(damage_amounts, reverse=True)[min(len(damage_amounts)//10, len(damage_amounts)-1)]
+                    for damage_event in char.damage_done:
+                        if damage_event.amount >= high_damage_threshold and damage_event.amount > 50000:
+                            try:
+                                relative_time = damage_event.timestamp - fight_start
+                                minutes = int(relative_time.total_seconds() // 60)
+                                seconds = int(relative_time.total_seconds() % 60)
+
+                                events.append({
+                                    'timestamp': damage_event.timestamp.timestamp(),
+                                    'time': f"{minutes}:{seconds:02d}",
+                                    'type': 'Damage Spike',
+                                    'player': char.character_name,
+                                    'description': f"{damage_event.spell_name or 'Unknown'}: {damage_event.amount:,} damage",
+                                    'impact': 'High'
+                                })
+                            except:
+                                continue
+
+            # Track major healing spikes
+            if char.healing_done:
+                healing_amounts = [event.amount for event in char.healing_done]
+                if healing_amounts:
+                    high_healing_threshold = sorted(healing_amounts, reverse=True)[min(len(healing_amounts)//10, len(healing_amounts)-1)]
+                    for heal_event in char.healing_done:
+                        if heal_event.amount >= high_healing_threshold and heal_event.amount > 30000:
+                            try:
+                                relative_time = heal_event.timestamp - fight_start
+                                minutes = int(relative_time.total_seconds() // 60)
+                                seconds = int(relative_time.total_seconds() % 60)
+
+                                events.append({
+                                    'timestamp': heal_event.timestamp.timestamp(),
+                                    'time': f"{minutes}:{seconds:02d}",
+                                    'type': 'Healing Spike',
+                                    'player': char.character_name,
+                                    'description': f"{heal_event.spell_name or 'Unknown'}: {heal_event.amount:,} healing",
+                                    'impact': 'Medium'
+                                })
+                            except:
+                                continue
+
+            # Track major cooldown usage
+            for buff in char.buffs_gained:
+                if hasattr(buff, 'spell_id') and buff.spell_id in major_cooldowns:
+                    try:
+                        relative_time = buff.timestamp - fight_start
+                        minutes = int(relative_time.total_seconds() // 60)
+                        seconds = int(relative_time.total_seconds() % 60)
+
+                        events.append({
+                            'timestamp': buff.timestamp.timestamp(),
+                            'time': f"{minutes}:{seconds:02d}",
+                            'type': 'Major Cooldown',
+                            'player': char.character_name,
+                            'description': f"Used {major_cooldowns[buff.spell_id]}",
+                            'impact': 'High'
+                        })
+                    except:
+                        continue
+
+        # Sort events by timestamp
+        events.sort(key=lambda x: x['timestamp'])
+
+        return events
 
     def _show_timeline_detail(
         self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
