@@ -304,7 +304,7 @@ class TestEventCompressor:
             mixed_events.append(timestamped_event)
 
         # Compress and decompress
-        compressed_data = compressor.compress_events(mixed_events)
+        compressed_data, metadata = compressor.compress_events(mixed_events)
         decompressed_events = compressor.decompress_events(compressed_data)
 
         # Verify integrity
