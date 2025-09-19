@@ -120,11 +120,13 @@ class TestEventCompressor:
     def test_compression_basic(self, compressor, sample_events):
         """Test basic compression functionality."""
         # Compress events
-        compressed_data = compressor.compress_events(sample_events)
+        compressed_data, metadata = compressor.compress_events(sample_events)
 
-        # Should return bytes
+        # Should return bytes and metadata
         assert isinstance(compressed_data, bytes)
         assert len(compressed_data) > 0
+        assert isinstance(metadata, dict)
+        assert metadata["event_count"] == len(sample_events)
 
         # Decompress
         decompressed_events = compressor.decompress_events(compressed_data)
@@ -135,13 +137,14 @@ class TestEventCompressor:
         # Events should be equivalent
         for original, decompressed in zip(sample_events, decompressed_events):
             assert original.timestamp == decompressed.timestamp
-            assert original.sequence == decompressed.sequence
+            assert original.category == decompressed.category
             assert original.event.event_type == decompressed.event.event_type
 
     def test_empty_event_list(self, compressor):
         """Test compression of empty event list."""
-        compressed_data = compressor.compress_events([])
+        compressed_data, metadata = compressor.compress_events([])
         assert isinstance(compressed_data, bytes)
+        assert metadata["event_count"] == 0
 
         decompressed_events = compressor.decompress_events(compressed_data)
         assert decompressed_events == []
@@ -150,7 +153,7 @@ class TestEventCompressor:
         """Test compression of single event."""
         single_event = [sample_events[0]]
 
-        compressed_data = compressor.compress_events(single_event)
+        compressed_data, metadata = compressor.compress_events(single_event)
         decompressed_events = compressor.decompress_events(compressed_data)
 
         assert len(decompressed_events) == 1
