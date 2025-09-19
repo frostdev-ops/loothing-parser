@@ -255,20 +255,20 @@ class LineTokenizer:
                 in_quotes = not in_quotes
                 current.append(char)
             elif not in_quotes:
-                if char == '(':
+                if char == "(":
                     paren_depth += 1
                     current.append(char)
-                elif char == ')':
+                elif char == ")":
                     paren_depth -= 1
                     current.append(char)
-                elif char == '[':
+                elif char == "[":
                     bracket_depth += 1
                     current.append(char)
-                elif char == ']':
+                elif char == "]":
                     bracket_depth -= 1
                     current.append(char)
-                elif char == ',' and paren_depth == 0 and bracket_depth == 0:
-                    elements.append(''.join(current).strip())
+                elif char == "," and paren_depth == 0 and bracket_depth == 0:
+                    elements.append("".join(current).strip())
                     current = []
                 else:
                     current.append(char)
@@ -277,14 +277,14 @@ class LineTokenizer:
 
         # Add last element
         if current:
-            elements.append(''.join(current).strip())
+            elements.append("".join(current).strip())
 
         # Parse each element
         parsed_elements = []
         for element in elements:
-            if element.startswith('(') and element.endswith(')'):
+            if element.startswith("(") and element.endswith(")"):
                 parsed_elements.append(self._parse_tuple(element))
-            elif element.startswith('[') and element.endswith(']'):
+            elif element.startswith("[") and element.endswith("]"):
                 parsed_elements.append(self._parse_array(element))
             else:
                 parsed_elements.append(self._convert_param(element))
@@ -319,20 +319,20 @@ class LineTokenizer:
                 in_quotes = not in_quotes
                 current.append(char)
             elif not in_quotes:
-                if char == '(':
+                if char == "(":
                     paren_depth += 1
                     current.append(char)
-                elif char == ')':
+                elif char == ")":
                     paren_depth -= 1
                     current.append(char)
-                elif char == '[':
+                elif char == "[":
                     bracket_depth += 1
                     current.append(char)
-                elif char == ']':
+                elif char == "]":
                     bracket_depth -= 1
                     current.append(char)
-                elif char == ',' and paren_depth == 0 and bracket_depth == 0:
-                    elements.append(''.join(current).strip())
+                elif char == "," and paren_depth == 0 and bracket_depth == 0:
+                    elements.append("".join(current).strip())
                     current = []
                 else:
                     current.append(char)
@@ -341,14 +341,14 @@ class LineTokenizer:
 
         # Add last element
         if current:
-            elements.append(''.join(current).strip())
+            elements.append("".join(current).strip())
 
         # Parse each element
         parsed_elements = []
         for element in elements:
-            if element.startswith('(') and element.endswith(')'):
+            if element.startswith("(") and element.endswith(")"):
                 parsed_elements.append(self._parse_tuple(element))
-            elif element.startswith('[') and element.endswith(']'):
+            elif element.startswith("[") and element.endswith("]"):
                 parsed_elements.append(self._parse_array(element))
             else:
                 parsed_elements.append(self._convert_param(element))
@@ -391,8 +391,8 @@ class LineTokenizer:
             params = params[1:]
         # SWING and RANGE have no prefix-specific parameters
 
-        # Remaining parameters are suffix-specific
-        suffix_params = params
+        # Handle Advanced Combat Logging (ACL) parameters
+        suffix_params = self._handle_acl_params(event_type, params)
 
         return prefix_params, suffix_params
 
