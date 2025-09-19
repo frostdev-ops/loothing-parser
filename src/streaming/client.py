@@ -14,7 +14,7 @@ from pathlib import Path
 import websockets
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
-from api.models import StreamMessage, StreamResponse, SessionStart
+from src.api.models import StreamMessage, StreamResponse, SessionStart
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class CombatLogStreamer:
         server_url: str = "ws://localhost:8000/stream",
         api_key: str = "dev_key_12345",
         client_id: str = "test_client",
-        reconnect_delay: float = 5.0
+        reconnect_delay: float = 5.0,
     ):
         """
         Initialize combat log streamer.
@@ -129,13 +129,13 @@ class CombatLogStreamer:
             client_version="1.0.0",
             character_name="TestCharacter",
             realm="TestRealm",
-            log_start_time=time.time()
+            log_start_time=time.time(),
         )
 
         message = StreamMessage(
             type="start_session",
             timestamp=time.time(),
-            metadata=session_start.model_dump()
+            metadata=session_start.model_dump(),
         )
 
         await self._send_message(message)
@@ -143,20 +143,14 @@ class CombatLogStreamer:
 
     async def send_session_end(self):
         """Send session end message."""
-        message = StreamMessage(
-            type="end_session",
-            timestamp=time.time()
-        )
+        message = StreamMessage(type="end_session", timestamp=time.time())
 
         await self._send_message(message)
         logger.info("Session end sent")
 
     async def send_heartbeat(self):
         """Send heartbeat message."""
-        message = StreamMessage(
-            type="heartbeat",
-            timestamp=time.time()
-        )
+        message = StreamMessage(type="heartbeat", timestamp=time.time())
 
         await self._send_message(message)
         logger.debug("Heartbeat sent")
@@ -175,10 +169,7 @@ class CombatLogStreamer:
         self.sequence_counter += 1
 
         message = StreamMessage(
-            type="log_line",
-            timestamp=time.time(),
-            line=line.strip(),
-            sequence=sequence
+            type="log_line", timestamp=time.time(), line=line.strip(), sequence=sequence
         )
 
         await self._send_message(message)
@@ -195,7 +186,7 @@ class CombatLogStreamer:
         follow: bool = False,
         start_position: int = 0,
         lines_per_batch: int = 100,
-        batch_delay: float = 0.1
+        batch_delay: float = 0.1,
     ):
         """
         Stream a combat log file to the server.
@@ -215,7 +206,7 @@ class CombatLogStreamer:
         logger.info(f"Starting to stream file: {file_path} (follow={follow})")
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 f.seek(self.file_position)
 
                 lines_batch = []
@@ -312,11 +303,7 @@ class CombatLogStreamer:
                 del self.pending_acks[response.sequence_ack]
                 self.stats["acks_received"] += 1
 
-    async def run_with_reconnect(
-        self,
-        stream_task: Callable,
-        max_reconnects: int = 10
-    ):
+    async def run_with_reconnect(self, stream_task: Callable, max_reconnects: int = 10):
         """
         Run with automatic reconnection.
 
@@ -351,7 +338,9 @@ class CombatLogStreamer:
                 else:
                     # Connection failed
                     reconnect_count += 1
-                    logger.warning(f"Connection failed, attempt {reconnect_count}/{max_reconnects}")
+                    logger.warning(
+                        f"Connection failed, attempt {reconnect_count}/{max_reconnects}"
+                    )
 
             except Exception as e:
                 logger.error(f"Unexpected error: {e}")
@@ -381,7 +370,8 @@ class CombatLogStreamer:
             "lines_per_second": self.stats["lines_sent"] / max(uptime, 1.0),
             "ack_rate": (
                 (self.stats["acks_received"] / self.stats["lines_sent"]) * 100
-                if self.stats["lines_sent"] > 0 else 0
+                if self.stats["lines_sent"] > 0
+                else 0
             ),
         }
 
@@ -391,14 +381,14 @@ async def main():
     # Configure logging
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Create client
     client = CombatLogStreamer(
         server_url="ws://localhost:8000/stream",
         api_key="dev_key_12345",
-        client_id="example_client"
+        client_id="example_client",
     )
 
     async def example_stream_task():
@@ -406,10 +396,10 @@ async def main():
         # Send some sample log lines
         sample_lines = [
             "9/15/2025 21:30:21.462-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1,BUILD_VERSION,11.2.0,PROJECT_ID,1",
-            "9/15/2025 21:30:21.463-4  ZONE_CHANGE,2649,\"Hallowfall\",23",
-            "9/15/2025 21:30:21.463-4  MAP_CHANGE,2215,\"Hallowfall\",4939.580078,-593.750000,4397.919922,-3902.080078",
-            "9/15/2025 21:30:22.123-4  SPELL_CAST_START,Player-1234,\"PlayerName\",0x512,0x0,Player-1234,\"PlayerName\",0x512,0x0,1234,\"Example Spell\",0x1",
-            "9/15/2025 21:30:23.456-4  SPELL_DAMAGE,Player-1234,\"PlayerName\",0x512,0x0,Creature-5678,\"TargetName\",0x10a28,0x0,1234,\"Example Spell\",0x1,5678,0,0,0,0,0,0,0"
+            '9/15/2025 21:30:21.463-4  ZONE_CHANGE,2649,"Hallowfall",23',
+            '9/15/2025 21:30:21.463-4  MAP_CHANGE,2215,"Hallowfall",4939.580078,-593.750000,4397.919922,-3902.080078',
+            '9/15/2025 21:30:22.123-4  SPELL_CAST_START,Player-1234,"PlayerName",0x512,0x0,Player-1234,"PlayerName",0x512,0x0,1234,"Example Spell",0x1',
+            '9/15/2025 21:30:23.456-4  SPELL_DAMAGE,Player-1234,"PlayerName",0x512,0x0,Creature-5678,"TargetName",0x10a28,0x0,1234,"Example Spell",0x1,5678,0,0,0,0,0,0,0',
         ]
 
         logger.info("Sending sample log lines...")
