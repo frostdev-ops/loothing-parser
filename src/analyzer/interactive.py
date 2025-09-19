@@ -327,11 +327,7 @@ class InteractiveAnalyzer:
 
     def _get_encounter_characters(self, fight: Fight) -> Optional[Dict[str, CharacterEventStream]]:
         """Get character data for an encounter if available."""
-        print(f"DEBUG: _get_encounter_characters called for {fight.encounter_name}")
-        print(f"DEBUG: enhanced_data is {'available' if self.enhanced_data else 'None'}")
-
         if self.enhanced_data:
-            print("DEBUG: Enhanced data available, checking for matches...")
             # Get enhanced data from raid encounters or mythic plus runs
             raid_encounters = self.enhanced_data.get("raid_encounters", [])
             mythic_plus_runs = self.enhanced_data.get("mythic_plus_runs", [])
@@ -373,9 +369,6 @@ class InteractiveAnalyzer:
                             < time_tolerance
                         ):
                             return getattr(segment, "characters", {})
-
-        # If no enhanced data match found, proceed to fallback
-        print("DEBUG: No enhanced_data, proceeding to fallback")
 
         # Enhanced fallback: create character streams from fight events and participants
         if fight.participants:
@@ -480,8 +473,12 @@ class InteractiveAnalyzer:
                 characters[event.dest_guid].all_events.append((event.timestamp, "death", 0))
 
         # Debug output
-        print(f"DEBUG METRICS: Found {damage_event_count} damage events, {heal_event_count} heal events")
-        print(f"DEBUG METRICS: Total damage processed: {total_damage_processed}, healing: {total_healing_processed}")
+        print(
+            f"DEBUG METRICS: Found {damage_event_count} damage events, {heal_event_count} heal events"
+        )
+        print(
+            f"DEBUG METRICS: Total damage processed: {total_damage_processed}, healing: {total_healing_processed}"
+        )
 
         # Calculate activity percentages and metrics
         for character in characters.values():
