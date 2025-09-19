@@ -12,11 +12,12 @@ from datetime import datetime
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.database.compression import EventCompressor, compression_stats
 from src.models.character_events import TimestampedEvent, CharacterEventStream
-from src.parser.events import SpellDamageEvent, SpellCastStartEvent, UnitDiedEvent
+from src.parser.events import BaseEvent, DamageEvent, SpellEvent
 
 
 @pytest.fixture
@@ -32,72 +33,78 @@ def sample_events():
     base_time = time.time()
 
     # Create various event types
-    events.append(TimestampedEvent(
-        timestamp=base_time,
-        sequence=0,
-        event=SpellCastStartEvent(
-            event_type="SPELL_CAST_START",
-            timestamp=datetime.fromtimestamp(base_time),
-            source_guid="Player-1234-567890AB",
-            source_name="Testplayer",
-            source_flags=0x512,
-            source_raid_flags=0x0,
-            dest_guid="Creature-5678-CDEF1234",
-            dest_name="Target",
-            dest_flags=0x10a28,
-            dest_raid_flags=0x0,
-            spell_id=1234,
-            spell_name="Test Spell",
-            spell_school=0x1
+    events.append(
+        TimestampedEvent(
+            timestamp=base_time,
+            sequence=0,
+            event=SpellCastStartEvent(
+                event_type="SPELL_CAST_START",
+                timestamp=datetime.fromtimestamp(base_time),
+                source_guid="Player-1234-567890AB",
+                source_name="Testplayer",
+                source_flags=0x512,
+                source_raid_flags=0x0,
+                dest_guid="Creature-5678-CDEF1234",
+                dest_name="Target",
+                dest_flags=0x10A28,
+                dest_raid_flags=0x0,
+                spell_id=1234,
+                spell_name="Test Spell",
+                spell_school=0x1,
+            ),
         )
-    ))
+    )
 
-    events.append(TimestampedEvent(
-        timestamp=base_time + 1.0,
-        sequence=1,
-        event=SpellDamageEvent(
-            event_type="SPELL_DAMAGE",
-            timestamp=datetime.fromtimestamp(base_time + 1.0),
-            source_guid="Player-1234-567890AB",
-            source_name="Testplayer",
-            source_flags=0x512,
-            source_raid_flags=0x0,
-            dest_guid="Creature-5678-CDEF1234",
-            dest_name="Target",
-            dest_flags=0x10a28,
-            dest_raid_flags=0x0,
-            spell_id=1234,
-            spell_name="Test Spell",
-            spell_school=0x1,
-            amount=5000,
-            overkill=0,
-            school=0x1,
-            resisted=0,
-            blocked=0,
-            absorbed=0,
-            critical=True,
-            glancing=False,
-            crushing=False,
-            is_off_hand=False
+    events.append(
+        TimestampedEvent(
+            timestamp=base_time + 1.0,
+            sequence=1,
+            event=SpellDamageEvent(
+                event_type="SPELL_DAMAGE",
+                timestamp=datetime.fromtimestamp(base_time + 1.0),
+                source_guid="Player-1234-567890AB",
+                source_name="Testplayer",
+                source_flags=0x512,
+                source_raid_flags=0x0,
+                dest_guid="Creature-5678-CDEF1234",
+                dest_name="Target",
+                dest_flags=0x10A28,
+                dest_raid_flags=0x0,
+                spell_id=1234,
+                spell_name="Test Spell",
+                spell_school=0x1,
+                amount=5000,
+                overkill=0,
+                school=0x1,
+                resisted=0,
+                blocked=0,
+                absorbed=0,
+                critical=True,
+                glancing=False,
+                crushing=False,
+                is_off_hand=False,
+            ),
         )
-    ))
+    )
 
-    events.append(TimestampedEvent(
-        timestamp=base_time + 2.0,
-        sequence=2,
-        event=UnitDiedEvent(
-            event_type="UNIT_DIED",
-            timestamp=datetime.fromtimestamp(base_time + 2.0),
-            source_guid="nil",
-            source_name="nil",
-            source_flags=0x0,
-            source_raid_flags=0x0,
-            dest_guid="Creature-5678-CDEF1234",
-            dest_name="Target",
-            dest_flags=0x10a28,
-            dest_raid_flags=0x0
+    events.append(
+        TimestampedEvent(
+            timestamp=base_time + 2.0,
+            sequence=2,
+            event=UnitDiedEvent(
+                event_type="UNIT_DIED",
+                timestamp=datetime.fromtimestamp(base_time + 2.0),
+                source_guid="nil",
+                source_name="nil",
+                source_flags=0x0,
+                source_raid_flags=0x0,
+                dest_guid="Creature-5678-CDEF1234",
+                dest_name="Target",
+                dest_flags=0x10A28,
+                dest_raid_flags=0x0,
+            ),
         )
-    ))
+    )
 
     return events
 
@@ -142,7 +149,9 @@ class TestEventCompressor:
         decompressed_events = compressor.decompress_events(compressed_data)
 
         assert len(decompressed_events) == 1
-        assert decompressed_events[0].event.event_type == single_event[0].event.event_type
+        assert (
+            decompressed_events[0].event.event_type == single_event[0].event.event_type
+        )
 
     def test_large_event_list(self, compressor):
         """Test compression of large event list."""
@@ -163,7 +172,7 @@ class TestEventCompressor:
                     source_raid_flags=0x0,
                     dest_guid="Creature-5678-CDEF1234",
                     dest_name="Target",
-                    dest_flags=0x10a28,
+                    dest_flags=0x10A28,
                     dest_raid_flags=0x0,
                     spell_id=1234,
                     spell_name="Test Spell",
@@ -177,8 +186,8 @@ class TestEventCompressor:
                     critical=i % 5 == 0,  # Some variation
                     glancing=False,
                     crushing=False,
-                    is_off_hand=False
-                )
+                    is_off_hand=False,
+                ),
             )
             large_event_list.append(event)
 
@@ -187,7 +196,9 @@ class TestEventCompressor:
 
         # Should achieve good compression
         # Estimate uncompressed size (this is rough)
-        uncompressed_estimate = len(json.dumps([e.model_dump() for e in large_event_list]).encode())
+        uncompressed_estimate = len(
+            json.dumps([e.model_dump() for e in large_event_list]).encode()
+        )
         compression_ratio = len(compressed_data) / uncompressed_estimate
 
         # Should compress to less than 50% of original
@@ -226,7 +237,13 @@ class TestEventCompressor:
         mixed_events = []
 
         # Create events of different types
-        event_types = ["SPELL_CAST_START", "SPELL_DAMAGE", "SPELL_HEAL", "UNIT_DIED", "SWING_DAMAGE"]
+        event_types = [
+            "SPELL_CAST_START",
+            "SPELL_DAMAGE",
+            "SPELL_HEAL",
+            "UNIT_DIED",
+            "SWING_DAMAGE",
+        ]
 
         for i, event_type in enumerate(event_types * 20):  # Repeat to get more data
             if event_type == "SPELL_DAMAGE":
@@ -239,7 +256,7 @@ class TestEventCompressor:
                     source_raid_flags=0x0,
                     dest_guid="Creature-5678-CDEF1234",
                     dest_name="Target",
-                    dest_flags=0x10a28,
+                    dest_flags=0x10A28,
                     dest_raid_flags=0x0,
                     spell_id=1234 + (i % 10),
                     spell_name=f"Spell {i % 10}",
@@ -253,7 +270,7 @@ class TestEventCompressor:
                     critical=i % 5 == 0,
                     glancing=False,
                     crushing=False,
-                    is_off_hand=False
+                    is_off_hand=False,
                 )
             else:
                 # Create a basic event for other types (simplified for testing)
@@ -266,17 +283,15 @@ class TestEventCompressor:
                     source_raid_flags=0x0,
                     dest_guid="Creature-5678-CDEF1234",
                     dest_name="Target",
-                    dest_flags=0x10a28,
+                    dest_flags=0x10A28,
                     dest_raid_flags=0x0,
                     spell_id=1234 + (i % 10),
                     spell_name=f"Spell {i % 10}",
-                    spell_school=0x1
+                    spell_school=0x1,
                 )
 
             timestamped_event = TimestampedEvent(
-                timestamp=base_time + i * 0.1,
-                sequence=i,
-                event=event
+                timestamp=base_time + i * 0.1, sequence=i, event=event
             )
             mixed_events.append(timestamped_event)
 
@@ -337,7 +352,7 @@ class TestCompressionPerformance:
                     source_raid_flags=0x0,
                     dest_guid="Creature-5678-CDEF1234",
                     dest_name="Target",
-                    dest_flags=0x10a28,
+                    dest_flags=0x10A28,
                     dest_raid_flags=0x0,
                     spell_id=1234,
                     spell_name="Test Spell",
@@ -351,8 +366,8 @@ class TestCompressionPerformance:
                     critical=False,
                     glancing=False,
                     crushing=False,
-                    is_off_hand=False
-                )
+                    is_off_hand=False,
+                ),
             )
             large_event_list.append(event)
 
@@ -385,7 +400,7 @@ class TestCompressionPerformance:
                     source_raid_flags=0x0,
                     dest_guid="Creature-5678-CDEF1234",
                     dest_name="Target",
-                    dest_flags=0x10a28,
+                    dest_flags=0x10A28,
                     dest_raid_flags=0x0,
                     spell_id=1234,
                     spell_name="Test Spell",
@@ -399,13 +414,14 @@ class TestCompressionPerformance:
                     critical=False,
                     glancing=False,
                     crushing=False,
-                    is_off_hand=False
-                )
+                    is_off_hand=False,
+                ),
             )
             repetitive_events.append(event)
 
         # Test 2: Highly random data (should compress less well)
         import random
+
         random_events = []
         for i in range(1000):
             event = TimestampedEvent(
@@ -420,7 +436,7 @@ class TestCompressionPerformance:
                     source_raid_flags=0x0,
                     dest_guid=f"Creature-{random.randint(1000, 9999)}-CDEF1234",
                     dest_name=f"Target{random.randint(1, 100)}",
-                    dest_flags=0x10a28,
+                    dest_flags=0x10A28,
                     dest_raid_flags=0x0,
                     spell_id=random.randint(1000, 9999),
                     spell_name=f"Spell {random.randint(1, 1000)}",
@@ -434,8 +450,8 @@ class TestCompressionPerformance:
                     critical=random.choice([True, False]),
                     glancing=random.choice([True, False]),
                     crushing=random.choice([True, False]),
-                    is_off_hand=random.choice([True, False])
-                )
+                    is_off_hand=random.choice([True, False]),
+                ),
             )
             random_events.append(event)
 
