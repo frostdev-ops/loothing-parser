@@ -167,7 +167,8 @@ class TestEventCompressor:
         for i in range(1000):
             event = TimestampedEvent(
                 timestamp=base_time + i * 0.1,
-                sequence=i,
+                datetime=datetime.fromtimestamp(base_time + i * 0.1),
+                category="damage_done",
                 event=DamageEvent(
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
                     event_type="SPELL_DAMAGE",
