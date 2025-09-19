@@ -16,7 +16,7 @@ import uuid
 from .buffer import BufferedLine, LineBuffer
 from .session import StreamSession, SessionStatus
 from src.parser.parser import CombatLogParser
-from src.parser.tokenizer import CombatLogTokenizer
+from src.parser.tokenizer import LineTokenizer
 from src.segmentation.enhanced import EnhancedSegmenter
 from src.database.storage import EventStorage
 from src.database.schema import DatabaseManager
