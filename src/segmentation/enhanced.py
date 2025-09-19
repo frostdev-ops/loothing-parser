@@ -151,9 +151,9 @@ class EnhancedSegmenter:
             self.categorizer.route_event(event)
 
             # Track mob deaths for progress
-            if event.event_type == "UNIT_DIED" and not event.dest_guid.startswith(
-                "Player-"
-            ):
+            if (event.event_type == "UNIT_DIED" and
+                event.dest_guid and
+                not event.dest_guid.startswith("Player-")):
                 self.current_m_plus_segment.mob_deaths.append(event.dest_guid)
                 self.current_m_plus_segment.mob_count += 1
 
