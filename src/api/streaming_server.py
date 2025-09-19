@@ -34,10 +34,10 @@ from .models import (
     StreamStats,
 )
 from .auth import auth_manager, authenticate_api_key, AuthResponse
-from streaming.processor import StreamProcessor
-from streaming.session import SessionManager, StreamSession, SessionStatus
-from database.schema import DatabaseManager, create_tables
-from database.query import QueryAPI
+from ..streaming.processor import StreamProcessor
+from ..streaming.session import SessionManager, StreamSession, SessionStatus
+from src.database.schema import DatabaseManager, create_tables
+from src.database.query import QueryAPI
 
 logger = logging.getLogger(__name__)
 
@@ -445,41 +445,73 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
 
         # Server metrics
         server_stats = stats["server"]
-        metrics.append(f"loothing_server_uptime_seconds {server_stats['uptime_seconds']}")
+        metrics.append(
+            f"loothing_server_uptime_seconds {server_stats['uptime_seconds']}"
+        )
         metrics.append(f"loothing_server_running {int(server_stats['running'])}")
-        metrics.append(f"loothing_websocket_connections_active {server_stats['active_websockets']}")
+        metrics.append(
+            f"loothing_websocket_connections_active {server_stats['active_websockets']}"
+        )
 
         # Processing metrics
         processing_stats = stats["processing"]
-        metrics.append(f"loothing_processing_contexts_active {processing_stats['active_contexts']}")
-        metrics.append(f"loothing_processing_lines_total {processing_stats['total_lines_processed']}")
-        metrics.append(f"loothing_processing_events_total {processing_stats['total_events_generated']}")
-        metrics.append(f"loothing_processing_errors_total {processing_stats['total_parse_errors']}")
-        metrics.append(f"loothing_processing_lines_per_second {processing_stats['lines_per_second']}")
-        metrics.append(f"loothing_processing_events_per_second {processing_stats['events_per_second']}")
-        metrics.append(f"loothing_processing_error_rate_percent {processing_stats['error_rate']}")
+        metrics.append(
+            f"loothing_processing_contexts_active {processing_stats['active_contexts']}"
+        )
+        metrics.append(
+            f"loothing_processing_lines_total {processing_stats['total_lines_processed']}"
+        )
+        metrics.append(
+            f"loothing_processing_events_total {processing_stats['total_events_generated']}"
+        )
+        metrics.append(
+            f"loothing_processing_errors_total {processing_stats['total_parse_errors']}"
+        )
+        metrics.append(
+            f"loothing_processing_lines_per_second {processing_stats['lines_per_second']}"
+        )
+        metrics.append(
+            f"loothing_processing_events_per_second {processing_stats['events_per_second']}"
+        )
+        metrics.append(
+            f"loothing_processing_error_rate_percent {processing_stats['error_rate']}"
+        )
 
         # Database metrics
         db_stats = stats["database"]
-        metrics.append(f"loothing_database_encounters_total {db_stats['total_encounters']}")
-        metrics.append(f"loothing_database_characters_total {db_stats['total_characters']}")
+        metrics.append(
+            f"loothing_database_encounters_total {db_stats['total_encounters']}"
+        )
+        metrics.append(
+            f"loothing_database_characters_total {db_stats['total_characters']}"
+        )
         metrics.append(f"loothing_database_blocks_total {db_stats['total_blocks']}")
         metrics.append(f"loothing_database_events_total {db_stats['total_events']}")
-        metrics.append(f"loothing_database_compressed_bytes {db_stats['total_compressed_bytes']}")
-        metrics.append(f"loothing_database_uncompressed_bytes {db_stats['total_uncompressed_bytes']}")
+        metrics.append(
+            f"loothing_database_compressed_bytes {db_stats['total_compressed_bytes']}"
+        )
+        metrics.append(
+            f"loothing_database_uncompressed_bytes {db_stats['total_uncompressed_bytes']}"
+        )
 
         # Authentication metrics
         auth_stats = stats["authentication"]
         metrics.append(f"loothing_auth_api_keys_total {auth_stats['total_api_keys']}")
         metrics.append(f"loothing_auth_api_keys_active {auth_stats['active_api_keys']}")
-        metrics.append(f"loothing_auth_connections_total {auth_stats['total_active_connections']}")
+        metrics.append(
+            f"loothing_auth_connections_total {auth_stats['total_active_connections']}"
+        )
         metrics.append(f"loothing_auth_clients_unique {auth_stats['unique_clients']}")
 
         # Session metrics
         session_stats = stats["sessions"]
         metrics.append(f"loothing_sessions_total {session_stats['total_sessions']}")
-        metrics.append(f"loothing_sessions_events_total {session_stats['total_events_processed']}")
-        metrics.append(f"loothing_sessions_events_per_second_avg {session_stats['average_events_per_second']}")
+        metrics.append(
+            f"loothing_sessions_events_total {session_stats['total_events_processed']}"
+        )
+        metrics.append(
+            f"loothing_sessions_events_per_second_avg {session_stats['average_events_per_second']}"
+        )
 
         return "\n".join(metrics) + "\n"
 
