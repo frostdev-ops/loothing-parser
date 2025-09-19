@@ -5,9 +5,8 @@ Quick test script to verify character data is properly populated.
 
 import sys
 from src.parser.parser import CombatLogParser
-from src.segmentation.enhanced import EnhancedSegmenter
+from src.segmentation.encounters import EncounterSegmenter
 from src.analyzer.interactive import InteractiveAnalyzer
-
 
 def test_character_data():
     """Test that character data is properly populated and accessible."""
@@ -18,17 +17,14 @@ def test_character_data():
     events = list(parser.parse_file("examples/WoWCombatLog-091625_041109.txt"))
     print(f"Parsed {len(events)} events")
 
-    # Segment encounters
-    segmenter = EnhancedSegmenter()
-    for event in events:
-        segmenter.process_event(event)
-    enhanced_data = segmenter.finalize()
-    print(f"Found {len(enhanced_data.get('raid_encounters', []))} raid encounters")
-    print(f"Found {len(enhanced_data.get('mythic_plus_runs', []))} M+ runs")
+    # Segment encounters using basic segmenter
+    segmenter = EncounterSegmenter()
+    fights = segmenter.segment_encounters(events)
+    print(f"Found {len(fights)} fights")
 
-    # Create analyzer and get fights
+    # Create analyzer with basic data
     analyzer = InteractiveAnalyzer()
-    analyzer.load_data(events, enhanced_data)
+    analyzer.load_data(events, None)  # No enhanced data - will trigger fallback
 
     print(f"\nTesting {len(analyzer.fights)} fights for character data:")
 
@@ -38,7 +34,7 @@ def test_character_data():
         print(f"  Duration: {fight.get_duration_str()}")
         print(f"  Participants: {fight.get_player_count()}")
 
-        # Test character data access
+        # Test character data access (should use fallback)
         characters = analyzer._get_encounter_characters(fight)
         if characters:
             print(f"  Characters found: {len(characters)}")
@@ -50,7 +46,6 @@ def test_character_data():
             print("  No character data available")
 
     print("\nTest completed!")
-
 
 if __name__ == "__main__":
     test_character_data()
