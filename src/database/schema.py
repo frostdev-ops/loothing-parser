@@ -274,45 +274,6 @@ def create_tables(db: DatabaseManager) -> None:
     """
     )
 
-    # Items catalog (for loot tracking)
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS items (
-            item_id INTEGER PRIMARY KEY,
-            item_name TEXT NOT NULL,
-            quality INTEGER NOT NULL,
-            item_level INTEGER NOT NULL,
-            item_type TEXT,
-            subtype TEXT,
-            slot TEXT,
-            class_mask INTEGER DEFAULT 0,
-            races_mask INTEGER DEFAULT 0,
-            source_type TEXT,
-            source_info TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(item_id)
-        )
-    """
-    )
-
-    # Loot drops tracking
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS loot_drops (
-            drop_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
-            character_id INTEGER NOT NULL REFERENCES characters(character_id),
-            item_id INTEGER NOT NULL REFERENCES items(item_id),
-            quantity INTEGER DEFAULT 1,
-            drop_timestamp REAL NOT NULL,
-            source_guid TEXT,
-            source_name TEXT,
-            loot_method TEXT,  -- 'group_loot', 'personal_loot', 'master_loot', etc.
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """
-    )
-
     logger.info("Creating database indices for fast queries...")
 
     # Encounters indices
