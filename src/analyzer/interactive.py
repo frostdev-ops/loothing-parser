@@ -336,43 +336,46 @@ class InteractiveAnalyzer:
             raid_encounters = self.enhanced_data.get("raid_encounters", [])
             mythic_plus_runs = self.enhanced_data.get("mythic_plus_runs", [])
 
-        # First try to match by encounter type and timing
-        time_tolerance = 60  # seconds
+            # First try to match by encounter type and timing
+            time_tolerance = 60  # seconds
 
-        # For raid bosses, find matching raid encounter
-        if fight.fight_type == FightType.RAID_BOSS:
-            for raid_encounter in raid_encounters:
-                if (
-                    raid_encounter.encounter_id == fight.encounter_id
-                    and abs((raid_encounter.start_time - fight.start_time).total_seconds())
-                    < time_tolerance
-                ):
-                    return raid_encounter.characters
-
-        # For mythic plus dungeons, find matching run
-        elif fight.fight_type == FightType.MYTHIC_PLUS:
-            for m_plus_run in mythic_plus_runs:
-                if abs(
-                    (m_plus_run.start_time - fight.start_time).total_seconds()
-                ) < time_tolerance and m_plus_run.dungeon_name in (fight.encounter_name or ""):
-                    return (
-                        m_plus_run.overall_characters
-                        if hasattr(m_plus_run, "overall_characters")
-                        else m_plus_run.characters if hasattr(m_plus_run, "characters") else {}
-                    )
-
-        # For dungeon bosses within M+, find from segments
-        elif fight.fight_type == FightType.DUNGEON_BOSS:
-            for m_plus_run in mythic_plus_runs:
-                # Check if this boss is part of an M+ run
-                for segment in getattr(m_plus_run, "segments", []):
+            # For raid bosses, find matching raid encounter
+            if fight.fight_type == FightType.RAID_BOSS:
+                for raid_encounter in raid_encounters:
                     if (
-                        hasattr(segment, "segment_name")
-                        and segment.segment_name == fight.encounter_name
-                        and abs((segment.start_time - fight.start_time).total_seconds())
+                        raid_encounter.encounter_id == fight.encounter_id
+                        and abs((raid_encounter.start_time - fight.start_time).total_seconds())
                         < time_tolerance
                     ):
-                        return getattr(segment, "characters", {})
+                        return raid_encounter.characters
+
+            # For mythic plus dungeons, find matching run
+            elif fight.fight_type == FightType.MYTHIC_PLUS:
+                for m_plus_run in mythic_plus_runs:
+                    if abs(
+                        (m_plus_run.start_time - fight.start_time).total_seconds()
+                    ) < time_tolerance and m_plus_run.dungeon_name in (fight.encounter_name or ""):
+                        return (
+                            m_plus_run.overall_characters
+                            if hasattr(m_plus_run, "overall_characters")
+                            else m_plus_run.characters if hasattr(m_plus_run, "characters") else {}
+                        )
+
+            # For dungeon bosses within M+, find from segments
+            elif fight.fight_type == FightType.DUNGEON_BOSS:
+                for m_plus_run in mythic_plus_runs:
+                    # Check if this boss is part of an M+ run
+                    for segment in getattr(m_plus_run, "segments", []):
+                        if (
+                            hasattr(segment, "segment_name")
+                            and segment.segment_name == fight.encounter_name
+                            and abs((segment.start_time - fight.start_time).total_seconds())
+                            < time_tolerance
+                        ):
+                            return getattr(segment, "characters", {})
+
+        # If no enhanced data match found, proceed to fallback
+        print("DEBUG: No enhanced_data, proceeding to fallback")
 
         # Enhanced fallback: create character streams from fight events and participants
         if fight.participants:
