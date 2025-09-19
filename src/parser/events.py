@@ -590,9 +590,9 @@ class EventFactory:
 
         # Heal parameters: amount, overhealing, absorbed, critical
         if len(params) >= 3:
-            heal_event.amount = params[0] or 0
-            heal_event.overhealing = params[1] or 0
-            heal_event.absorbed = params[2] or 0
+            heal_event.amount = cls._safe_int(params[0])
+            heal_event.overhealing = cls._safe_int(params[1])
+            heal_event.absorbed = cls._safe_int(params[2])
 
         if len(params) >= 4:
             heal_event.critical = bool(params[3])
