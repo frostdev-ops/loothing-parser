@@ -25,8 +25,7 @@ def test_character_data():
     print(f"Found {len(segmenter.fights)} fights")
 
     # Create analyzer with basic data
-    analyzer = InteractiveAnalyzer()
-    analyzer.load_data(segmenter.fights, None)  # No enhanced data - will trigger fallback
+    analyzer = InteractiveAnalyzer(segmenter.fights, None)  # No enhanced data - will trigger fallback
 
     print(f"\nTesting {len(analyzer.fights)} fights for character data:")
 
