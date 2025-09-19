@@ -1,0 +1,77 @@
+# Git files
+.git
+.gitignore
+
+# Virtual environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+docs/
+
+# Test files and data
+test_*.py
+*_test.py
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Example files (large WoW logs)
+examples/*.txt
+
+# Development files
+.env
+.env.local
+docker-compose.override.yml
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Logs
+logs/
+*.log
+
+# Data directories
+data/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Package files
+*.tar.gz
+*.zip
+
+# Research and development
+research/
+*.ipynb
+.jupyter/
+
+# Monitoring config (will be mounted if needed)
+monitoring/
