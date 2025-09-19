@@ -121,7 +121,13 @@ class TestRealDataParser:
                         events.append(event)
 
         if events:
-            segments = segmenter.segment_encounters(events)
+            # Process events through segmenter
+            for event in events:
+                fight = segmenter.process_event(event)
+                # process_event may return a completed fight or None
+
+            # Get final segments
+            segments = segmenter.finalize()
             # Don't assert specific number as it depends on the log content
             # Just validate the segmenter doesn't crash
             assert isinstance(segments, list), "Segmenter should return a list"
