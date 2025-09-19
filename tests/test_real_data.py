@@ -194,9 +194,9 @@ class TestRealDataParser:
 
                     line = line.strip()
                     if line:
-                        event = parser.parse_line(line)
-                        if event:
-                            events_parsed += 1
+                        events_from_line = list(parser._process_line(line))
+                        if events_from_line:
+                            events_parsed += len(events_from_line)
 
             parse_time = time.time() - start_time
             lines_per_second = 1000 / parse_time if parse_time > 0 else 0
