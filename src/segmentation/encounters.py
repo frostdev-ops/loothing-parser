@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
-from parser.events import BaseEvent, EncounterEvent, ChallengeModeEvent
+from src.parser.events import BaseEvent, EncounterEvent, ChallengeModeEvent
 
 
 class FightType(Enum):
