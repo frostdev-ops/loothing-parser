@@ -253,9 +253,10 @@ class TestEventCompressor:
 
         for i, event_type in enumerate(event_types * 20):  # Repeat to get more data
             if event_type == "SPELL_DAMAGE":
-                event = SpellDamageEvent(
-                    event_type=event_type,
+                event = DamageEvent(
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
+                    event_type=event_type,
+                    raw_line="test line",
                     source_guid=f"Player-{i % 5}-567890AB",
                     source_name=f"Player{i % 5}",
                     source_flags=0x512,
@@ -276,13 +277,13 @@ class TestEventCompressor:
                     critical=i % 5 == 0,
                     glancing=False,
                     crushing=False,
-                    is_off_hand=False,
                 )
             else:
                 # Create a basic event for other types (simplified for testing)
-                event = SpellCastStartEvent(
-                    event_type=event_type,
+                event = SpellEvent(
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
+                    event_type=event_type,
+                    raw_line="test line",
                     source_guid=f"Player-{i % 5}-567890AB",
                     source_name=f"Player{i % 5}",
                     source_flags=0x512,
@@ -297,7 +298,10 @@ class TestEventCompressor:
                 )
 
             timestamped_event = TimestampedEvent(
-                timestamp=base_time + i * 0.1, sequence=i, event=event
+                timestamp=base_time + i * 0.1,
+                datetime=datetime.fromtimestamp(base_time + i * 0.1),
+                category="mixed",
+                event=event,
             )
             mixed_events.append(timestamped_event)
 
