@@ -35,9 +35,7 @@ class DatabaseManager:
     def _setup_database(self):
         """Initialize database with optimized settings."""
         self.connection = sqlite3.connect(
-            self.db_path,
-            timeout=30.0,
-            check_same_thread=False
+            self.db_path, timeout=30.0, check_same_thread=False
         )
 
         # Optimize SQLite for our workload
@@ -85,7 +83,7 @@ class DatabaseManager:
         """Check if table exists."""
         cursor = self.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (table_name,)
+            (table_name,),
         )
         return cursor.fetchone() is not None
 
@@ -99,15 +97,18 @@ def create_tables(db: DatabaseManager) -> None:
     """
 
     # Schema version tracking
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS schema_version (
             version INTEGER PRIMARY KEY,
             applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """)
+    """
+    )
 
     # Log files tracking (prevent duplicate processing)
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS log_files (
             file_id INTEGER PRIMARY KEY AUTOINCREMENT,
             file_path TEXT UNIQUE NOT NULL,
@@ -119,10 +120,12 @@ def create_tables(db: DatabaseManager) -> None:
             INDEX idx_log_hash(file_hash),
             INDEX idx_log_processed(processed_at)
         )
-    """)
+    """
+    )
 
     # Encounter metadata (denormalized for speed)
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS encounters (
             encounter_id INTEGER PRIMARY KEY AUTOINCREMENT,
             log_file_id INTEGER REFERENCES log_files(file_id),
@@ -143,10 +146,12 @@ def create_tables(db: DatabaseManager) -> None:
             battle_resurrections INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """)
+    """
+    )
 
     # Character metadata
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS characters (
             character_id INTEGER PRIMARY KEY AUTOINCREMENT,
             character_guid TEXT UNIQUE NOT NULL,
@@ -158,10 +163,12 @@ def create_tables(db: DatabaseManager) -> None:
             last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             encounter_count INTEGER DEFAULT 0
         )
-    """)
+    """
+    )
 
     # Compressed event storage (core table)
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS event_blocks (
             block_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
@@ -176,10 +183,12 @@ def create_tables(db: DatabaseManager) -> None:
             compression_ratio REAL NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """)
+    """
+    )
 
     # Pre-computed character metrics (for fast dashboard queries)
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS character_metrics (
             metric_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
@@ -200,10 +209,12 @@ def create_tables(db: DatabaseManager) -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(encounter_id, character_id)
         )
-    """)
+    """
+    )
 
     # Spell usage summary (aggregated for analysis)
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS spell_summary (
             summary_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
@@ -219,10 +230,12 @@ def create_tables(db: DatabaseManager) -> None:
             max_healing INTEGER DEFAULT 0,
             UNIQUE(encounter_id, character_id, spell_id)
         )
-    """)
+    """
+    )
 
     # Mythic+ specific data
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS mythic_plus_runs (
             run_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER UNIQUE REFERENCES encounters(encounter_id),
@@ -238,10 +251,12 @@ def create_tables(db: DatabaseManager) -> None:
             death_penalties REAL DEFAULT 0.0,
             enemy_forces_percent REAL DEFAULT 0.0
         )
-    """)
+    """
+    )
 
     # Combat segments for M+ (bosses and trash)
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS combat_segments (
             segment_id INTEGER PRIMARY KEY AUTOINCREMENT,
             run_id INTEGER NOT NULL REFERENCES mythic_plus_runs(run_id),
@@ -256,41 +271,121 @@ def create_tables(db: DatabaseManager) -> None:
             enemy_forces_end REAL DEFAULT 0.0,
             enemy_forces_gained REAL DEFAULT 0.0
         )
-    """)
+    """
+    )
+
+    # Items catalog (for loot tracking)
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS items (
+            item_id INTEGER PRIMARY KEY,
+            item_name TEXT NOT NULL,
+            quality INTEGER NOT NULL,
+            item_level INTEGER NOT NULL,
+            item_type TEXT,
+            subtype TEXT,
+            slot TEXT,
+            class_mask INTEGER DEFAULT 0,
+            races_mask INTEGER DEFAULT 0,
+            source_type TEXT,
+            source_info TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(item_id)
+        )
+    """
+    )
+
+    # Loot drops tracking
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS loot_drops (
+            drop_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
+            character_id INTEGER NOT NULL REFERENCES characters(character_id),
+            item_id INTEGER NOT NULL REFERENCES items(item_id),
+            quantity INTEGER DEFAULT 1,
+            drop_timestamp REAL NOT NULL,
+            source_guid TEXT,
+            source_name TEXT,
+            loot_method TEXT,  -- 'group_loot', 'personal_loot', 'master_loot', etc.
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """
+    )
 
     logger.info("Creating database indices for fast queries...")
 
     # Encounters indices
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name, difficulty)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type, success)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name, difficulty)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type, success)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)"
+    )
 
     # Characters indices
-    db.execute("CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, realm)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name, spec_name)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, realm)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name, spec_name)"
+    )
 
     # Event blocks indices (critical for performance)
-    db.execute("CREATE INDEX IF NOT EXISTS idx_block_lookup ON event_blocks(encounter_id, character_id, block_index)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_block_time ON event_blocks(start_time, end_time)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_block_character ON event_blocks(character_id)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_block_encounter ON event_blocks(encounter_id)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_block_lookup ON event_blocks(encounter_id, character_id, block_index)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_block_time ON event_blocks(start_time, end_time)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_block_character ON event_blocks(character_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_block_encounter ON event_blocks(encounter_id)"
+    )
 
     # Metrics indices
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_performance ON character_metrics(dps DESC, hps DESC)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_encounter ON character_metrics(encounter_id)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_character ON character_metrics(character_id)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_performance ON character_metrics(dps DESC, hps DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_encounter ON character_metrics(encounter_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_character ON character_metrics(character_id)"
+    )
 
     # Spell summary indices
-    db.execute("CREATE INDEX IF NOT EXISTS idx_spell_usage ON spell_summary(character_id, spell_id)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_spell_encounter ON spell_summary(encounter_id)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_spell_damage ON spell_summary(total_damage DESC)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_spell_usage ON spell_summary(character_id, spell_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_spell_encounter ON spell_summary(encounter_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_spell_damage ON spell_summary(total_damage DESC)"
+    )
 
     # M+ indices
-    db.execute("CREATE INDEX IF NOT EXISTS idx_mplus_level ON mythic_plus_runs(keystone_level, completed)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_mplus_dungeon ON mythic_plus_runs(dungeon_id)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_segment_run ON combat_segments(run_id, segment_index)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_mplus_level ON mythic_plus_runs(keystone_level, completed)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_mplus_dungeon ON mythic_plus_runs(dungeon_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_segment_run ON combat_segments(run_id, segment_index)"
+    )
 
     # Set schema version
     db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (1)")
@@ -312,43 +407,55 @@ def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
     stats = {}
 
     # Table row counts
-    tables = ['encounters', 'characters', 'event_blocks', 'character_metrics', 'spell_summary']
+    tables = [
+        "encounters",
+        "characters",
+        "event_blocks",
+        "character_metrics",
+        "spell_summary",
+    ]
     for table in tables:
         cursor = db.execute(f"SELECT COUNT(*) FROM {table}")
         stats[f"{table}_count"] = cursor.fetchone()[0]
 
     # Storage statistics
-    cursor = db.execute("""
+    cursor = db.execute(
+        """
         SELECT
             SUM(compressed_size) as total_compressed,
             SUM(uncompressed_size) as total_uncompressed,
             AVG(compression_ratio) as avg_compression_ratio,
             COUNT(*) as block_count
         FROM event_blocks
-    """)
+    """
+    )
     row = cursor.fetchone()
     if row and row[0]:
-        stats.update({
-            'total_compressed_bytes': row[0],
-            'total_uncompressed_bytes': row[1],
-            'average_compression_ratio': round(row[2], 3),
-            'total_blocks': row[3]
-        })
+        stats.update(
+            {
+                "total_compressed_bytes": row[0],
+                "total_uncompressed_bytes": row[1],
+                "average_compression_ratio": round(row[2], 3),
+                "total_blocks": row[3],
+            }
+        )
 
     # Recent activity
-    cursor = db.execute("""
+    cursor = db.execute(
+        """
         SELECT COUNT(*)
         FROM encounters
         WHERE created_at > datetime('now', '-7 days')
-    """)
-    stats['encounters_last_7_days'] = cursor.fetchone()[0]
+    """
+    )
+    stats["encounters_last_7_days"] = cursor.fetchone()[0]
 
     # Database file size
     cursor = db.execute("PRAGMA page_count")
     page_count = cursor.fetchone()[0]
     cursor = db.execute("PRAGMA page_size")
     page_size = cursor.fetchone()[0]
-    stats['database_size_bytes'] = page_count * page_size
+    stats["database_size_bytes"] = page_count * page_size
 
     return stats
 
