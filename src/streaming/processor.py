@@ -15,12 +15,12 @@ import uuid
 
 from .buffer import BufferedLine, LineBuffer
 from .session import StreamSession, SessionStatus
-from parser.parser import CombatLogParser
-from parser.tokenizer import CombatLogTokenizer
-from segmentation.enhanced import EnhancedSegmenter
-from database.storage import EventStorage
-from database.schema import DatabaseManager
-from api.models import EncounterUpdate, StreamStats
+from src.parser.parser import CombatLogParser
+from src.parser.tokenizer import CombatLogTokenizer
+from src.segmentation.enhanced import EnhancedSegmenter
+from src.database.storage import EventStorage
+from src.database.schema import DatabaseManager
+from src.api.models import EncounterUpdate, StreamStats
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class StreamProcessor:
         db: DatabaseManager,
         on_encounter_update: Optional[Callable[[EncounterUpdate], None]] = None,
         on_character_update: Optional[Callable[[str, Dict[str, Any]], None]] = None,
-        metrics_update_interval: float = 5.0
+        metrics_update_interval: float = 5.0,
     ):
         """
         Initialize stream processor.
@@ -125,9 +125,7 @@ class StreamProcessor:
         logger.info("Stream processor stopped")
 
     async def create_processing_context(
-        self,
-        session: StreamSession,
-        buffer_config: Optional[Dict[str, Any]] = None
+        self, session: StreamSession, buffer_config: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Create a processing context for a client session.
@@ -154,7 +152,7 @@ class StreamProcessor:
         buffer_config = buffer_config or {}
         buffer = LineBuffer(
             on_batch_ready=lambda batch: self._process_batch(context_id, batch),
-            **buffer_config
+            **buffer_config,
         )
 
         # Create context
@@ -165,7 +163,7 @@ class StreamProcessor:
             storage=storage,
             buffer=buffer,
             processing_start_time=time.time(),
-            last_metrics_update=time.time()
+            last_metrics_update=time.time(),
         )
 
         self._contexts[context_id] = context
@@ -202,7 +200,9 @@ class StreamProcessor:
             # Store final encounters
             try:
                 context.storage.store_encounters(raids, mplus, f"stream:{context_id}")
-                logger.info(f"Stored final encounters for {context_id}: {len(raids)} raids, {len(mplus)} M+")
+                logger.info(
+                    f"Stored final encounters for {context_id}: {len(raids)} raids, {len(mplus)} M+"
+                )
             except Exception as e:
                 logger.error(f"Error storing final encounters for {context_id}: {e}")
 
@@ -216,7 +216,13 @@ class StreamProcessor:
         logger.info(f"Stopped processing context for {context_id}")
         return True
 
-    async def process_line(self, context_id: str, line: str, timestamp: Optional[float] = None, sequence: Optional[int] = None) -> bool:
+    async def process_line(
+        self,
+        context_id: str,
+        line: str,
+        timestamp: Optional[float] = None,
+        sequence: Optional[int] = None,
+    ) -> bool:
         """
         Process a single log line for a client.
 
@@ -244,7 +250,7 @@ class StreamProcessor:
         assigned_sequence = context.buffer.add_line(line, timestamp, sequence)
 
         # Update session metrics
-        context.session.add_event(assigned_sequence, len(line.encode('utf-8')))
+        context.session.add_event(assigned_sequence, len(line.encode("utf-8")))
 
         return True
 
@@ -301,7 +307,9 @@ class StreamProcessor:
             # Periodically store encounters
             self._maybe_store_encounters(context)
 
-            logger.debug(f"Processed batch for {context_id}: {processed_count}/{len(batch)} successful")
+            logger.debug(
+                f"Processed batch for {context_id}: {processed_count}/{len(batch)} successful"
+            )
 
         except Exception as e:
             logger.error(f"Critical error processing batch for {context_id}: {e}")
@@ -318,16 +326,22 @@ class StreamProcessor:
             encounter_update = EncounterUpdate(
                 encounter_type="raid",
                 boss_name=current_raid.boss_name,
-                difficulty=current_raid.difficulty.name if current_raid.difficulty else None,
+                difficulty=(
+                    current_raid.difficulty.name if current_raid.difficulty else None
+                ),
                 status="in_progress",
-                start_time=current_raid.start_time.timestamp() if current_raid.start_time else time.time(),
+                start_time=(
+                    current_raid.start_time.timestamp()
+                    if current_raid.start_time
+                    else time.time()
+                ),
                 duration=current_raid.combat_length,
                 participants=len(current_raid.characters),
                 top_dps={
                     char.character_name: char.get_dps(current_raid.combat_length)
                     for char in list(current_raid.characters.values())[:5]  # Top 5
                     if char.total_damage_done > 0
-                }
+                },
             )
 
         elif current_mplus:
@@ -336,14 +350,18 @@ class StreamProcessor:
                 boss_name=current_mplus.dungeon_name,
                 difficulty=f"+{current_mplus.keystone_level}",
                 status="in_progress",
-                start_time=current_mplus.start_time.timestamp() if current_mplus.start_time else time.time(),
+                start_time=(
+                    current_mplus.start_time.timestamp()
+                    if current_mplus.start_time
+                    else time.time()
+                ),
                 duration=current_mplus.actual_time_seconds,
                 participants=len(current_mplus.overall_characters),
                 top_dps={
                     char.character_name: char.get_dps(current_mplus.actual_time_seconds)
                     for char in list(current_mplus.overall_characters.values())[:5]
                     if char.total_damage_done > 0
-                }
+                },
             )
 
         # Emit update if significant change
@@ -366,7 +384,9 @@ class StreamProcessor:
                 result = context.storage.store_encounters(
                     raids, mplus, f"stream:{context.session.client_id}"
                 )
-                logger.info(f"Stored encounters for {context.session.client_id}: {result}")
+                logger.info(
+                    f"Stored encounters for {context.session.client_id}: {result}"
+                )
 
                 # Update session context
                 for raid in raids:
@@ -375,7 +395,9 @@ class StreamProcessor:
 
                 for run in mplus:
                     if run.overall_characters:
-                        context.session.character_context.update(run.overall_characters.keys())
+                        context.session.character_context.update(
+                            run.overall_characters.keys()
+                        )
 
             except Exception as e:
                 logger.error(f"Error storing encounters: {e}")
@@ -391,8 +413,12 @@ class StreamProcessor:
                 # Update buffer utilization for all contexts
                 for context in self._contexts.values():
                     buffer_stats = context.buffer.get_stats()
-                    context.session.set_buffer_utilization(buffer_stats["utilization_percent"])
-                    context.session.set_lag(buffer_stats["lag_seconds"] * 1000)  # Convert to ms
+                    context.session.set_buffer_utilization(
+                        buffer_stats["utilization_percent"]
+                    )
+                    context.session.set_lag(
+                        buffer_stats["lag_seconds"] * 1000
+                    )  # Convert to ms
 
                     # Update last metrics time
                     context.last_metrics_update = time.time()
@@ -423,7 +449,7 @@ class StreamProcessor:
                 "mythic_plus": len(context.segmenter.mythic_plus_runs),
                 "current_raid": bool(context.segmenter.current_raid),
                 "current_mplus": bool(context.segmenter.current_mythic_plus),
-            }
+            },
         }
 
     def get_global_stats(self) -> Dict[str, Any]:
@@ -437,11 +463,15 @@ class StreamProcessor:
             "total_lines_processed": self._global_stats["total_lines_processed"],
             "total_events_generated": self._global_stats["total_events_generated"],
             "total_parse_errors": self._global_stats["total_parse_errors"],
-            "lines_per_second": self._global_stats["total_lines_processed"] / max(uptime, 1.0),
-            "events_per_second": self._global_stats["total_events_generated"] / max(uptime, 1.0),
+            "lines_per_second": self._global_stats["total_lines_processed"]
+            / max(uptime, 1.0),
+            "events_per_second": self._global_stats["total_events_generated"]
+            / max(uptime, 1.0),
             "error_rate": (
-                self._global_stats["total_parse_errors"] / max(self._global_stats["total_lines_processed"], 1)
-            ) * 100,
+                self._global_stats["total_parse_errors"]
+                / max(self._global_stats["total_lines_processed"], 1)
+            )
+            * 100,
             "contexts": {
                 context_id: {
                     "client_id": context.session.client_id,
@@ -451,5 +481,5 @@ class StreamProcessor:
                     "last_activity": context.session.last_activity,
                 }
                 for context_id, context in self._contexts.items()
-            }
+            },
         }
