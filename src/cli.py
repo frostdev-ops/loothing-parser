@@ -25,13 +25,13 @@ console = Console()
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
-    handlers=[RichHandler(console=console, rich_tracebacks=True)]
+    handlers=[RichHandler(console=console, rich_tracebacks=True)],
 )
 logger = logging.getLogger(__name__)
 
 
 @click.group()
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 def cli(verbose):
     """WoW Combat Log Parser - Loothing Guild Tracking System"""
     if verbose:
@@ -39,9 +39,9 @@ def cli(verbose):
 
 
 @cli.command()
-@click.argument('log_file', type=click.Path(exists=True))
-@click.option('--output', '-o', help='Output file for results')
-@click.option('--format', type=click.Choice(['json', 'csv', 'summary']), default='summary')
+@click.argument("log_file", type=click.Path(exists=True))
+@click.option("--output", "-o", help="Output file for results")
+@click.option("--format", type=click.Choice(["json", "csv", "summary"]), default="summary")
 def parse(log_file, output, format):
     """Parse a combat log file and extract encounters."""
     log_path = Path(log_file)
@@ -66,8 +66,7 @@ def parse(log_file, output, format):
     ) as progress:
         file_size = log_path.stat().st_size
         task = progress.add_task(
-            f"[cyan]Processing {file_size / 1024 / 1024:.1f} MB...",
-            total=file_size
+            f"[cyan]Processing {file_size / 1024 / 1024:.1f} MB...", total=file_size
         )
 
         def update_progress(prog, bytes_read, total_bytes):
@@ -81,8 +80,10 @@ def parse(log_file, output, format):
             # Segment into encounters
             completed_fight = segmenter.process_event(event)
             if completed_fight:
-                console.print(f"[yellow]Fight completed:[/yellow] {completed_fight.encounter_name or 'Trash'} "
-                            f"({'Success' if completed_fight.success else 'Wipe' if completed_fight.success is False else 'Unknown'})")
+                console.print(
+                    f"[yellow]Fight completed:[/yellow] {completed_fight.encounter_name or 'Trash'} "
+                    f"({'Success' if completed_fight.success else 'Wipe' if completed_fight.success is False else 'Unknown'})"
+                )
 
     # Finalize remaining fights
     fights = segmenter.finalize()
@@ -91,12 +92,12 @@ def parse(log_file, output, format):
     processing_time = (datetime.now() - start_time).total_seconds()
 
     # Display results
-    if format == 'summary':
+    if format == "summary":
         display_summary(parser, segmenter, fights, event_types, total_events, processing_time)
-    elif format == 'json':
-        export_json(fights, output or 'output.json')
-    elif format == 'csv':
-        export_csv(fights, output or 'output.csv')
+    elif format == "json":
+        export_json(fights, output or "output.json")
+    elif format == "csv":
+        export_csv(fights, output or "output.csv")
 
 
 def display_summary(parser, segmenter, fights, event_types, total_events, processing_time):
@@ -130,7 +131,7 @@ def display_summary(parser, segmenter, fights, event_types, total_events, proces
                 FightType.RAID_BOSS: "red",
                 FightType.MYTHIC_PLUS: "magenta",
                 FightType.DUNGEON_BOSS: "yellow",
-                FightType.TRASH: "dim"
+                FightType.TRASH: "dim",
             }.get(fight.fight_type, "white")
 
             result = "Success" if fight.success else "Wipe" if fight.success is False else "-"
@@ -146,7 +147,7 @@ def display_summary(parser, segmenter, fights, event_types, total_events, proces
                 name,
                 fight.get_duration_str(),
                 str(fight.get_player_count()),
-                f"[{result_color}]{result}[/{result_color}]"
+                f"[{result_color}]{result}[/{result_color}]",
             )
 
         console.print(fight_table)
@@ -159,17 +160,13 @@ def display_summary(parser, segmenter, fights, event_types, total_events, proces
 
     for event_type, count in event_types.most_common(10):
         percentage = (count / total_events) * 100
-        event_table.add_row(
-            event_type,
-            f"{count:,}",
-            f"{percentage:.1f}%"
-        )
+        event_table.add_row(event_type, f"{count:,}", f"{percentage:.1f}%")
 
     console.print(event_table)
 
     # Segment statistics
     seg_stats = segmenter.get_stats()
-    if seg_stats['total_fights'] > 0:
+    if seg_stats["total_fights"] > 0:
         console.print(f"\n[bold cyan]Fight Statistics:[/bold cyan]")
         console.print(f"  • Successful Kills: {seg_stats['successful_kills']}")
         console.print(f"  • Wipes: {seg_stats['wipes']}")
@@ -182,19 +179,21 @@ def export_json(fights, output_file):
 
     data = []
     for fight in fights:
-        data.append({
-            'id': fight.fight_id,
-            'type': fight.fight_type.value,
-            'name': fight.encounter_name,
-            'start': fight.start_time.isoformat() if fight.start_time else None,
-            'end': fight.end_time.isoformat() if fight.end_time else None,
-            'duration': fight.duration,
-            'success': fight.success,
-            'players': fight.get_player_count(),
-            'event_count': len(fight.events)
-        })
+        data.append(
+            {
+                "id": fight.fight_id,
+                "type": fight.fight_type.value,
+                "name": fight.encounter_name,
+                "start": fight.start_time.isoformat() if fight.start_time else None,
+                "end": fight.end_time.isoformat() if fight.end_time else None,
+                "duration": fight.duration,
+                "success": fight.success,
+                "players": fight.get_player_count(),
+                "event_count": len(fight.events),
+            }
+        )
 
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         json.dump(data, f, indent=2)
 
     console.print(f"[green]Exported {len(fights)} fights to {output_file}[/green]")
@@ -204,29 +203,33 @@ def export_csv(fights, output_file):
     """Export fights to CSV format."""
     import csv
 
-    with open(output_file, 'w', newline='') as f:
+    with open(output_file, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(['ID', 'Type', 'Name', 'Start', 'End', 'Duration', 'Success', 'Players', 'Events'])
+        writer.writerow(
+            ["ID", "Type", "Name", "Start", "End", "Duration", "Success", "Players", "Events"]
+        )
 
         for fight in fights:
-            writer.writerow([
-                fight.fight_id,
-                fight.fight_type.value,
-                fight.encounter_name or 'Trash',
-                fight.start_time.isoformat() if fight.start_time else '',
-                fight.end_time.isoformat() if fight.end_time else '',
-                fight.duration or '',
-                fight.success if fight.success is not None else '',
-                fight.get_player_count(),
-                len(fight.events)
-            ])
+            writer.writerow(
+                [
+                    fight.fight_id,
+                    fight.fight_type.value,
+                    fight.encounter_name or "Trash",
+                    fight.start_time.isoformat() if fight.start_time else "",
+                    fight.end_time.isoformat() if fight.end_time else "",
+                    fight.duration or "",
+                    fight.success if fight.success is not None else "",
+                    fight.get_player_count(),
+                    len(fight.events),
+                ]
+            )
 
     console.print(f"[green]Exported {len(fights)} fights to {output_file}[/green]")
 
 
 @cli.command()
-@click.argument('log_file', type=click.Path(exists=True))
-@click.option('--lines', '-n', default=100, help='Number of lines to analyze')
+@click.argument("log_file", type=click.Path(exists=True))
+@click.option("--lines", "-n", default=100, help="Number of lines to analyze")
 def analyze(log_file, lines):
     """Analyze the structure of a combat log file."""
     log_path = Path(log_file)
@@ -235,7 +238,7 @@ def analyze(log_file, lines):
     parser = CombatLogParser()
     event_types = Counter()
 
-    with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
         sample_lines = []
         for i, line in enumerate(f):
             if i >= lines:
@@ -264,7 +267,7 @@ def analyze(log_file, lines):
         console.print(f"\n[bold]Sample Events:[/bold]")
         for event in events[:5]:
             console.print(f"  • {event.timestamp.strftime('%H:%M:%S')} - {event.event_type}")
-            if hasattr(event, 'spell_name') and event.spell_name:
+            if hasattr(event, "spell_name") and event.spell_name:
                 console.print(f"    Spell: {event.spell_name}")
             if event.source_name and event.dest_name:
                 console.print(f"    {event.source_name} → {event.dest_name}")
@@ -273,12 +276,12 @@ def analyze(log_file, lines):
 @cli.command()
 def test():
     """Run parser tests on example files."""
-    examples_dir = Path('examples')
+    examples_dir = Path("examples")
     if not examples_dir.exists():
         console.print("[red]Examples directory not found![/red]")
         return
 
-    log_files = list(examples_dir.glob('*.txt'))
+    log_files = list(examples_dir.glob("*.txt"))
     console.print(f"[bold cyan]Found {len(log_files)} example files[/bold cyan]\n")
 
     total_events = 0
@@ -320,10 +323,10 @@ def stream():
     pass
 
 
-@stream.command('start')
-@click.option('--host', default='localhost', help='Host to bind to')
-@click.option('--port', default=8000, help='Port to bind to')
-@click.option('--db-path', default='data/combat_logs.db', help='Database path')
+@stream.command("start")
+@click.option("--host", default="localhost", help="Host to bind to")
+@click.option("--port", default=8000, help="Port to bind to")
+@click.option("--db-path", default="data/combat_logs.db", help="Database path")
 def start_server(host, port, db_path):
     """Start the streaming server."""
     console.print(f"[bold green]Starting streaming server on {host}:{port}[/bold green]")
@@ -333,29 +336,31 @@ def start_server(host, port, db_path):
     console.print(f"[yellow]Note: Use docker-compose up for production deployment[/yellow]")
 
 
-@stream.command('test')
-@click.option('--host', default='localhost', help='Server host')
-@click.option('--port', default=8000, help='Server port')
+@stream.command("test")
+@click.option("--host", default="localhost", help="Server host")
+@click.option("--port", default=8000, help="Server port")
 def test_connection(host, port):
     """Test connection to streaming server."""
-    import requests
+    import urllib.request
+    import json
 
     try:
-        response = requests.get(f"http://{host}:{port}/health", timeout=5)
-        if response.status_code == 200:
-            console.print(f"[bold green]✓ Server is responding at {host}:{port}[/bold green]")
-            health_data = response.json()
-            console.print(f"[cyan]Status:[/cyan] {health_data.get('status', 'unknown')}")
-        else:
-            console.print(f"[red]✗ Server responded with status {response.status_code}[/red]")
-    except requests.exceptions.RequestException as e:
+        url = f"http://{host}:{port}/health"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            if response.getcode() == 200:
+                console.print(f"[bold green]✓ Server is responding at {host}:{port}[/bold green]")
+                health_data = json.loads(response.read().decode())
+                console.print(f"[cyan]Status:[/cyan] {health_data.get('status', 'unknown')}")
+            else:
+                console.print(f"[red]✗ Server responded with status {response.getcode()}[/red]")
+    except Exception as e:
         console.print(f"[red]✗ Failed to connect to {host}:{port}[/red]")
         console.print(f"[red]Error: {e}[/red]")
 
 
-@stream.command('status')
-@click.option('--host', default='localhost', help='Server host')
-@click.option('--port', default=8000, help='Server port')
+@stream.command("status")
+@click.option("--host", default="localhost", help="Server host")
+@click.option("--port", default=8000, help="Server port")
 def server_status(host, port):
     """Get detailed server status and statistics."""
     import requests
@@ -367,18 +372,20 @@ def server_status(host, port):
             console.print(f"[bold green]Server Status - {host}:{port}[/bold green]")
 
             # Server info
-            server_stats = stats.get('server', {})
-            uptime = server_stats.get('uptime_seconds', 0)
+            server_stats = stats.get("server", {})
+            uptime = server_stats.get("uptime_seconds", 0)
             console.print(f"[cyan]Uptime:[/cyan] {uptime:.1f}s")
-            console.print(f"[cyan]Active WebSockets:[/cyan] {server_stats.get('active_websockets', 0)}")
+            console.print(
+                f"[cyan]Active WebSockets:[/cyan] {server_stats.get('active_websockets', 0)}"
+            )
 
             # Database stats
-            db_stats = stats.get('database', {}).get('database', {})
+            db_stats = stats.get("database", {}).get("database", {})
             console.print(f"[cyan]Total Encounters:[/cyan] {db_stats.get('total_encounters', 0)}")
             console.print(f"[cyan]Total Events:[/cyan] {db_stats.get('total_events', 0)}")
 
             # Processing stats
-            proc_stats = stats.get('processing', {})
+            proc_stats = stats.get("processing", {})
             console.print(f"[cyan]Events/sec:[/cyan] {proc_stats.get('events_per_second', 0):.1f}")
 
         else:
@@ -392,5 +399,5 @@ def main():
     cli()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
