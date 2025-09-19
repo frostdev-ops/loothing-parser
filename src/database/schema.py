@@ -34,9 +34,25 @@ class DatabaseManager:
 
     def _setup_database(self):
         """Initialize database with optimized settings."""
-        self.connection = sqlite3.connect(
-            self.db_path, timeout=30.0, check_same_thread=False
-        )
+        try:
+            # Ensure parent directory exists with proper error handling
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Test write permissions before creating database
+            test_file = self.db_path.parent / ".write_test"
+            try:
+                test_file.touch()
+                test_file.unlink()
+            except (PermissionError, OSError) as e:
+                logger.error(f"No write permission to database directory {self.db_path.parent}: {e}")
+                raise RuntimeError(f"Cannot write to database directory: {e}")
+
+            self.connection = sqlite3.connect(
+                self.db_path, timeout=30.0, check_same_thread=False
+            )
+        except Exception as e:
+            logger.error(f"Failed to setup database at {self.db_path}: {e}")
+            raise
 
         # Optimize SQLite for our workload
         self.connection.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging
