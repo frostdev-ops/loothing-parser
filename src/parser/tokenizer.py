@@ -149,16 +149,16 @@ class LineTokenizer:
                 in_quotes = not in_quotes
                 current.append(char)
             elif not in_quotes:
-                if char == '[':
+                if char == "[":
                     bracket_depth += 1
                     current.append(char)
-                elif char == ']':
+                elif char == "]":
                     bracket_depth -= 1
                     current.append(char)
-                elif char == '(':
+                elif char == "(":
                     paren_depth += 1
                     current.append(char)
-                elif char == ')':
+                elif char == ")":
                     paren_depth -= 1
                     current.append(char)
                 elif char == "," and bracket_depth == 0 and paren_depth == 0:
@@ -181,10 +181,10 @@ class LineTokenizer:
                 cleaned.append(param[1:-1])
             elif param == "nil":
                 cleaned.append(None)
-            elif param.startswith('[') and param.endswith(']'):
+            elif param.startswith("[") and param.endswith("]"):
                 # Parse array
                 cleaned.append(self._parse_array(param))
-            elif param.startswith('(') and param.endswith(')'):
+            elif param.startswith("(") and param.endswith(")"):
                 # Parse tuple
                 cleaned.append(self._parse_tuple(param))
             else:
@@ -226,6 +226,134 @@ class LineTokenizer:
                 pass
 
         return param
+
+    def _parse_array(self, array_str: str) -> List[Any]:
+        """
+        Parse array string into Python list.
+
+        Args:
+            array_str: String representation of array like "[1,2,3]" or "[(1,2),(3,4)]"
+
+        Returns:
+            Parsed list
+        """
+        # Remove outer brackets
+        content = array_str[1:-1].strip()
+
+        if not content:
+            return []
+
+        # Split by commas at top level only
+        elements = []
+        current = []
+        paren_depth = 0
+        bracket_depth = 0
+        in_quotes = False
+
+        for char in content:
+            if char == '"' and (not current or current[-1] != "\\"):
+                in_quotes = not in_quotes
+                current.append(char)
+            elif not in_quotes:
+                if char == '(':
+                    paren_depth += 1
+                    current.append(char)
+                elif char == ')':
+                    paren_depth -= 1
+                    current.append(char)
+                elif char == '[':
+                    bracket_depth += 1
+                    current.append(char)
+                elif char == ']':
+                    bracket_depth -= 1
+                    current.append(char)
+                elif char == ',' and paren_depth == 0 and bracket_depth == 0:
+                    elements.append(''.join(current).strip())
+                    current = []
+                else:
+                    current.append(char)
+            else:
+                current.append(char)
+
+        # Add last element
+        if current:
+            elements.append(''.join(current).strip())
+
+        # Parse each element
+        parsed_elements = []
+        for element in elements:
+            if element.startswith('(') and element.endswith(')'):
+                parsed_elements.append(self._parse_tuple(element))
+            elif element.startswith('[') and element.endswith(']'):
+                parsed_elements.append(self._parse_array(element))
+            else:
+                parsed_elements.append(self._convert_param(element))
+
+        return parsed_elements
+
+    def _parse_tuple(self, tuple_str: str) -> tuple:
+        """
+        Parse tuple string into Python tuple.
+
+        Args:
+            tuple_str: String representation of tuple like "(1,2,3)"
+
+        Returns:
+            Parsed tuple
+        """
+        # Remove outer parentheses
+        content = tuple_str[1:-1].strip()
+
+        if not content:
+            return ()
+
+        # Split by commas at top level only
+        elements = []
+        current = []
+        paren_depth = 0
+        bracket_depth = 0
+        in_quotes = False
+
+        for char in content:
+            if char == '"' and (not current or current[-1] != "\\"):
+                in_quotes = not in_quotes
+                current.append(char)
+            elif not in_quotes:
+                if char == '(':
+                    paren_depth += 1
+                    current.append(char)
+                elif char == ')':
+                    paren_depth -= 1
+                    current.append(char)
+                elif char == '[':
+                    bracket_depth += 1
+                    current.append(char)
+                elif char == ']':
+                    bracket_depth -= 1
+                    current.append(char)
+                elif char == ',' and paren_depth == 0 and bracket_depth == 0:
+                    elements.append(''.join(current).strip())
+                    current = []
+                else:
+                    current.append(char)
+            else:
+                current.append(char)
+
+        # Add last element
+        if current:
+            elements.append(''.join(current).strip())
+
+        # Parse each element
+        parsed_elements = []
+        for element in elements:
+            if element.startswith('(') and element.endswith(')'):
+                parsed_elements.append(self._parse_tuple(element))
+            elif element.startswith('[') and element.endswith(']'):
+                parsed_elements.append(self._parse_array(element))
+            else:
+                parsed_elements.append(self._convert_param(element))
+
+        return tuple(parsed_elements)
 
     def _parse_event_params(
         self, event_type: str, params: List[Any]
