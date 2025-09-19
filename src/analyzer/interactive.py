@@ -53,7 +53,9 @@ class InteractiveAnalyzer:
     def run(self):
         """Start the interactive session."""
         try:
-            self.console.print("[bold green]Starting Interactive Combat Log Analyzer...[/bold green]")
+            self.console.print(
+                "[bold green]Starting Interactive Combat Log Analyzer...[/bold green]"
+            )
             self.console.print(f"[dim]Loaded {len(self.fights)} encounters[/dim]\n")
 
             while True:
@@ -113,7 +115,9 @@ class InteractiveAnalyzer:
         self.console.print(f"[dim]{summary_text}[/dim]\n")
 
         # Get user input
-        choice = Prompt.ask("Select option", choices=["1", "2", "3", "4", "5", "6", "q", "Q"], default="q")
+        choice = Prompt.ask(
+            "Select option", choices=["1", "2", "3", "4", "5", "6", "q", "Q"], default="q"
+        )
 
         if choice.lower() == "q":
             return False
@@ -167,15 +171,18 @@ class InteractiveAnalyzer:
 
         # Show filter info if any filters active
         if self.current_filters:
-            filter_info = " | ".join(f"{k}: {v}" for k, v in self.current_filters.items() if v is not None)
+            filter_info = " | ".join(
+                f"{k}: {v}" for k, v in self.current_filters.items() if v is not None
+            )
             self.console.print(f"[dim]Active filters: {filter_info}[/dim]")
 
         # Get user input
         self.console.print()
         choice = Prompt.ask(
             "Enter choice",
-            choices=["n", "p", "f", "b", "h", "q"] + [str(i) for i in range(1, min(21, end - start + 1))],
-            default="b"
+            choices=["n", "p", "f", "b", "h", "q"]
+            + [str(i) for i in range(1, min(21, end - start + 1))],
+            default="b",
         )
 
         if choice.lower() == "q":
@@ -205,8 +212,10 @@ class InteractiveAnalyzer:
 
     def _handle_encounter_detail(self) -> bool:
         """Handle detailed encounter view."""
-        if (self.navigation.selected_encounter_index >= len(self.filtered_fights) or
-            self.navigation.selected_encounter_index < 0):
+        if (
+            self.navigation.selected_encounter_index >= len(self.filtered_fights)
+            or self.navigation.selected_encounter_index < 0
+        ):
             self.console.print("[red]Invalid encounter selection[/red]")
             self.navigation.go_back()
             return True
@@ -221,11 +230,7 @@ class InteractiveAnalyzer:
         self.console.print(panel)
 
         # Get user input
-        choice = Prompt.ask(
-            "Select action",
-            choices=["d", "h", "e", "t", "b", "q"],
-            default="b"
-        )
+        choice = Prompt.ask("Select action", choices=["d", "h", "e", "t", "b", "q"], default="b")
 
         if choice.lower() == "q":
             return False
@@ -249,9 +254,7 @@ class InteractiveAnalyzer:
         self.console.print(panel)
 
         choice = Prompt.ask(
-            "Filter option",
-            choices=["r", "m", "d", "t", "a", "s", "w", "e", "b"],
-            default="b"
+            "Filter option", choices=["r", "m", "d", "t", "a", "s", "w", "e", "b"], default="b"
         )
 
         if choice.lower() == "b":
@@ -315,8 +318,42 @@ class InteractiveAnalyzer:
 
     def _get_encounter_characters(self, fight: Fight) -> Optional[Dict[str, CharacterEventStream]]:
         """Get character data for an encounter if available."""
-        # This would need to be connected to the enhanced segmenter data
-        # For now, return None as we don't have the enhanced data connected yet
+        if not self.enhanced_data:
+            return None
+
+        # Get enhanced data from raid encounters or mythic plus runs
+        raid_encounters = self.enhanced_data.get("raid_encounters", [])
+        mythic_plus_runs = self.enhanced_data.get("mythic_plus_runs", [])
+
+        # For raid bosses, find matching raid encounter
+        if fight.fight_type == FightType.RAID_BOSS:
+            for raid_encounter in raid_encounters:
+                # Match by encounter ID and rough timestamp
+                if (hasattr(raid_encounter, 'encounter_id') and
+                    hasattr(fight, 'encounter_id') and
+                    raid_encounter.encounter_id == fight.encounter_id):
+                    return raid_encounter.characters
+
+        # For mythic plus dungeons, find matching run
+        elif fight.fight_type == FightType.MYTHIC_PLUS:
+            for m_plus_run in mythic_plus_runs:
+                # Match by dungeon name and rough timing
+                if (hasattr(m_plus_run, 'dungeon_name') and
+                    hasattr(fight, 'encounter_name') and
+                    m_plus_run.dungeon_name in fight.encounter_name):
+                    # Return aggregated character data from the run
+                    return getattr(m_plus_run, 'characters', {})
+
+        # For dungeon bosses within M+, try to find the parent M+ run
+        elif fight.fight_type == FightType.DUNGEON_BOSS:
+            for m_plus_run in mythic_plus_runs:
+                # Check if this boss is part of an M+ run
+                for segment in getattr(m_plus_run, 'segments', []):
+                    if (hasattr(segment, 'segment_name') and
+                        hasattr(fight, 'encounter_name') and
+                        segment.segment_name == fight.encounter_name):
+                        return getattr(segment, 'characters', {})
+
         return None
 
     def _show_help(self):
@@ -326,22 +363,30 @@ class InteractiveAnalyzer:
         self.console.print(panel)
         self._wait_for_key()
 
-    def _show_dps_details(self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]):
+    def _show_dps_details(
+        self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
+    ):
         """Show detailed DPS breakdown."""
         self.console.print("[yellow]DPS details not yet implemented[/yellow]")
         self._wait_for_key()
 
-    def _show_hps_details(self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]):
+    def _show_hps_details(
+        self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
+    ):
         """Show detailed HPS breakdown."""
         self.console.print("[yellow]HPS details not yet implemented[/yellow]")
         self._wait_for_key()
 
-    def _show_events_timeline(self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]):
+    def _show_events_timeline(
+        self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
+    ):
         """Show events timeline."""
         self.console.print("[yellow]Events timeline not yet implemented[/yellow]")
         self._wait_for_key()
 
-    def _show_timeline_detail(self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]):
+    def _show_timeline_detail(
+        self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
+    ):
         """Show detailed timeline view."""
         self.console.print("[yellow]Timeline details not yet implemented[/yellow]")
         self._wait_for_key()
