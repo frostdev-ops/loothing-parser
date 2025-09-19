@@ -317,6 +317,16 @@ class EventFactory:
 
     _event_classes: Dict[str, Type[BaseEvent]] = {}
 
+    @staticmethod
+    def _safe_int(value: Any, default: int = 0) -> int:
+        """Safely convert a value to int, returning default on failure."""
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return default
+
     @classmethod
     def register_event_class(cls, event_type: str, event_class: Type[BaseEvent]):
         """Register an event class for a specific event type."""
@@ -500,11 +510,13 @@ class EventFactory:
                     event.talents = []
                     for talent_tuple in params[24]:
                         if isinstance(talent_tuple, tuple) and len(talent_tuple) >= 3:
-                            event.talents.append(Talent(
-                                talent_id=talent_tuple[0],
-                                spell_id=talent_tuple[1],
-                                rank=talent_tuple[2]
-                            ))
+                            event.talents.append(
+                                Talent(
+                                    talent_id=talent_tuple[0],
+                                    spell_id=talent_tuple[1],
+                                    rank=talent_tuple[2],
+                                )
+                            )
 
                 # PvP talents tuple: (talent1, talent2, talent3, talent4)
                 if len(params) > 25:
@@ -524,7 +536,7 @@ class EventFactory:
                                 item_level=item_data[1] or 0,
                                 gems=item_data[2] if isinstance(item_data[2], tuple) else (),
                                 enchants=item_data[3] if isinstance(item_data[3], tuple) else (),
-                                bonus_ids=item_data[4] if isinstance(item_data[4], tuple) else ()
+                                bonus_ids=item_data[4] if isinstance(item_data[4], tuple) else (),
                             )
                             event.equipped_items.append(item)
 
@@ -540,7 +552,7 @@ class EventFactory:
                                 aura = ActiveAura(
                                     source_guid=str(auras_data[i] or ""),
                                     spell_id=auras_data[i + 1] or 0,
-                                    stacks=auras_data[i + 2] or 1
+                                    stacks=auras_data[i + 2] or 1,
                                 )
                                 event.active_auras.append(aura)
 
