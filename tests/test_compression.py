@@ -471,15 +471,12 @@ class TestCompressionPerformance:
             random_events.append(event)
 
         # Compress both
-        repetitive_compressed = compressor.compress_events(repetitive_events)
-        random_compressed = compressor.compress_events(random_events)
+        repetitive_compressed, rep_metadata = compressor.compress_events(repetitive_events)
+        random_compressed, rand_metadata = compressor.compress_events(random_events)
 
         # Calculate ratios
-        rep_uncompressed = compressor._estimate_uncompressed_size(repetitive_events)
-        rand_uncompressed = compressor._estimate_uncompressed_size(random_events)
-
-        rep_ratio = len(repetitive_compressed) / rep_uncompressed
-        rand_ratio = len(random_compressed) / rand_uncompressed
+        rep_ratio = rep_metadata["compression_ratio"]
+        rand_ratio = rand_metadata["compression_ratio"]
 
         # Repetitive data should compress better than random data
         assert rep_ratio < rand_ratio
