@@ -90,8 +90,7 @@ class TestRealDataParser:
                     line = line.strip()
                     if line:
                         try:
-                            event = parser.parse_line(line)
-                            if event:
+                            for event in parser._process_line(line):
                                 events_parsed += 1
                         except Exception as e:
                             parse_errors += 1
