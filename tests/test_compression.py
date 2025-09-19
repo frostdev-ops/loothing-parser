@@ -389,8 +389,7 @@ class TestCompressionPerformance:
         compressed_data, metadata = compressor.compress_events(large_event_list)
 
         # Should achieve significant compression
-        uncompressed_estimate = compressor._estimate_uncompressed_size(large_event_list)
-        compression_ratio = len(compressed_data) / uncompressed_estimate
+        compression_ratio = metadata["compression_ratio"]
 
         # Should compress to less than 30% for repetitive data
         assert compression_ratio < 0.3
