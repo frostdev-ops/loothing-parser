@@ -140,8 +140,8 @@ class TestRealDataParser:
 
                 line = line.strip()
                 if line:
-                    event = parser.parse_line(line)
-                    if event:
+                    events_from_line = list(parser._process_line(line))
+                    if events_from_line:
                         # Convert to timestamped events for compression
                         timestamped_event = {
                             "timestamp": event.timestamp,
