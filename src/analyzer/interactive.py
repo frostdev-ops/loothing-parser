@@ -444,14 +444,6 @@ class InteractiveAnalyzer:
                 characters[event.dest_guid].death_count += 1
                 characters[event.dest_guid].all_events.append((event.timestamp, "death", 0))
 
-        # Debug output
-        print(
-            f"DEBUG METRICS: Found {damage_event_count} damage events, {heal_event_count} heal events"
-        )
-        print(
-            f"DEBUG METRICS: Total damage processed: {total_damage_processed}, healing: {total_healing_processed}"
-        )
-
         # Calculate activity percentages and metrics
         for character in characters.values():
             if duration > 0:
