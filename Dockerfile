@@ -68,8 +68,8 @@ RUN mkdir -p /app/data /app/logs && \
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Switch to non-root user
-USER appuser
+# Note: We start as root and switch to appuser in entrypoint script
+# This allows us to set up volumes with correct permissions
 
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
