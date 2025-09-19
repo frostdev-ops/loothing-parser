@@ -394,6 +394,7 @@ class InteractiveAnalyzer:
 
         # Main DPS table
         from rich.table import Table
+
         table = Table(title=f"DPS Breakdown - {fight.encounter_name or 'Unknown'}")
         table.add_column("Rank", width=4)
         table.add_column("Player", width=20)
@@ -404,7 +405,11 @@ class InteractiveAnalyzer:
 
         for i, (name, dps, char) in enumerate(dps_rankings[:10], 1):
             rank_color = "gold1" if i <= 3 else "white"
-            activity_color = "green" if char.activity_percentage >= 90 else "yellow" if char.activity_percentage >= 75 else "red"
+            activity_color = (
+                "green"
+                if char.activity_percentage >= 90
+                else "yellow" if char.activity_percentage >= 75 else "red"
+            )
             death_color = "red" if char.death_count > 0 else "green"
 
             table.add_row(
@@ -413,7 +418,7 @@ class InteractiveAnalyzer:
                 f"[{rank_color}]{dps:,.0f}[/{rank_color}]",
                 f"[{rank_color}]{char.total_damage_done:,}[/{rank_color}]",
                 f"[{activity_color}]{char.activity_percentage:.1f}%[/{activity_color}]",
-                f"[{death_color}]{char.death_count}[/{death_color}]"
+                f"[{death_color}]{char.death_count}[/{death_color}]",
             )
 
         self.console.print(table)
@@ -449,7 +454,75 @@ class InteractiveAnalyzer:
         self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
     ):
         """Show detailed HPS breakdown."""
-        self.console.print("[yellow]HPS details not yet implemented[/yellow]")
+        self.console.clear()
+
+        if not characters or not fight.duration:
+            self.console.print("[red]No character data available for HPS analysis[/red]")
+            self._wait_for_key()
+            return
+
+        # Create HPS rankings table
+        hps_rankings = self.metrics_calculator.get_hps_rankings(characters, fight.duration)
+
+        if not hps_rankings:
+            self.console.print("[yellow]No healing data found for this encounter[/yellow]")
+            self._wait_for_key()
+            return
+
+        # Main HPS table
+        from rich.table import Table
+        table = Table(title=f"HPS Breakdown - {fight.encounter_name or 'Unknown'}")
+        table.add_column("Rank", width=4)
+        table.add_column("Player", width=20)
+        table.add_column("HPS", width=12, justify="right")
+        table.add_column("Total Healing", width=15, justify="right")
+        table.add_column("Overhealing", width=12, justify="right")
+        table.add_column("Efficiency %", width=12, justify="right")
+        table.add_column("Deaths", width=7, justify="center")
+
+        for i, (name, hps, char) in enumerate(hps_rankings[:10], 1):
+            rank_color = "gold1" if i <= 3 else "white"
+            efficiency = (char.total_healing_done / (char.total_healing_done + char.total_overhealing) * 100) if (char.total_healing_done + char.total_overhealing) > 0 else 0
+            efficiency_color = "green" if efficiency >= 80 else "yellow" if efficiency >= 60 else "red"
+            death_color = "red" if char.death_count > 0 else "green"
+
+            table.add_row(
+                f"[{rank_color}]{i}[/{rank_color}]",
+                f"[{rank_color}]{name}[/{rank_color}]",
+                f"[{rank_color}]{hps:,.0f}[/{rank_color}]",
+                f"[{rank_color}]{char.total_healing_done:,}[/{rank_color}]",
+                f"[{rank_color}]{char.total_overhealing:,}[/{rank_color}]",
+                f"[{efficiency_color}]{efficiency:.1f}%[/{efficiency_color}]",
+                f"[{death_color}]{char.death_count}[/{death_color}]"
+            )
+
+        self.console.print(table)
+
+        # Top healing abilities breakdown
+        top_abilities = self.metrics_calculator.get_top_abilities(characters, "healing")
+        if top_abilities:
+            self.console.print("\n[bold green]Top Healing Abilities:[/bold green]")
+            abilities_table = Table()
+            abilities_table.add_column("Player", width=20)
+            abilities_table.add_column("Ability", width=25)
+            abilities_table.add_column("Total Healing", width=15, justify="right")
+
+            for char_name, spell_name, total in top_abilities[:10]:
+                abilities_table.add_row(char_name, spell_name, f"{total:,}")
+
+            self.console.print(abilities_table)
+
+        # Overall healing stats
+        encounter_metrics = self.metrics_calculator.calculate_encounter_metrics(fight, characters)
+        if encounter_metrics:
+            self.console.print(f"\n[bold]Healing Summary:[/bold]")
+            self.console.print(f"  Raid HPS: {encounter_metrics['raid_hps']:,.0f}")
+            self.console.print(f"  Total Healing: {encounter_metrics['total_healing']:,}")
+            self.console.print(f"  Total Overhealing: {encounter_metrics['total_overhealing']:,}")
+            overall_efficiency = (encounter_metrics['total_healing'] / (encounter_metrics['total_healing'] + encounter_metrics['total_overhealing']) * 100) if (encounter_metrics['total_healing'] + encounter_metrics['total_overhealing']) > 0 else 0
+            self.console.print(f"  Overall Efficiency: {overall_efficiency:.1f}%")
+
+        self.console.print("\n[dim]Press any key to return...[/dim]")
         self._wait_for_key()
 
     def _show_events_timeline(
