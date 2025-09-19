@@ -14,8 +14,8 @@ from dataclasses import asdict
 from datetime import datetime
 import time
 
-from models.character_events import TimestampedEvent, CharacterEventStream
-from parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent
+from src.models.character_events import TimestampedEvent, CharacterEventStream
+from src.parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,9 @@ class EventCompressor:
         self.compressor = zstd.ZstdCompressor(level=self.COMPRESSION_LEVEL)
         self.decompressor = zstd.ZstdDecompressor()
 
-    def compress_events(self, events: List[TimestampedEvent]) -> Tuple[bytes, Dict[str, Any]]:
+    def compress_events(
+        self, events: List[TimestampedEvent]
+    ) -> Tuple[bytes, Dict[str, Any]]:
         """
         Compress a block of timestamped events.
 
@@ -82,7 +84,9 @@ class EventCompressor:
         compression_time = time.time() - start_time
         uncompressed_size = len(serialized)
         compressed_size = len(compressed)
-        compression_ratio = compressed_size / uncompressed_size if uncompressed_size > 0 else 1.0
+        compression_ratio = (
+            compressed_size / uncompressed_size if uncompressed_size > 0 else 1.0
+        )
 
         metadata = {
             "event_count": len(events),
@@ -128,9 +132,7 @@ class EventCompressor:
         events = self._columnar_to_events(columnar_data)
 
         decompression_time = time.time() - start_time
-        logger.debug(
-            f"Decompressed {len(events)} events in {decompression_time:.3f}s"
-        )
+        logger.debug(f"Decompressed {len(events)} events in {decompression_time:.3f}s")
 
         return events
 
@@ -173,37 +175,48 @@ class EventCompressor:
             categories.append(self._intern_string(ts_event.category))
 
             # Source/dest (intern GUIDs for massive savings)
-            source_guids.append(self._intern_string(event.source_guid) if event.source_guid else 0)
-            source_names.append(self._intern_string(event.source_name) if event.source_name else 0)
-            dest_guids.append(self._intern_string(event.dest_guid) if event.dest_guid else 0)
-            dest_names.append(self._intern_string(event.dest_name) if event.dest_name else 0)
+            source_guids.append(
+                self._intern_string(event.source_guid) if event.source_guid else 0
+            )
+            source_names.append(
+                self._intern_string(event.source_name) if event.source_name else 0
+            )
+            dest_guids.append(
+                self._intern_string(event.dest_guid) if event.dest_guid else 0
+            )
+            dest_names.append(
+                self._intern_string(event.dest_name) if event.dest_name else 0
+            )
 
             # Type-specific fields
-            if hasattr(event, 'spell_id'):
+            if hasattr(event, "spell_id"):
                 spell_ids.append(event.spell_id or 0)
             else:
                 spell_ids.append(0)
 
-            if hasattr(event, 'spell_name'):
-                spell_names.append(self._intern_string(event.spell_name) if event.spell_name else 0)
+            if hasattr(event, "spell_name"):
+                spell_names.append(
+                    self._intern_string(event.spell_name) if event.spell_name else 0
+                )
             else:
                 spell_names.append(0)
 
             # Damage/healing amounts
             if isinstance(event, (DamageEvent, HealEvent)):
-                amounts.append(event.amount if hasattr(event, 'amount') else 0)
+                amounts.append(event.amount if hasattr(event, "amount") else 0)
             else:
                 amounts.append(0)
 
             # Store minimal raw line info (can reconstruct from other fields if needed)
-            raw_lines.append(self._intern_string(event.raw_line[:100]))  # Truncate for space
+            raw_lines.append(
+                self._intern_string(event.raw_line[:100])
+            )  # Truncate for space
 
         return {
             "version": self.VERSION,
             "event_count": len(events),
             "base_timestamp": base_timestamp,
             "string_table": self.reverse_string_cache,
-
             # Columnar event data
             "timestamps": timestamps,
             "event_types": event_types,
@@ -275,7 +288,7 @@ class EventCompressor:
                 timestamp=timestamp,
                 datetime=datetime.fromtimestamp(timestamp),
                 event=event,
-                category=category
+                category=category,
             )
 
             events.append(ts_event)
@@ -295,6 +308,7 @@ class EventCompressor:
         # Use MessagePack for efficient binary serialization
         # (Could optimize further with custom binary format)
         import msgpack
+
         return msgpack.packb(data, use_bin_type=True)
 
     def _deserialize_columnar(self, data: bytes) -> Dict[str, Any]:
@@ -308,6 +322,7 @@ class EventCompressor:
             Columnar data dictionary
         """
         import msgpack
+
         return msgpack.unpackb(data, raw=False)
 
     def _intern_string(self, s: Optional[str]) -> int:
@@ -356,7 +371,7 @@ class EventCompressor:
         spell_id: Optional[int] = None,
         spell_name: Optional[str] = None,
         amount: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> BaseEvent:
         """
         Create appropriate event object from decompressed data.
@@ -371,7 +386,13 @@ class EventCompressor:
             Reconstructed event object
         """
         # Import here to avoid circular imports
-        from parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent, SpellEvent
+        from parser.events import (
+            BaseEvent,
+            DamageEvent,
+            HealEvent,
+            AuraEvent,
+            SpellEvent,
+        )
 
         # Create base fields
         base_fields = {
@@ -445,8 +466,13 @@ class CompressionStats:
         self.compression_times = []
         self.decompression_times = []
 
-    def add_compression(self, uncompressed_size: int, compressed_size: int,
-                       event_count: int, compression_time: float):
+    def add_compression(
+        self,
+        uncompressed_size: int,
+        compressed_size: int,
+        event_count: int,
+        compression_time: float,
+    ):
         """Record compression operation."""
         self.total_uncompressed += uncompressed_size
         self.total_compressed += compressed_size
@@ -477,8 +503,16 @@ class CompressionStats:
             "total_compressed_bytes": self.total_compressed,
             "overall_compression_ratio": self.overall_ratio,
             "space_saved_mb": self.space_saved_mb,
-            "avg_compression_time": sum(self.compression_times) / len(self.compression_times) if self.compression_times else 0,
-            "avg_decompression_time": sum(self.decompression_times) / len(self.decompression_times) if self.decompression_times else 0,
+            "avg_compression_time": (
+                sum(self.compression_times) / len(self.compression_times)
+                if self.compression_times
+                else 0
+            ),
+            "avg_decompression_time": (
+                sum(self.decompression_times) / len(self.decompression_times)
+                if self.decompression_times
+                else 0
+            ),
         }
 
 
