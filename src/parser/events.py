@@ -569,12 +569,12 @@ class EventFactory:
 
         # Damage parameters: amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing
         if len(params) >= 6:
-            damage_event.amount = params[0] or 0
-            damage_event.overkill = params[1] or 0
-            damage_event.school = params[2] or 0
-            damage_event.resisted = params[3] or 0
-            damage_event.blocked = params[4] or 0
-            damage_event.absorbed = params[5] or 0
+            damage_event.amount = cls._safe_int(params[0])
+            damage_event.overkill = cls._safe_int(params[1])
+            damage_event.school = cls._safe_int(params[2])
+            damage_event.resisted = cls._safe_int(params[3])
+            damage_event.blocked = cls._safe_int(params[4])
+            damage_event.absorbed = cls._safe_int(params[5])
 
         if len(params) >= 9:
             damage_event.critical = bool(params[6])
