@@ -13,13 +13,16 @@ import time
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.api.streaming_server import StreamingServer
 from src.streaming.client import CombatLogStreamer
 from src.database.schema import DatabaseManager, create_tables
 from src.api.models import StreamMessage, SessionStart
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_db():
     """Create a temporary test database."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
@@ -34,7 +37,7 @@ async def test_db():
     Path(db_path).unlink(missing_ok=True)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def streaming_server(test_db):
     """Create a test streaming server instance."""
     server = StreamingServer(test_db.db_path)
@@ -103,9 +106,7 @@ class TestStreamingPipeline:
             )
 
         # Session end
-        messages.append(
-            StreamMessage(type="end_session", timestamp=time.time())
-        )
+        messages.append(StreamMessage(type="end_session", timestamp=time.time()))
 
         # Mock WebSocket receive to return our messages
         message_iter = iter([msg.model_dump_json() for msg in messages])
@@ -212,14 +213,18 @@ class TestStreamingPipeline:
                     line="test line",
                     sequence=1,
                 ).model_dump_json(),
-                StreamMessage(type="end_session", timestamp=time.time()).model_dump_json(),
+                StreamMessage(
+                    type="end_session", timestamp=time.time()
+                ).model_dump_json(),
             ]
 
             message_iter = iter(messages)
             websocket.receive_text.side_effect = message_iter
 
             sent_responses = []
-            websocket.send_text.side_effect = lambda x: sent_responses.append(json.loads(x))
+            websocket.send_text.side_effect = lambda x: sent_responses.append(
+                json.loads(x)
+            )
 
             try:
                 await streaming_server.handle_websocket_connection(websocket, api_key)
@@ -268,7 +273,9 @@ class TestStreamingPipeline:
                 ).model_dump_json()
             )
 
-        messages.append(StreamMessage(type="end_session", timestamp=time.time()).model_dump_json())
+        messages.append(
+            StreamMessage(type="end_session", timestamp=time.time()).model_dump_json()
+        )
 
         message_iter = iter(messages)
         websocket.receive_text.side_effect = message_iter
@@ -298,7 +305,9 @@ class TestStreamingPipeline:
             assert compression_ratio < 0.8  # Should achieve reasonable compression
 
     @pytest.mark.asyncio
-    async def test_encounter_segmentation(self, streaming_server, sample_combat_log_lines):
+    async def test_encounter_segmentation(
+        self, streaming_server, sample_combat_log_lines
+    ):
         """Test that encounters are properly segmented and stored."""
         websocket = AsyncMock()
         api_key = "dev_key_12345"
@@ -322,7 +331,9 @@ class TestStreamingPipeline:
                 ).model_dump_json()
             )
 
-        messages.append(StreamMessage(type="end_session", timestamp=time.time()).model_dump_json())
+        messages.append(
+            StreamMessage(type="end_session", timestamp=time.time()).model_dump_json()
+        )
 
         message_iter = iter(messages)
         websocket.receive_text.side_effect = message_iter
