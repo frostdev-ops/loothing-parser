@@ -207,10 +207,12 @@ class TestRateLimiting:
         allowed, reason = auth_manager.check_rate_limit(client_id, event_count=1)
         assert allowed is True
 
-    def test_invalid_metric_validation(self, auth_manager):
-        """Test that invalid metrics are rejected."""
-        with pytest.raises(ValueError, match="Invalid metric"):
-            auth_manager.get_top_performers(metric="invalid_metric")
+    def test_invalid_permission_check(self, auth_manager):
+        """Test that invalid permissions are handled properly."""
+        # Test with empty client_id
+        assert not auth_manager.check_permission("", "stream_write")
+        # Test with nonexistent client_id
+        assert not auth_manager.check_permission("nonexistent", "stream_write")
 
 
 class TestPermissions:
