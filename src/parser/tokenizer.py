@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class ParsedLine:
     """Represents a parsed combat log line."""
+
     timestamp: datetime
     event_type: str
     base_params: List[Any]
@@ -29,7 +30,9 @@ class LineTokenizer:
 
     # Regex pattern to split timestamp from rest of line
     # Format: "M/D/YYYY HH:MM:SS.mmm-Z  EVENT_TYPE,params..."
-    LINE_PATTERN = re.compile(r'^(\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}\.\d{3}[-+]\d+)\s\s(.+)$')
+    LINE_PATTERN = re.compile(
+        r"^(\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}\.\d{3}[-+]\d+)\s\s(.+)$"
+    )
 
     # Standard base parameter count (after event type)
     BASE_PARAM_COUNT = 8  # sourceGUID through destRaidFlags
@@ -69,7 +72,7 @@ class LineTokenizer:
         try:
             # Convert timestamp format "9/18/2025 20:23:42.758-4" to datetime
             # Remove timezone for simplicity (can add pytz later if needed)
-            timestamp_clean = timestamp_str.rsplit('-', 1)[0].rsplit('+', 1)[0]
+            timestamp_clean = timestamp_str.rsplit("-", 1)[0].rsplit("+", 1)[0]
             timestamp = datetime.strptime(timestamp_clean, "%m/%d/%Y %H:%M:%S.%f")
         except ValueError:
             self.error_count += 1
@@ -88,9 +91,16 @@ class LineTokenizer:
         remaining_params = params[1:]
 
         # Special handling for non-combat events
-        if event_type in ['COMBAT_LOG_VERSION', 'ZONE_CHANGE', 'MAP_CHANGE',
-                          'ENCOUNTER_START', 'ENCOUNTER_END',
-                          'CHALLENGE_MODE_START', 'CHALLENGE_MODE_END']:
+        if event_type in [
+            "COMBAT_LOG_VERSION",
+            "ZONE_CHANGE",
+            "MAP_CHANGE",
+            "ENCOUNTER_START",
+            "ENCOUNTER_END",
+            "CHALLENGE_MODE_START",
+            "CHALLENGE_MODE_END",
+            "COMBATANT_INFO",
+        ]:
             # These events have their own specific formats
             base_params = []
             prefix_params = []
@@ -98,8 +108,8 @@ class LineTokenizer:
         else:
             # Standard combat events have base parameters
             if len(remaining_params) >= self.BASE_PARAM_COUNT:
-                base_params = remaining_params[:self.BASE_PARAM_COUNT]
-                remaining_params = remaining_params[self.BASE_PARAM_COUNT:]
+                base_params = remaining_params[: self.BASE_PARAM_COUNT]
+                remaining_params = remaining_params[self.BASE_PARAM_COUNT :]
             else:
                 # Not enough parameters for a standard event
                 base_params = remaining_params
@@ -115,7 +125,7 @@ class LineTokenizer:
             prefix_params=prefix_params,
             suffix_params=suffix_params,
             advanced_params={},  # Will be populated by event-specific parsers
-            raw_line=line
+            raw_line=line,
         )
 
     def _split_params(self, params_str: str) -> List[str]:
@@ -133,25 +143,25 @@ class LineTokenizer:
         in_quotes = False
 
         for char in params_str:
-            if char == '"' and (not current or current[-1] != '\\'):
+            if char == '"' and (not current or current[-1] != "\\"):
                 in_quotes = not in_quotes
                 current.append(char)
-            elif char == ',' and not in_quotes:
-                params.append(''.join(current).strip())
+            elif char == "," and not in_quotes:
+                params.append("".join(current).strip())
                 current = []
             else:
                 current.append(char)
 
         # Don't forget the last parameter
         if current:
-            params.append(''.join(current).strip())
+            params.append("".join(current).strip())
 
         # Clean up parameters (remove quotes, convert types)
         cleaned = []
         for param in params:
             if param.startswith('"') and param.endswith('"'):
                 cleaned.append(param[1:-1])
-            elif param == 'nil':
+            elif param == "nil":
                 cleaned.append(None)
             else:
                 # Try to convert to appropriate type
@@ -169,8 +179,8 @@ class LineTokenizer:
         Returns:
             Converted value (int, float, bool, or str)
         """
-        if param in ['true', 'false']:
-            return param == 'true'
+        if param in ["true", "false"]:
+            return param == "true"
 
         # Try integer
         try:
@@ -185,7 +195,7 @@ class LineTokenizer:
             pass
 
         # Try hex number (for flags)
-        if param.startswith('0x'):
+        if param.startswith("0x"):
             try:
                 return int(param, 16)
             except ValueError:
@@ -193,7 +203,9 @@ class LineTokenizer:
 
         return param
 
-    def _parse_event_params(self, event_type: str, params: List[Any]) -> Tuple[List[Any], List[Any]]:
+    def _parse_event_params(
+        self, event_type: str, params: List[Any]
+    ) -> Tuple[List[Any], List[Any]]:
         """
         Split remaining parameters into prefix-specific and suffix-specific.
 
@@ -206,22 +218,22 @@ class LineTokenizer:
         """
         # Determine prefix
         prefix = None
-        if event_type.startswith('SWING_'):
-            prefix = 'SWING'
-        elif event_type.startswith('SPELL_'):
-            prefix = 'SPELL'
-        elif event_type.startswith('RANGE_'):
-            prefix = 'RANGE'
-        elif event_type.startswith('ENVIRONMENTAL_'):
-            prefix = 'ENVIRONMENTAL'
+        if event_type.startswith("SWING_"):
+            prefix = "SWING"
+        elif event_type.startswith("SPELL_"):
+            prefix = "SPELL"
+        elif event_type.startswith("RANGE_"):
+            prefix = "RANGE"
+        elif event_type.startswith("ENVIRONMENTAL_"):
+            prefix = "ENVIRONMENTAL"
 
         # Extract prefix-specific parameters
         prefix_params = []
-        if prefix == 'SPELL' and len(params) >= 3:
+        if prefix == "SPELL" and len(params) >= 3:
             # SPELL events have spellId, spellName, spellSchool
             prefix_params = params[:3]
             params = params[3:]
-        elif prefix == 'ENVIRONMENTAL' and len(params) >= 1:
+        elif prefix == "ENVIRONMENTAL" and len(params) >= 1:
             # ENVIRONMENTAL events have environmentalType
             prefix_params = params[:1]
             params = params[1:]
@@ -240,7 +252,7 @@ class LineTokenizer:
             Dictionary with line_count and error_count
         """
         return {
-            'lines_processed': self.line_count,
-            'errors': self.error_count,
-            'success_rate': (self.line_count - self.error_count) / max(self.line_count, 1)
+            "lines_processed": self.line_count,
+            "errors": self.error_count,
+            "success_rate": (self.line_count - self.error_count) / max(self.line_count, 1),
         }
