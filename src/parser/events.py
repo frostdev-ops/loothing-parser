@@ -167,6 +167,43 @@ class ChallengeModeEvent(BaseEvent):
 
 
 @dataclass
+class EquippedItem:
+    """Represents an equipped item with full details."""
+
+    item_id: int = 0
+    item_level: int = 0
+    gems: tuple = field(default_factory=tuple)
+    enchants: tuple = field(default_factory=tuple)
+    bonus_ids: tuple = field(default_factory=tuple)
+
+    def has_enchant(self) -> bool:
+        """Check if item has any enchants."""
+        return bool(self.enchants and any(e for e in self.enchants if e != 0))
+
+    def get_gem_count(self) -> int:
+        """Get number of gems socketed."""
+        return len([g for g in self.gems if g != 0]) if self.gems else 0
+
+
+@dataclass
+class Talent:
+    """Represents a single talent choice."""
+
+    talent_id: int = 0
+    spell_id: int = 0
+    rank: int = 1
+
+
+@dataclass
+class ActiveAura:
+    """Represents an active buff/debuff."""
+
+    source_guid: str = ""
+    spell_id: int = 0
+    stacks: int = 1
+
+
+@dataclass
 class CombatantInfo(BaseEvent):
     """Event containing detailed combatant information."""
 
@@ -191,11 +228,26 @@ class CombatantInfo(BaseEvent):
     avoidance: float = 0.0
     mastery: float = 0.0
     versatility_damage: float = 0.0
+    versatility_healing: float = 0.0
+    versatility_taken: float = 0.0
     armor: int = 0
     spec_id: int = 0
-    talents: List[int] = field(default_factory=list)
-    pvp_talents: List[int] = field(default_factory=list)
-    items: List[Dict[str, Any]] = field(default_factory=list)
+
+    # Comprehensive talent data
+    talents_raw: List[tuple] = field(default_factory=list)
+    talents: List[Talent] = field(default_factory=list)
+    pvp_talents: tuple = field(default_factory=tuple)
+
+    # Equipment with full details
+    equipped_items: List[EquippedItem] = field(default_factory=list)
+
+    # Active buffs/consumables/auras
+    active_auras: List[ActiveAura] = field(default_factory=list)
+
+    # Raw arrays for debugging
+    talents_array: List[Any] = field(default_factory=list)
+    items_array: List[Any] = field(default_factory=list)
+    auras_array: List[Any] = field(default_factory=list)
 
 
 class EventFactory:
@@ -380,7 +432,9 @@ class EventFactory:
             if len(params) >= 27:
                 # Talents array
                 if isinstance(params[24], list):
-                    event.talents = [t[0] if isinstance(t, tuple) and len(t) > 0 else t for t in params[24]]
+                    event.talents = [
+                        t[0] if isinstance(t, tuple) and len(t) > 0 else t for t in params[24]
+                    ]
 
                 # PvP talents array
                 if isinstance(params[25], list):
@@ -391,7 +445,7 @@ class EventFactory:
                     event.items = params[26]
 
         # Extract player name from GUID if not provided elsewhere
-        if event.player_guid and not hasattr(event, 'player_name'):
+        if event.player_guid and not hasattr(event, "player_name"):
             # We'll need to track this from other events or set from display name
             event.player_name = "Unknown"
 
