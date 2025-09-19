@@ -6,16 +6,24 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
 import logging
 
-from ..parser.events import (
-    BaseEvent, EncounterEvent, ChallengeModeEvent,
-    DamageEvent, HealEvent, AuraEvent
+from parser.events import (
+    BaseEvent,
+    EncounterEvent,
+    ChallengeModeEvent,
+    DamageEvent,
+    HealEvent,
+    AuraEvent,
 )
-from ..parser.categorizer import EventCategorizer
-from ..models.encounter_models import (
-    RaidEncounter, MythicPlusRun, CombatSegment,
-    Phase, Difficulty, SegmentType
+from parser.categorizer import EventCategorizer
+from models.encounter_models import (
+    RaidEncounter,
+    MythicPlusRun,
+    CombatSegment,
+    Phase,
+    Difficulty,
+    SegmentType,
 )
-from ..models.character_events import CharacterEventStream
+from models.character_events import CharacterEventStream
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +54,9 @@ class EnhancedSegmenter:
         # Combat tracking
         self.in_combat = False
         self.last_combat_event: Optional[datetime] = None
-        self.combat_timeout = timedelta(seconds=5)  # 5 seconds of no combat = end segment
+        self.combat_timeout = timedelta(
+            seconds=5
+        )  # 5 seconds of no combat = end segment
 
         # Statistics
         self.total_events = 0
@@ -88,9 +98,11 @@ class EnhancedSegmenter:
             self.last_combat_event = event.timestamp
 
         # Check for combat timeout in M+
-        if (self.current_mythic_plus and
-            self.last_combat_event and
-            event.timestamp - self.last_combat_event > self.combat_timeout):
+        if (
+            self.current_mythic_plus
+            and self.last_combat_event
+            and event.timestamp - self.last_combat_event > self.combat_timeout
+        ):
             self._leave_combat(event)
 
         # Route to appropriate context
@@ -131,13 +143,17 @@ class EnhancedSegmenter:
             self._ensure_characters_exist(event, self.current_m_plus_segment.characters)
 
             # Set up categorizer with segment character streams
-            self.categorizer.set_character_streams(self.current_m_plus_segment.characters)
+            self.categorizer.set_character_streams(
+                self.current_m_plus_segment.characters
+            )
 
             # Route event to character streams
             self.categorizer.route_event(event)
 
             # Track mob deaths for progress
-            if event.event_type == "UNIT_DIED" and not event.dest_guid.startswith("Player-"):
+            if event.event_type == "UNIT_DIED" and not event.dest_guid.startswith(
+                "Player-"
+            ):
                 self.current_m_plus_segment.mob_deaths.append(event.dest_guid)
                 self.current_m_plus_segment.mob_count += 1
 
@@ -149,7 +165,9 @@ class EnhancedSegmenter:
 
         # Track pull count
         encounter_id = event.encounter_id
-        self.raid_pull_count[encounter_id] = self.raid_pull_count.get(encounter_id, 0) + 1
+        self.raid_pull_count[encounter_id] = (
+            self.raid_pull_count.get(encounter_id, 0) + 1
+        )
 
         # Create new encounter
         self.current_raid = RaidEncounter(
@@ -158,21 +176,28 @@ class EnhancedSegmenter:
             difficulty=self._get_difficulty(event.difficulty_id),
             instance_id=event.instance_id,
             pull_number=self.raid_pull_count[encounter_id],
-            start_time=event.timestamp
+            start_time=event.timestamp,
         )
 
-        logger.info(f"Started raid encounter: {event.encounter_name} (Pull #{self.current_raid.pull_number})")
+        logger.info(
+            f"Started raid encounter: {event.encounter_name} (Pull #{self.current_raid.pull_number})"
+        )
 
     def _end_raid_encounter(self, event: EncounterEvent):
         """End the current raid encounter."""
-        if not self.current_raid or self.current_raid.encounter_id != event.encounter_id:
+        if (
+            not self.current_raid
+            or self.current_raid.encounter_id != event.encounter_id
+        ):
             return
 
         self.current_raid.end_time = event.timestamp
         self.current_raid.success = event.success
 
         if event.duration:
-            self.current_raid.combat_length = event.duration / 1000.0  # Convert ms to seconds
+            self.current_raid.combat_length = (
+                event.duration / 1000.0
+            )  # Convert ms to seconds
 
         # Calculate wipe percentage if failed
         if not event.success:
@@ -196,7 +221,7 @@ class EnhancedSegmenter:
             dungeon_name=event.zone_name,
             keystone_level=event.keystone_level,
             affixes=event.affix_ids,
-            start_time=event.timestamp
+            start_time=event.timestamp,
         )
 
         logger.info(f"Started Mythic+ run: {event.zone_name} +{event.keystone_level}")
@@ -212,12 +237,16 @@ class EnhancedSegmenter:
 
         self.current_mythic_plus.end_time = event.timestamp
         self.current_mythic_plus.completed = event.success
-        self.current_mythic_plus.actual_time_seconds = event.duration if event.duration else 0
+        self.current_mythic_plus.actual_time_seconds = (
+            event.duration if event.duration else 0
+        )
 
         self._finalize_mythic_plus()
 
         result = "Completed" if event.success else "Abandoned"
-        logger.info(f"Ended Mythic+ run: {self.current_mythic_plus.dungeon_name} ({result})")
+        logger.info(
+            f"Ended Mythic+ run: {self.current_mythic_plus.dungeon_name} ({result})"
+        )
 
     def _start_m_plus_segment(self, event: BaseEvent):
         """Start a new combat segment in M+."""
@@ -239,7 +268,7 @@ class EnhancedSegmenter:
             segment_id=segment_id,
             segment_type=segment_type,
             segment_name=segment_name,
-            start_time=event.timestamp
+            start_time=event.timestamp,
         )
 
         logger.debug(f"Started M+ segment: {segment_name}")
@@ -274,8 +303,9 @@ class EnhancedSegmenter:
         if self.current_m_plus_segment:
             self._end_m_plus_segment(event.timestamp)
 
-    def _ensure_characters_exist(self, event: BaseEvent,
-                                 character_dict: Dict[str, CharacterEventStream]):
+    def _ensure_characters_exist(
+        self, event: BaseEvent, character_dict: Dict[str, CharacterEventStream]
+    ):
         """
         Ensure character streams exist for event participants.
 
@@ -288,7 +318,7 @@ class EnhancedSegmenter:
             if event.source_guid not in character_dict:
                 character_dict[event.source_guid] = CharacterEventStream(
                     character_guid=event.source_guid,
-                    character_name=event.source_name or "Unknown"
+                    character_name=event.source_name or "Unknown",
                 )
                 self.total_characters = max(self.total_characters, len(character_dict))
 
@@ -297,7 +327,7 @@ class EnhancedSegmenter:
             if event.dest_guid not in character_dict:
                 character_dict[event.dest_guid] = CharacterEventStream(
                     character_guid=event.dest_guid,
-                    character_name=event.dest_name or "Unknown"
+                    character_name=event.dest_name or "Unknown",
                 )
                 self.total_characters = max(self.total_characters, len(character_dict))
 
@@ -307,9 +337,12 @@ class EnhancedSegmenter:
             return
 
         # Track bloodlust/heroism
-        if hasattr(event, 'spell_id'):
+        if hasattr(event, "spell_id"):
             bloodlust_spells = {32182, 80353, 2825, 90355, 160452, 264667, 390386}
-            if event.spell_id in bloodlust_spells and event.event_type == "SPELL_CAST_SUCCESS":
+            if (
+                event.spell_id in bloodlust_spells
+                and event.event_type == "SPELL_CAST_SUCCESS"
+            ):
                 self.current_raid.bloodlust_used = True
                 self.current_raid.bloodlust_time = event.timestamp.timestamp()
 
@@ -347,9 +380,13 @@ class EnhancedSegmenter:
     def _is_combat_event(self, event: BaseEvent) -> bool:
         """Check if an event represents active combat."""
         combat_types = {
-            "SWING_DAMAGE", "SPELL_DAMAGE", "SPELL_HEAL",
-            "SPELL_CAST_START", "SPELL_CAST_SUCCESS",
-            "SPELL_AURA_APPLIED", "SPELL_AURA_REMOVED"
+            "SWING_DAMAGE",
+            "SPELL_DAMAGE",
+            "SPELL_HEAL",
+            "SPELL_CAST_START",
+            "SPELL_CAST_SUCCESS",
+            "SPELL_AURA_APPLIED",
+            "SPELL_AURA_REMOVED",
         }
         return event.event_type in combat_types
 
@@ -359,7 +396,7 @@ class EnhancedSegmenter:
             17: Difficulty.LFR,
             14: Difficulty.NORMAL,
             15: Difficulty.HEROIC,
-            16: Difficulty.MYTHIC
+            16: Difficulty.MYTHIC,
         }
         return difficulty_map.get(difficulty_id, Difficulty.NORMAL)
 
@@ -384,9 +421,9 @@ class EnhancedSegmenter:
     def get_stats(self) -> Dict[str, Any]:
         """Get segmentation statistics."""
         return {
-            'total_events': self.total_events,
-            'total_characters': self.total_characters,
-            'raid_encounters': len(self.raid_encounters),
-            'mythic_plus_runs': len(self.mythic_plus_runs),
-            'categorizer_stats': self.categorizer.get_stats()
+            "total_events": self.total_events,
+            "total_characters": self.total_characters,
+            "raid_encounters": len(self.raid_encounters),
+            "mythic_plus_runs": len(self.mythic_plus_runs),
+            "categorizer_stats": self.categorizer.get_stats(),
         }
