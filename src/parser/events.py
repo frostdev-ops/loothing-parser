@@ -392,10 +392,6 @@ class EventFactory:
             event.dest_flags = cls._safe_int(parsed_line.base_params[6])
             event.dest_raid_flags = cls._safe_int(parsed_line.base_params[7])
 
-        # Create specific event type if it has spell data
-        if parsed_line.event_type.startswith("SPELL_"):
-            event = SpellEvent(**event.__dict__)
-
         return event
 
     @classmethod
