@@ -39,6 +39,7 @@ ENV PYTHONPATH=/app
 # Install minimal runtime dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    gosu \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
