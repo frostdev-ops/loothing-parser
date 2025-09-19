@@ -375,13 +375,30 @@ class InteractiveAnalyzer:
         # Enhanced fallback: create character streams from fight events and participants
         if fight.participants:
             characters = {}
+            player_count = 0
+            debug_participants = []
 
-            # Initialize character streams for players
+            # First pass: use the is_player flag
             for guid, participant in fight.participants.items():
-                if participant["is_player"]:
+                debug_participants.append(f"{guid[:20]}...={participant.get('is_player', 'No flag')}")
+                if participant.get("is_player", False):
+                    player_count += 1
                     characters[guid] = CharacterEventStream(
                         character_guid=guid, character_name=participant["name"] or "Unknown"
                     )
+
+            # Fallback: if no players found via flag, detect by GUID pattern
+            if player_count == 0:
+                for guid, participant in fight.participants.items():
+                    if guid and guid.startswith("Player-"):
+                        player_count += 1
+                        characters[guid] = CharacterEventStream(
+                            character_guid=guid, character_name=participant["name"] or "Unknown"
+                        )
+
+            # Debug logging - uncomment to debug player detection
+            # print(f"Fight {fight.encounter_name}: Found {player_count} players from {len(fight.participants)} participants")
+            # print(f"Participants: {debug_participants[:3]}")  # Show first 3
 
             # Process fight events to populate metrics
             if characters and fight.events:
