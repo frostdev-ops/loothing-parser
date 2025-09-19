@@ -325,34 +325,49 @@ class InteractiveAnalyzer:
         raid_encounters = self.enhanced_data.get("raid_encounters", [])
         mythic_plus_runs = self.enhanced_data.get("mythic_plus_runs", [])
 
+        # First try to match by encounter type and timing
+        time_tolerance = 60  # seconds
+
         # For raid bosses, find matching raid encounter
         if fight.fight_type == FightType.RAID_BOSS:
             for raid_encounter in raid_encounters:
-                # Match by encounter ID and rough timestamp
-                if (hasattr(raid_encounter, 'encounter_id') and
-                    hasattr(fight, 'encounter_id') and
-                    raid_encounter.encounter_id == fight.encounter_id):
+                if (
+                    raid_encounter.encounter_id == fight.encounter_id
+                    and abs((raid_encounter.start_time - fight.start_time).total_seconds()) < time_tolerance
+                ):
                     return raid_encounter.characters
 
         # For mythic plus dungeons, find matching run
         elif fight.fight_type == FightType.MYTHIC_PLUS:
             for m_plus_run in mythic_plus_runs:
-                # Match by dungeon name and rough timing
-                if (hasattr(m_plus_run, 'dungeon_name') and
-                    hasattr(fight, 'encounter_name') and
-                    m_plus_run.dungeon_name in fight.encounter_name):
-                    # Return aggregated character data from the run
-                    return getattr(m_plus_run, 'characters', {})
+                if (
+                    abs((m_plus_run.start_time - fight.start_time).total_seconds()) < time_tolerance
+                    and m_plus_run.dungeon_name in (fight.encounter_name or "")
+                ):
+                    return m_plus_run.characters if hasattr(m_plus_run, 'characters') else {}
 
-        # For dungeon bosses within M+, try to find the parent M+ run
+        # For dungeon bosses within M+, find from segments
         elif fight.fight_type == FightType.DUNGEON_BOSS:
             for m_plus_run in mythic_plus_runs:
                 # Check if this boss is part of an M+ run
-                for segment in getattr(m_plus_run, 'segments', []):
-                    if (hasattr(segment, 'segment_name') and
-                        hasattr(fight, 'encounter_name') and
-                        segment.segment_name == fight.encounter_name):
-                        return getattr(segment, 'characters', {})
+                for segment in getattr(m_plus_run, "segments", []):
+                    if (
+                        hasattr(segment, "boss_name")
+                        and segment.boss_name == fight.encounter_name
+                        and abs((segment.start_time - fight.start_time).total_seconds()) < time_tolerance
+                    ):
+                        return getattr(segment, "characters", {})
+
+        # Fallback: create basic character streams from fight participants
+        if fight.participants:
+            characters = {}
+            for guid, participant in fight.participants.items():
+                if participant["is_player"]:
+                    characters[guid] = CharacterEventStream(
+                        character_guid=guid,
+                        character_name=participant["name"] or "Unknown"
+                    )
+            return characters if characters else None
 
         return None
 
