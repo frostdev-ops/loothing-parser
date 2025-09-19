@@ -389,12 +389,12 @@ class EventFactory:
         if len(parsed_line.base_params) >= 8:
             event.source_guid = parsed_line.base_params[0]
             event.source_name = parsed_line.base_params[1]
-            event.source_flags = parsed_line.base_params[2]
-            event.source_raid_flags = parsed_line.base_params[3]
+            event.source_flags = cls._safe_int(parsed_line.base_params[2])
+            event.source_raid_flags = cls._safe_int(parsed_line.base_params[3])
             event.dest_guid = parsed_line.base_params[4]
             event.dest_name = parsed_line.base_params[5]
-            event.dest_flags = parsed_line.base_params[6]
-            event.dest_raid_flags = parsed_line.base_params[7]
+            event.dest_flags = cls._safe_int(parsed_line.base_params[6])
+            event.dest_raid_flags = cls._safe_int(parsed_line.base_params[7])
 
         # Create specific event type if it has spell data
         if parsed_line.event_type.startswith("SPELL_"):
