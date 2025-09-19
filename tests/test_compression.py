@@ -513,7 +513,7 @@ class TestCompressionStats:
         compression_stats.clear()
 
         # Perform known operations
-        compressed_data = compressor.compress_events(sample_events)
+        compressed_data, metadata = compressor.compress_events(sample_events)
 
         stats = compression_stats.get_stats()
         assert stats["total_compressions"] == 1
