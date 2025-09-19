@@ -451,7 +451,7 @@ class EventFactory:
 
     @classmethod
     def _create_combatant_info(cls, parsed_line) -> CombatantInfo:
-        """Create combatant info event with detailed character data."""
+        """Create combatant info event with comprehensive character data."""
         event = CombatantInfo(
             timestamp=parsed_line.timestamp,
             event_type=parsed_line.event_type,
@@ -486,29 +486,66 @@ class EventFactory:
             event.avoidance = params[17] or 0.0
             event.mastery = params[18] or 0.0
             event.versatility_damage = params[19] or 0.0
-            # params[20] = versatility_heal, params[21] = versatility_taken
+            event.versatility_healing = params[20] or 0.0
+            event.versatility_taken = params[21] or 0.0
             event.armor = params[22] or 0
             event.spec_id = params[23] or 0
 
-            # Parse arrays (talents, pvp_talents, items) if present
+            # Parse complex arrays if present
             if len(params) >= 27:
-                # Talents array
+                # Talents array: [(talent_id, spell_id, rank), ...]
                 if isinstance(params[24], list):
-                    event.talents = [
-                        t[0] if isinstance(t, tuple) and len(t) > 0 else t for t in params[24]
-                    ]
+                    event.talents_array = params[24]
+                    event.talents_raw = params[24]
+                    event.talents = []
+                    for talent_tuple in params[24]:
+                        if isinstance(talent_tuple, tuple) and len(talent_tuple) >= 3:
+                            event.talents.append(Talent(
+                                talent_id=talent_tuple[0],
+                                spell_id=talent_tuple[1],
+                                rank=talent_tuple[2]
+                            ))
 
-                # PvP talents array
-                if isinstance(params[25], list):
-                    event.pvp_talents = params[25]
+                # PvP talents tuple: (talent1, talent2, talent3, talent4)
+                if len(params) > 25:
+                    if isinstance(params[25], tuple):
+                        event.pvp_talents = params[25]
+                    elif isinstance(params[25], list):
+                        event.pvp_talents = tuple(params[25])
 
-                # Items array
-                if isinstance(params[26], list):
-                    event.items = params[26]
+                # Items array: [(item_id, item_level, gems_tuple, enchants_tuple, bonus_ids_tuple), ...]
+                if len(params) > 26 and isinstance(params[26], list):
+                    event.items_array = params[26]
+                    event.equipped_items = []
+                    for item_data in params[26]:
+                        if isinstance(item_data, tuple) and len(item_data) >= 5:
+                            item = EquippedItem(
+                                item_id=item_data[0] or 0,
+                                item_level=item_data[1] or 0,
+                                gems=item_data[2] if isinstance(item_data[2], tuple) else (),
+                                enchants=item_data[3] if isinstance(item_data[3], tuple) else (),
+                                bonus_ids=item_data[4] if isinstance(item_data[4], tuple) else ()
+                            )
+                            event.equipped_items.append(item)
 
-        # Extract player name from GUID if not provided elsewhere
-        if event.player_guid and not hasattr(event, "player_name"):
-            # We'll need to track this from other events or set from display name
+                # Active auras/buffs: [source_guid, spell_id, stacks, ...]
+                if len(params) > 27:
+                    auras_data = params[27]
+                    if isinstance(auras_data, list):
+                        event.auras_array = auras_data
+                        event.active_auras = []
+                        # Parse auras in groups of 3: source_guid, spell_id, stacks
+                        for i in range(0, len(auras_data), 3):
+                            if i + 2 < len(auras_data):
+                                aura = ActiveAura(
+                                    source_guid=str(auras_data[i] or ""),
+                                    spell_id=auras_data[i + 1] or 0,
+                                    stacks=auras_data[i + 2] or 1
+                                )
+                                event.active_auras.append(aura)
+
+        # Extract player name from other sources if needed
+        if event.player_guid and not event.player_name:
             event.player_name = "Unknown"
 
         return event
