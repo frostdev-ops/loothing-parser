@@ -755,16 +755,18 @@ class QueryAPI:
                 (SELECT COUNT(*) FROM encounters) as total_encounters,
                 (SELECT COUNT(*) FROM characters) as total_characters,
                 (SELECT COUNT(*) FROM event_blocks) as total_blocks,
-                (SELECT SUM(event_count) FROM event_blocks) as total_events,
-                (SELECT SUM(compressed_size) FROM event_blocks) as total_compressed_bytes,
-                (SELECT SUM(uncompressed_size) FROM event_blocks) as total_uncompressed_bytes
+                (SELECT COALESCE(SUM(event_count), 0) FROM event_blocks) as total_events,
+                (SELECT COALESCE(SUM(compressed_size), 0) FROM event_blocks) as total_compressed_bytes,
+                (SELECT COALESCE(SUM(uncompressed_size), 0) FROM event_blocks) as total_uncompressed_bytes
         """
         )
         row = cursor.fetchone()
 
         compression_ratio = 0.0
-        if row[5] > 0:  # total_uncompressed_bytes
-            compression_ratio = row[4] / row[5]  # compressed / uncompressed
+        total_compressed = row[4] or 0
+        total_uncompressed = row[5] or 0
+        if total_uncompressed > 0:
+            compression_ratio = total_compressed / total_uncompressed
 
         return {
             "database": {
