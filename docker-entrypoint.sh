@@ -6,6 +6,17 @@ set -e
 
 echo "Starting WoW Combat Log Parser..."
 
+# Ensure the script runs as root initially for permission setup
+if [ "$(id -u)" -eq 0 ]; then
+    # Create data directory and set permissions
+    mkdir -p /app/data /app/logs
+    chown -R appuser:appuser /app/data /app/logs
+    chmod 755 /app/data /app/logs
+
+    # Re-exec this script as appuser for the rest of the process
+    exec gosu appuser "$0" "$@"
+fi
+
 # Initialize database if it doesn't exist
 if [ ! -f "$DB_PATH" ]; then
     echo "Initializing database at $DB_PATH..."
