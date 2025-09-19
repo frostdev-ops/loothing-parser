@@ -12,6 +12,7 @@ from .character_events import CharacterEventStream
 
 class Difficulty(Enum):
     """Raid difficulty levels."""
+
     LFR = 17
     NORMAL = 14
     HEROIC = 15
@@ -20,6 +21,7 @@ class Difficulty(Enum):
 
 class SegmentType(Enum):
     """Types of combat segments in M+."""
+
     BOSS = "boss"
     TRASH = "trash"
     MINIBOSS = "miniboss"
@@ -31,6 +33,7 @@ class Phase:
     """
     Represents a boss phase or combat transition.
     """
+
     phase_number: int
     phase_name: str
     start_time: float
@@ -50,6 +53,7 @@ class RaidEvent:
     """
     Represents a raid-wide mechanic or event.
     """
+
     timestamp: float
     event_name: str
     spell_id: Optional[int] = None
@@ -98,7 +102,9 @@ class RaidEncounter:
     bloodlust_time: Optional[float] = None
     battle_resurrections: int = 0
 
-    def add_character(self, character_guid: str, character_name: str) -> CharacterEventStream:
+    def add_character(
+        self, character_guid: str, character_name: str
+    ) -> CharacterEventStream:
         """
         Add or get a character stream.
 
@@ -111,8 +117,7 @@ class RaidEncounter:
         """
         if character_guid not in self.characters:
             self.characters[character_guid] = CharacterEventStream(
-                character_guid=character_guid,
-                character_name=character_name
+                character_guid=character_guid, character_name=character_name
             )
         return self.characters[character_guid]
 
@@ -122,8 +127,13 @@ class RaidEncounter:
             self.combat_length = (self.end_time - self.start_time).total_seconds()
 
         # Calculate raid composition
-        self.raid_size = len([c for c in self.characters.values()
-                             if not c.character_guid.startswith("Pet-")])
+        self.raid_size = len(
+            [
+                c
+                for c in self.characters.values()
+                if not c.character_guid.startswith("Pet-")
+            ]
+        )
 
         # Calculate per-character metrics
         for character in self.characters.values():
@@ -140,26 +150,26 @@ class RaidEncounter:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            'encounter_id': self.encounter_id,
-            'boss_name': self.boss_name,
-            'difficulty': self.difficulty.name,
-            'pull_number': self.pull_number,
-            'start_time': self.start_time.isoformat() if self.start_time else None,
-            'end_time': self.end_time.isoformat() if self.end_time else None,
-            'success': self.success,
-            'wipe_percentage': self.wipe_percentage,
-            'combat_length': round(self.combat_length, 1),
-            'raid_size': self.raid_size,
-            'composition': {
-                'tanks': len(self.tanks),
-                'healers': len(self.healers),
-                'dps': len(self.dps)
+            "encounter_id": self.encounter_id,
+            "boss_name": self.boss_name,
+            "difficulty": self.difficulty.name,
+            "pull_number": self.pull_number,
+            "start_time": self.start_time.isoformat() if self.start_time else None,
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "success": self.success,
+            "wipe_percentage": self.wipe_percentage,
+            "combat_length": round(self.combat_length, 1),
+            "raid_size": self.raid_size,
+            "composition": {
+                "tanks": len(self.tanks),
+                "healers": len(self.healers),
+                "dps": len(self.dps),
             },
-            'characters': {
+            "characters": {
                 guid: char.to_dict() for guid, char in self.characters.items()
             },
-            'phases': len(self.phases),
-            'raid_events': len(self.raid_events)
+            "phases": len(self.phases),
+            "raid_events": len(self.raid_events),
         }
 
 
@@ -188,15 +198,16 @@ class CombatSegment:
 
     # Progress tracking
     enemy_forces_start: float = 0.0  # % at segment start
-    enemy_forces_end: float = 0.0    # % at segment end
+    enemy_forces_end: float = 0.0  # % at segment end
     enemy_forces_gained: float = 0.0  # % gained in this segment
 
-    def add_character(self, character_guid: str, character_name: str) -> CharacterEventStream:
+    def add_character(
+        self, character_guid: str, character_name: str
+    ) -> CharacterEventStream:
         """Add or get a character stream for this segment."""
         if character_guid not in self.characters:
             self.characters[character_guid] = CharacterEventStream(
-                character_guid=character_guid,
-                character_name=character_name
+                character_guid=character_guid, character_name=character_name
             )
         return self.characters[character_guid]
 
@@ -255,7 +266,9 @@ class MythicPlusRun:
     group_classes: Dict[str, str] = field(default_factory=dict)  # guid -> class
 
     # Key depletion events
-    death_penalties: List[float] = field(default_factory=list)  # Time penalties from deaths
+    death_penalties: List[float] = field(
+        default_factory=list
+    )  # Time penalties from deaths
 
     def add_segment(self, segment: CombatSegment):
         """Add a combat segment to the run."""
@@ -279,7 +292,7 @@ class MythicPlusRun:
                         character_guid=char_guid,
                         character_name=char_stream.character_name,
                         class_name=char_stream.class_name,
-                        spec_name=char_stream.spec_name
+                        spec_name=char_stream.spec_name,
                     )
 
                 # Combine data from segment into overall
@@ -320,12 +333,17 @@ class MythicPlusRun:
         for character in self.overall_characters.values():
             character.calculate_activity(self.actual_time_seconds)
 
+    @property
+    def characters(self) -> Dict[str, CharacterEventStream]:
+        """Provide access to overall character data via 'characters' property."""
+        return self.overall_characters
+
     def get_segment_at_time(self, timestamp: float) -> Optional[CombatSegment]:
         """Get the segment active at a given timestamp."""
         for segment in self.segments:
             if segment.start_time:
                 start = segment.start_time.timestamp()
-                end = segment.end_time.timestamp() if segment.end_time else float('inf')
+                end = segment.end_time.timestamp() if segment.end_time else float("inf")
                 if start <= timestamp <= end:
                     return segment
         return None
@@ -333,24 +351,24 @@ class MythicPlusRun:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            'dungeon_id': self.dungeon_id,
-            'dungeon_name': self.dungeon_name,
-            'keystone_level': self.keystone_level,
-            'affixes': self.affix_names,
-            'start_time': self.start_time.isoformat() if self.start_time else None,
-            'end_time': self.end_time.isoformat() if self.end_time else None,
-            'time_limit': self.time_limit_seconds,
-            'actual_time': round(self.actual_time_seconds, 1),
-            'completed': self.completed,
-            'in_time': self.in_time,
-            'time_remaining': round(self.time_remaining, 1),
-            'deaths': self.num_deaths,
-            'segments': {
-                'total': len(self.segments),
-                'bosses': len(self.boss_segments),
-                'trash': len(self.trash_segments)
+            "dungeon_id": self.dungeon_id,
+            "dungeon_name": self.dungeon_name,
+            "keystone_level": self.keystone_level,
+            "affixes": self.affix_names,
+            "start_time": self.start_time.isoformat() if self.start_time else None,
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "time_limit": self.time_limit_seconds,
+            "actual_time": round(self.actual_time_seconds, 1),
+            "completed": self.completed,
+            "in_time": self.in_time,
+            "time_remaining": round(self.time_remaining, 1),
+            "deaths": self.num_deaths,
+            "segments": {
+                "total": len(self.segments),
+                "bosses": len(self.boss_segments),
+                "trash": len(self.trash_segments),
             },
-            'characters': {
+            "characters": {
                 guid: char.to_dict() for guid, char in self.overall_characters.items()
-            }
+            },
         }
