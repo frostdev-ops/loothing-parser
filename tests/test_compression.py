@@ -198,14 +198,11 @@ class TestEventCompressor:
             large_event_list.append(event)
 
         # Compress
-        compressed_data = compressor.compress_events(large_event_list)
+        compressed_data, metadata = compressor.compress_events(large_event_list)
 
         # Should achieve good compression
-        # Estimate uncompressed size (this is rough)
-        uncompressed_estimate = len(
-            json.dumps([e.model_dump() for e in large_event_list]).encode()
-        )
-        compression_ratio = len(compressed_data) / uncompressed_estimate
+        # Use compression ratio from metadata
+        compression_ratio = metadata["compression_ratio"]
 
         # Should compress to less than 50% of original
         assert compression_ratio < 0.5
