@@ -37,7 +37,7 @@ def test_db():
     Path(db_path).unlink(missing_ok=True)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def streaming_server(test_db):
     """Create a test streaming server instance."""
     server = StreamingServer(test_db.db_path)
