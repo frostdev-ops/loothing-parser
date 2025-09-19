@@ -32,7 +32,7 @@ class LineTokenizer:
     LINE_PATTERN = re.compile(r'^(\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}\.\d{3}[-+]\d+)\s\s(.+)$')
 
     # Standard base parameter count (after event type)
-    BASE_PARAM_COUNT = 10  # sourceGUID through destRaidFlags
+    BASE_PARAM_COUNT = 8  # sourceGUID through destRaidFlags
 
     def __init__(self):
         self.line_count = 0
