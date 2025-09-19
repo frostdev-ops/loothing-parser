@@ -13,6 +13,7 @@ from pathlib import Path
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.database.schema import DatabaseManager, create_tables
@@ -20,7 +21,7 @@ from src.database.query import QueryAPI, CharacterMetrics, EncounterSummary, Spe
 from src.database.storage import EventStorage
 from src.segmentation.enhanced import EnhancedSegmenter
 from src.parser.parser import CombatLogParser
-from src.models.encounter_models import RaidEncounter, Character, Difficulty
+from src.models.encounter_models import RaidEncounter, Difficulty
 
 
 @pytest.fixture
@@ -67,14 +68,44 @@ def _add_test_data(db: DatabaseManager, api: QueryAPI):
             (character_guid, character_name, realm, class_name, spec_name, first_seen, last_seen)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (*char_data, datetime.now(), datetime.now())
+            (*char_data, datetime.now(), datetime.now()),
         )
 
     # Add test encounters
     encounters_data = [
-        ("raid", "Ulgrax the Devourer", "HEROIC", 1, time.time() - 3600, time.time() - 3400, True, 200.0, 20),
-        ("raid", "The Bloodbound Horror", "MYTHIC", 2, time.time() - 7200, time.time() - 6900, False, 300.0, 20),
-        ("mythic_plus", "Ara-Kara, City of Echoes", "+15", 3, time.time() - 1800, time.time() - 600, True, 1200.0, 5),
+        (
+            "raid",
+            "Ulgrax the Devourer",
+            "HEROIC",
+            1,
+            time.time() - 3600,
+            time.time() - 3400,
+            True,
+            200.0,
+            20,
+        ),
+        (
+            "raid",
+            "The Bloodbound Horror",
+            "MYTHIC",
+            2,
+            time.time() - 7200,
+            time.time() - 6900,
+            False,
+            300.0,
+            20,
+        ),
+        (
+            "mythic_plus",
+            "Ara-Kara, City of Echoes",
+            "+15",
+            3,
+            time.time() - 1800,
+            time.time() - 600,
+            True,
+            1200.0,
+            5,
+        ),
     ]
 
     for enc_data in encounters_data:
@@ -85,20 +116,71 @@ def _add_test_data(db: DatabaseManager, api: QueryAPI):
              success, combat_length, raid_size, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (*enc_data, datetime.now())
+            (*enc_data, datetime.now()),
         )
 
     # Add character metrics
-    db.execute("SELECT character_id FROM characters WHERE character_name = 'Testplayer'")
-    testplayer_id = db.execute("SELECT character_id FROM characters WHERE character_name = 'Testplayer'").fetchone()[0]
+    db.execute(
+        "SELECT character_id FROM characters WHERE character_name = 'Testplayer'"
+    )
+    testplayer_id = db.execute(
+        "SELECT character_id FROM characters WHERE character_name = 'Testplayer'"
+    ).fetchone()[0]
 
     db.execute("SELECT character_id FROM characters WHERE character_name = 'Healer'")
-    healer_id = db.execute("SELECT character_id FROM characters WHERE character_name = 'Healer'").fetchone()[0]
+    healer_id = db.execute(
+        "SELECT character_id FROM characters WHERE character_name = 'Healer'"
+    ).fetchone()[0]
 
     metrics_data = [
-        (1, testplayer_id, 1500000, 0, 200000, 0, 0, 0, 95.0, 200.0, 7500.0, 0.0, 1000.0, 150),
-        (1, healer_id, 500000, 800000, 150000, 900000, 100000, 1, 98.0, 200.0, 2500.0, 4000.0, 1000.0, 200),
-        (2, testplayer_id, 1200000, 0, 250000, 0, 0, 2, 90.0, 150.0, 8000.0, 0.0, 850.0, 120),
+        (
+            1,
+            testplayer_id,
+            1500000,
+            0,
+            200000,
+            0,
+            0,
+            0,
+            95.0,
+            200.0,
+            7500.0,
+            0.0,
+            1000.0,
+            150,
+        ),
+        (
+            1,
+            healer_id,
+            500000,
+            800000,
+            150000,
+            900000,
+            100000,
+            1,
+            98.0,
+            200.0,
+            2500.0,
+            4000.0,
+            1000.0,
+            200,
+        ),
+        (
+            2,
+            testplayer_id,
+            1200000,
+            0,
+            250000,
+            0,
+            0,
+            2,
+            90.0,
+            150.0,
+            8000.0,
+            0.0,
+            850.0,
+            120,
+        ),
     ]
 
     for metric_data in metrics_data:
@@ -110,7 +192,7 @@ def _add_test_data(db: DatabaseManager, api: QueryAPI):
              time_alive, dps, hps, dtps, total_events)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            metric_data
+            metric_data,
         )
 
     # Add spell usage data
@@ -128,7 +210,7 @@ def _add_test_data(db: DatabaseManager, api: QueryAPI):
              hit_count, crit_count, total_damage, total_healing, max_damage, max_healing)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            spell
+            spell,
         )
 
     db.commit()
@@ -157,7 +239,11 @@ class TestQueryAPI:
         assert len(encounters) >= 3  # We added 3 test encounters
 
         # Should be ordered by creation time (most recent first)
-        assert encounters[0].boss_name in ["Ulgrax the Devourer", "The Bloodbound Horror", "Ara-Kara, City of Echoes"]
+        assert encounters[0].boss_name in [
+            "Ulgrax the Devourer",
+            "The Bloodbound Horror",
+            "Ara-Kara, City of Echoes",
+        ]
 
     def test_search_encounters_by_boss(self, query_api):
         """Test searching encounters by boss name."""
@@ -188,7 +274,7 @@ class TestQueryAPI:
         failed = query_api.search_encounters(success=False)
 
         assert len(successful) >= 2  # Should have at least 2 successful encounters
-        assert len(failed) >= 1     # Should have at least 1 failed encounter
+        assert len(failed) >= 1  # Should have at least 1 failed encounter
 
         assert all(enc.success is True for enc in successful)
         assert all(enc.success is False for enc in failed)
@@ -395,16 +481,14 @@ class TestQueryAPIEdgeCases:
         # Test with future date range (should return nothing)
         future_date = datetime.now() + timedelta(days=1)
         encounters = query_api.search_encounters(
-            start_date=future_date,
-            end_date=future_date + timedelta(days=1)
+            start_date=future_date, end_date=future_date + timedelta(days=1)
         )
         assert encounters == []
 
         # Test with past date range
         past_date = datetime.now() - timedelta(days=365)
         encounters = query_api.search_encounters(
-            start_date=past_date,
-            end_date=datetime.now()
+            start_date=past_date, end_date=datetime.now()
         )
         assert len(encounters) >= 0  # Should not error
 
