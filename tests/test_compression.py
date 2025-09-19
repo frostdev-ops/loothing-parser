@@ -356,7 +356,7 @@ class TestCompressionPerformance:
             event = TimestampedEvent(
                 timestamp=base_time + i * 0.1,
                 sequence=i,
-                event=SpellDamageEvent(
+                event=DamageEvent(
                     event_type="SPELL_DAMAGE",
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
                     source_guid="Player-1234-567890AB",
@@ -404,7 +404,7 @@ class TestCompressionPerformance:
             event = TimestampedEvent(
                 timestamp=base_time + i * 0.1,
                 sequence=i,
-                event=SpellDamageEvent(
+                event=DamageEvent(
                     event_type="SPELL_DAMAGE",
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
                     source_guid="Player-1234-567890AB",
@@ -440,7 +440,7 @@ class TestCompressionPerformance:
             event = TimestampedEvent(
                 timestamp=base_time + i * 0.1,
                 sequence=i,
-                event=SpellDamageEvent(
+                event=DamageEvent(
                     event_type="SPELL_DAMAGE",
                     timestamp=datetime.fromtimestamp(base_time + i * 0.1),
                     source_guid=f"Player-{random.randint(1000, 9999)}-567890AB",
