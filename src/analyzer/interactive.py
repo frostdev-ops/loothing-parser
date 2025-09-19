@@ -544,6 +544,247 @@ class InteractiveAnalyzer:
         self.console.print("\n[dim]Press any key to return...[/dim]")
         self._wait_for_key()
 
+    def _handle_players_list(self) -> bool:
+        """Handle players list view."""
+        self.console.clear()
+
+        # Aggregate player data across all encounters
+        player_stats = self._aggregate_player_data()
+
+        if not player_stats:
+            self.console.print("[yellow]No player data found across encounters.[/yellow]")
+            self.console.print("Press any key to return to main menu...")
+            self._wait_for_key()
+            self.navigation.go_back()
+            return True
+
+        # Create players summary table
+        from rich.table import Table
+        table = Table(title="Player Performance Summary")
+        table.add_column("Player", width=20)
+        table.add_column("Encounters", width=10, justify="center")
+        table.add_column("Avg DPS", width=12, justify="right")
+        table.add_column("Avg HPS", width=12, justify="right")
+        table.add_column("Total Deaths", width=12, justify="center")
+        table.add_column("Success Rate", width=12, justify="right")
+        table.add_column("Avg iLevel", width=10, justify="right")
+
+        # Sort by average DPS
+        sorted_players = sorted(player_stats.items(),
+                               key=lambda x: x[1]['avg_dps'], reverse=True)
+
+        for player_name, stats in sorted_players:
+            success_rate = (stats['successful_encounters'] / stats['total_encounters'] * 100) if stats['total_encounters'] > 0 else 0
+            success_color = "green" if success_rate >= 80 else "yellow" if success_rate >= 60 else "red"
+            death_color = "red" if stats['total_deaths'] > 5 else "yellow" if stats['total_deaths'] > 2 else "green"
+
+            table.add_row(
+                player_name,
+                str(stats['total_encounters']),
+                f"{stats['avg_dps']:,.0f}",
+                f"{stats['avg_hps']:,.0f}",
+                f"[{death_color}]{stats['total_deaths']}[/{death_color}]",
+                f"[{success_color}]{success_rate:.1f}%[/{success_color}]",
+                f"{stats['avg_item_level']:.0f}" if stats['avg_item_level'] > 0 else "N/A"
+            )
+
+        self.console.print(table)
+
+        # Summary stats
+        total_players = len(player_stats)
+        avg_success_rate = sum(stats['successful_encounters'] / stats['total_encounters'] for stats in player_stats.values() if stats['total_encounters'] > 0) / total_players if total_players > 0 else 0
+
+        self.console.print(f"\n[bold]Summary:[/bold]")
+        self.console.print(f"  Total unique players: {total_players}")
+        self.console.print(f"  Average success rate: {avg_success_rate * 100:.1f}%")
+
+        # Get user input
+        choice = Prompt.ask(
+            "Select action",
+            choices=["1", "2", "3", "s", "b", "q"],
+            default="b"
+        )
+
+        if choice.lower() == "q":
+            return False
+        elif choice.lower() == "b":
+            self.navigation.go_back()
+        elif choice.isdigit():
+            # Select specific player for detailed view
+            player_index = int(choice) - 1
+            if 0 <= player_index < len(sorted_players):
+                selected_player = sorted_players[player_index][0]
+                self.navigation.selected_player_guid = selected_player
+                self.navigation.navigate_to(ViewMode.PLAYER_DETAIL)
+
+        return True
+
+    def _handle_player_detail(self) -> bool:
+        """Handle individual player detail view."""
+        self.console.clear()
+
+        if not self.navigation.selected_player_guid:
+            self.console.print("[red]No player selected[/red]")
+            self.navigation.go_back()
+            return True
+
+        # Get detailed player data
+        player_data = self._get_player_detailed_data(self.navigation.selected_player_guid)
+
+        if not player_data:
+            self.console.print(f"[red]No data found for player: {self.navigation.selected_player_guid}[/red]")
+            self.navigation.go_back()
+            return True
+
+        # Display detailed player information
+        self.console.print(f"[bold cyan]Player Details: {player_data['name']}[/bold cyan]\n")
+
+        # Performance across encounters
+        from rich.table import Table
+        encounters_table = Table(title="Performance by Encounter")
+        encounters_table.add_column("Encounter", width=25)
+        encounters_table.add_column("Result", width=10)
+        encounters_table.add_column("DPS", width=12, justify="right")
+        encounters_table.add_column("HPS", width=12, justify="right")
+        encounters_table.add_column("Deaths", width=8, justify="center")
+        encounters_table.add_column("Duration", width=10)
+
+        for encounter in player_data['encounters']:
+            result_color = "green" if encounter['success'] else "red"
+            death_color = "red" if encounter['deaths'] > 0 else "green"
+
+            encounters_table.add_row(
+                encounter['name'],
+                f"[{result_color}]{'Kill' if encounter['success'] else 'Wipe'}[/{result_color}]",
+                f"{encounter['dps']:,.0f}",
+                f"{encounter['hps']:,.0f}",
+                f"[{death_color}]{encounter['deaths']}[/{death_color}]",
+                encounter['duration']
+            )
+
+        self.console.print(encounters_table)
+
+        # Overall stats
+        self.console.print(f"\n[bold]Overall Statistics:[/bold]")
+        self.console.print(f"  Total encounters: {len(player_data['encounters'])}")
+        self.console.print(f"  Success rate: {player_data['success_rate']:.1f}%")
+        self.console.print(f"  Average DPS: {player_data['avg_dps']:,.0f}")
+        self.console.print(f"  Average HPS: {player_data['avg_hps']:,.0f}")
+        self.console.print(f"  Total deaths: {player_data['total_deaths']}")
+
+        self.console.print("\n[dim]Press any key to return...[/dim]")
+        self._wait_for_key()
+        self.navigation.go_back()
+        return True
+
+    def _aggregate_player_data(self) -> Dict[str, Dict[str, Any]]:
+        """Aggregate player performance data across all encounters."""
+        player_stats = {}
+
+        for fight in self.fights:
+            characters = self._get_encounter_characters(fight)
+            if not characters:
+                continue
+
+            for guid, char in characters.items():
+                if not char.character_name:
+                    continue
+
+                if char.character_name not in player_stats:
+                    player_stats[char.character_name] = {
+                        'total_encounters': 0,
+                        'successful_encounters': 0,
+                        'total_dps': 0,
+                        'total_hps': 0,
+                        'total_deaths': 0,
+                        'total_item_level': 0,
+                        'encounters_with_gear': 0,
+                        'avg_dps': 0,
+                        'avg_hps': 0,
+                        'avg_item_level': 0
+                    }
+
+                stats = player_stats[char.character_name]
+                stats['total_encounters'] += 1
+
+                if fight.success:
+                    stats['successful_encounters'] += 1
+
+                if fight.duration and fight.duration > 0:
+                    dps = char.total_damage_done / fight.duration
+                    hps = char.total_healing_done / fight.duration
+                    stats['total_dps'] += dps
+                    stats['total_hps'] += hps
+
+                stats['total_deaths'] += char.death_count
+
+                if char.item_level and char.item_level > 0:
+                    stats['total_item_level'] += char.item_level
+                    stats['encounters_with_gear'] += 1
+
+        # Calculate averages
+        for stats in player_stats.values():
+            if stats['total_encounters'] > 0:
+                stats['avg_dps'] = stats['total_dps'] / stats['total_encounters']
+                stats['avg_hps'] = stats['total_hps'] / stats['total_encounters']
+            if stats['encounters_with_gear'] > 0:
+                stats['avg_item_level'] = stats['total_item_level'] / stats['encounters_with_gear']
+
+        return player_stats
+
+    def _get_player_detailed_data(self, player_name: str) -> Optional[Dict[str, Any]]:
+        """Get detailed data for a specific player."""
+        encounters = []
+        total_dps = 0
+        total_hps = 0
+        total_deaths = 0
+        successful = 0
+
+        for fight in self.fights:
+            characters = self._get_encounter_characters(fight)
+            if not characters:
+                continue
+
+            # Find this player in the encounter
+            player_char = None
+            for char in characters.values():
+                if char.character_name == player_name:
+                    player_char = char
+                    break
+
+            if not player_char:
+                continue
+
+            dps = player_char.total_damage_done / fight.duration if fight.duration and fight.duration > 0 else 0
+            hps = player_char.total_healing_done / fight.duration if fight.duration and fight.duration > 0 else 0
+
+            encounters.append({
+                'name': fight.encounter_name or 'Unknown',
+                'success': fight.success or False,
+                'dps': dps,
+                'hps': hps,
+                'deaths': player_char.death_count,
+                'duration': fight.get_duration_str()
+            })
+
+            total_dps += dps
+            total_hps += hps
+            total_deaths += player_char.death_count
+            if fight.success:
+                successful += 1
+
+        if not encounters:
+            return None
+
+        return {
+            'name': player_name,
+            'encounters': encounters,
+            'success_rate': (successful / len(encounters) * 100) if encounters else 0,
+            'avg_dps': total_dps / len(encounters) if encounters else 0,
+            'avg_hps': total_hps / len(encounters) if encounters else 0,
+            'total_deaths': total_deaths
+        }
+
     def _show_events_timeline(
         self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
     ):
