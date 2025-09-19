@@ -330,15 +330,11 @@ class InteractiveAnalyzer:
         print(f"DEBUG: _get_encounter_characters called for {fight.encounter_name}")
         print(f"DEBUG: enhanced_data is {'available' if self.enhanced_data else 'None'}")
 
-        if not self.enhanced_data:
-            print("DEBUG: No enhanced_data, proceeding to fallback")
-        else:
+        if self.enhanced_data:
             print("DEBUG: Enhanced data available, checking for matches...")
-            # Keep the existing enhanced data logic here...
-
-        # Get enhanced data from raid encounters or mythic plus runs
-        raid_encounters = self.enhanced_data.get("raid_encounters", [])
-        mythic_plus_runs = self.enhanced_data.get("mythic_plus_runs", [])
+            # Get enhanced data from raid encounters or mythic plus runs
+            raid_encounters = self.enhanced_data.get("raid_encounters", [])
+            mythic_plus_runs = self.enhanced_data.get("mythic_plus_runs", [])
 
         # First try to match by encounter type and timing
         time_tolerance = 60  # seconds
