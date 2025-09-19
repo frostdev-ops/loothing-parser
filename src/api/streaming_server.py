@@ -13,14 +13,25 @@ import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Query
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    HTTPException,
+    Depends,
+    Query,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 
 from .models import (
-    StreamMessage, StreamResponse, SessionStart, ErrorResponse,
-    EncounterUpdate, StreamStats
+    StreamMessage,
+    StreamResponse,
+    SessionStart,
+    ErrorResponse,
+    EncounterUpdate,
+    StreamStats,
 )
 from .auth import auth_manager, authenticate_api_key, AuthResponse
 from streaming.processor import StreamProcessor
@@ -50,8 +61,7 @@ class StreamingServer:
         self.db = DatabaseManager(db_path)
         self.session_manager = SessionManager()
         self.stream_processor = StreamProcessor(
-            self.db,
-            on_encounter_update=self._handle_encounter_update
+            self.db, on_encounter_update=self._handle_encounter_update
         )
         self.query_api = QueryAPI(self.db)
 
@@ -122,13 +132,13 @@ class StreamingServer:
         try:
             # Create session
             session = self.session_manager.create_session(
-                client_id=client_id,
-                session_id=session_id,
-                api_key=api_key
+                client_id=client_id, session_id=session_id, api_key=api_key
             )
 
             session.websocket_connected = True
-            session.remote_address = websocket.client.host if websocket.client else "unknown"
+            session.remote_address = (
+                websocket.client.host if websocket.client else "unknown"
+            )
 
             # Track connection
             auth_manager.track_connection(client_id, session_id)
@@ -144,8 +154,8 @@ class StreamingServer:
                 data={
                     "session_id": session_id,
                     "rate_limits": auth_response.rate_limit,
-                    "permissions": auth_response.permissions
-                }
+                    "permissions": auth_response.permissions,
+                },
             )
             await websocket.send_text(welcome.model_dump_json())
 
@@ -165,10 +175,7 @@ class StreamingServer:
             await self._cleanup_websocket_connection(session_id, context_id)
 
     async def _handle_websocket_messages(
-        self,
-        websocket: WebSocket,
-        session: StreamSession,
-        context_id: str
+        self, websocket: WebSocket, session: StreamSession, context_id: str
     ):
         """Handle incoming WebSocket messages."""
         while True:
@@ -204,15 +211,13 @@ class StreamingServer:
                 break
             except json.JSONDecodeError as e:
                 error_response = StreamResponse(
-                    type="error",
-                    message=f"Invalid JSON: {e}"
+                    type="error", message=f"Invalid JSON: {e}"
                 )
                 await websocket.send_text(error_response.model_dump_json())
             except Exception as e:
                 logger.error(f"Error handling message: {e}")
                 error_response = StreamResponse(
-                    type="error",
-                    message=f"Processing error: {e}"
+                    type="error", message=f"Processing error: {e}"
                 )
                 await websocket.send_text(error_response.model_dump_json())
 
@@ -221,7 +226,7 @@ class StreamingServer:
         websocket: WebSocket,
         session: StreamSession,
         context_id: str,
-        message: StreamMessage
+        message: StreamMessage,
     ):
         """Handle a log line message."""
         if not message.line:
@@ -232,16 +237,14 @@ class StreamingServer:
             context_id=context_id,
             line=message.line,
             timestamp=message.timestamp,
-            sequence=message.sequence
+            sequence=message.sequence,
         )
 
         if success:
             # Send acknowledgment
             if message.sequence is not None:
                 ack = StreamResponse(
-                    type="ack",
-                    sequence_ack=message.sequence,
-                    data={"processed": True}
+                    type="ack", sequence_ack=message.sequence, data={"processed": True}
                 )
                 await websocket.send_text(ack.model_dump_json())
         else:
@@ -249,15 +252,12 @@ class StreamingServer:
             error = StreamResponse(
                 type="error",
                 message="Failed to process line",
-                data={"sequence": message.sequence}
+                data={"sequence": message.sequence},
             )
             await websocket.send_text(error.model_dump_json())
 
     async def _handle_session_start(
-        self,
-        websocket: WebSocket,
-        session: StreamSession,
-        message: StreamMessage
+        self, websocket: WebSocket, session: StreamSession, message: StreamMessage
     ):
         """Handle session start message."""
         if message.metadata:
@@ -274,15 +274,12 @@ class StreamingServer:
         response = StreamResponse(
             type="status",
             message="Session started",
-            data={"session_id": session.session_id}
+            data={"session_id": session.session_id},
         )
         await websocket.send_text(response.model_dump_json())
 
     async def _handle_session_end(
-        self,
-        websocket: WebSocket,
-        session: StreamSession,
-        context_id: str
+        self, websocket: WebSocket, session: StreamSession, context_id: str
     ):
         """Handle session end message."""
         session.status = SessionStatus.DISCONNECTED
@@ -290,10 +287,7 @@ class StreamingServer:
         # Stop processing context
         await self.stream_processor.stop_processing_context(context_id)
 
-        response = StreamResponse(
-            type="status",
-            message="Session ended"
-        )
+        response = StreamResponse(type="status", message="Session ended")
         await websocket.send_text(response.model_dump_json())
 
     async def _handle_heartbeat(self, websocket: WebSocket, session: StreamSession):
@@ -303,31 +297,24 @@ class StreamingServer:
         response = StreamResponse(
             type="status",
             message="Heartbeat received",
-            data={"server_time": time.time()}
+            data={"server_time": time.time()},
         )
         await websocket.send_text(response.model_dump_json())
 
     async def _handle_checkpoint(
-        self,
-        websocket: WebSocket,
-        session: StreamSession,
-        message: StreamMessage
+        self, websocket: WebSocket, session: StreamSession, message: StreamMessage
     ):
         """Handle checkpoint message."""
         if message.sequence is not None:
             session.acknowledge_sequence(message.sequence)
 
         response = StreamResponse(
-            type="ack",
-            sequence_ack=message.sequence,
-            message="Checkpoint acknowledged"
+            type="ack", sequence_ack=message.sequence, message="Checkpoint acknowledged"
         )
         await websocket.send_text(response.model_dump_json())
 
     async def _cleanup_websocket_connection(
-        self,
-        session_id: str,
-        context_id: Optional[str] = None
+        self, session_id: str, context_id: Optional[str] = None
     ):
         """Clean up WebSocket connection resources."""
         # Remove from tracking
@@ -351,7 +338,9 @@ class StreamingServer:
         """Handle encounter state updates (broadcast to relevant clients)."""
         # For now, just log the update
         # In the future, this could broadcast to Discord or other services
-        logger.info(f"Encounter update: {encounter_update.boss_name} - {encounter_update.status}")
+        logger.info(
+            f"Encounter update: {encounter_update.boss_name} - {encounter_update.status}"
+        )
 
     def get_server_stats(self) -> Dict[str, Any]:
         """Get comprehensive server statistics."""
@@ -390,7 +379,7 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
     app = FastAPI(
         title="WoW Combat Log Streaming API",
         description="Real-time combat log processing and analysis",
-        version="1.0.0"
+        version="1.0.0",
     )
 
     # CORS middleware
@@ -446,24 +435,188 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
 
     @app.get("/characters/{character_name}/metrics")
     async def get_character_metrics(
-        character_name: str,
-        encounter_id: Optional[int] = Query(None)
+        character_name: str, encounter_id: Optional[int] = Query(None)
     ):
         """Get character performance metrics."""
         if encounter_id:
-            metrics = _server_instance.query_api.get_character_metrics(encounter_id, character_name)
+            metrics = _server_instance.query_api.get_character_metrics(
+                encounter_id, character_name
+            )
         else:
             # Get recent metrics
             metrics = _server_instance.query_api.get_top_performers(limit=1)
-            metrics = [m for m in metrics if m.character_name.lower() == character_name.lower()]
+            metrics = [
+                m for m in metrics if m.character_name.lower() == character_name.lower()
+            ]
 
         return [metric.model_dump() for metric in metrics]
+
+    @app.get("/encounters/search")
+    async def search_encounters(
+        boss_name: Optional[str] = Query(None),
+        difficulty: Optional[str] = Query(None),
+        encounter_type: Optional[str] = Query(None),
+        success: Optional[bool] = Query(None),
+        limit: int = Query(50, ge=1, le=200),
+    ):
+        """Search encounters with filters."""
+        encounters = _server_instance.query_api.search_encounters(
+            boss_name=boss_name,
+            difficulty=difficulty,
+            encounter_type=encounter_type,
+            success=success,
+            limit=limit,
+        )
+        return [encounter.model_dump() for encounter in encounters]
+
+    @app.get("/characters/{character_name}/events")
+    async def get_character_events(
+        character_name: str,
+        encounter_id: int,
+        start_time: Optional[float] = Query(None),
+        end_time: Optional[float] = Query(None),
+        event_types: Optional[str] = Query(None),
+        limit: int = Query(1000, ge=1, le=10000),
+    ):
+        """Get detailed events for a character in an encounter."""
+        event_types_list = event_types.split(",") if event_types else None
+
+        events = _server_instance.query_api.get_character_events(
+            character_name=character_name,
+            encounter_id=encounter_id,
+            start_time=start_time,
+            end_time=end_time,
+            event_types=event_types_list,
+        )
+
+        # Limit results for API response
+        limited_events = events[:limit]
+
+        return {
+            "character_name": character_name,
+            "encounter_id": encounter_id,
+            "total_events": len(events),
+            "returned_events": len(limited_events),
+            "events": [
+                {
+                    "timestamp": event.timestamp,
+                    "event_type": event.event.event_type,
+                    "event_data": event.event.model_dump(),
+                }
+                for event in limited_events
+            ],
+        }
+
+    @app.get("/characters/{character_name}/spells")
+    async def get_character_spells(
+        character_name: str,
+        encounter_id: Optional[int] = Query(None),
+        spell_name: Optional[str] = Query(None),
+        days: int = Query(30, ge=1, le=365),
+    ):
+        """Get spell usage statistics for a character."""
+        spells = _server_instance.query_api.get_spell_usage(
+            character_name=character_name,
+            encounter_id=encounter_id,
+            spell_name=spell_name,
+            days=days,
+        )
+        return [spell.model_dump() for spell in spells]
+
+    @app.get("/performance/top")
+    async def get_top_performers(
+        metric: str = Query("dps", regex="^(dps|hps|damage_done|healing_done|activity_percentage)$"),
+        encounter_type: Optional[str] = Query(None),
+        boss_name: Optional[str] = Query(None),
+        days: int = Query(7, ge=1, le=365),
+        limit: int = Query(10, ge=1, le=100),
+    ):
+        """Get top performing characters by metric."""
+        performers = _server_instance.query_api.get_top_performers(
+            metric=metric,
+            encounter_type=encounter_type,
+            boss_name=boss_name,
+            days=days,
+            limit=limit,
+        )
+        return [performer.model_dump() for performer in performers]
+
+    @app.get("/database/stats")
+    async def get_database_stats():
+        """Get comprehensive database statistics."""
+        return _server_instance.query_api.get_database_stats()
+
+    @app.post("/database/optimize")
+    async def optimize_database(admin_key: str = "admin_secret"):
+        """Trigger database optimization (admin only)."""
+        if admin_key != "admin_secret":
+            raise HTTPException(status_code=403, detail="Invalid admin key")
+
+        try:
+            from database.schema import optimize_database
+            optimize_database(_server_instance.db)
+            return {"status": "success", "message": "Database optimization completed"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Optimization failed: {str(e)}")
+
+    @app.get("/export/encounters/{encounter_id}")
+    async def export_encounter(encounter_id: int, format: str = Query("json", regex="^(json|csv)$")):
+        """Export encounter data in specified format."""
+        encounter = _server_instance.query_api.get_encounter(encounter_id)
+        if not encounter:
+            raise HTTPException(status_code=404, detail="Encounter not found")
+
+        metrics = _server_instance.query_api.get_character_metrics(encounter_id)
+
+        if format == "json":
+            return {
+                "encounter": encounter.model_dump(),
+                "character_metrics": [metric.model_dump() for metric in metrics],
+            }
+        else:  # CSV format
+            from fastapi.responses import StreamingResponse
+            import csv
+            import io
+
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Write encounter header
+            writer.writerow(["encounter_id", "boss_name", "difficulty", "success", "combat_length"])
+            writer.writerow([
+                encounter.encounter_id,
+                encounter.boss_name,
+                encounter.difficulty,
+                encounter.success,
+                encounter.combat_length,
+            ])
+
+            # Write metrics
+            writer.writerow([])  # Empty row
+            writer.writerow(["character_name", "dps", "hps", "damage_done", "healing_done", "death_count"])
+
+            for metric in metrics:
+                writer.writerow([
+                    metric.character_name,
+                    metric.dps,
+                    metric.hps,
+                    metric.damage_done,
+                    metric.healing_done,
+                    metric.death_count,
+                ])
+
+            output.seek(0)
+            return StreamingResponse(
+                io.StringIO(output.getvalue()),
+                media_type="text/csv",
+                headers={"Content-Disposition": f"attachment; filename=encounter_{encounter_id}.csv"},
+            )
 
     @app.post("/auth/generate-key")
     async def generate_api_key(
         client_id: str,
         description: str,
-        admin_key: str = "admin_secret"  # Simple admin auth for demo
+        admin_key: str = "admin_secret",  # Simple admin auth for demo
     ):
         """Generate a new API key."""
         if admin_key != "admin_secret":
@@ -474,7 +627,7 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
             "key_id": key_id,
             "api_key": api_key,
             "client_id": client_id,
-            "description": description
+            "description": description,
         }
 
     return app
@@ -484,7 +637,7 @@ def run_server(
     host: str = "0.0.0.0",
     port: int = 8000,
     db_path: str = "combat_logs.db",
-    log_level: str = "info"
+    log_level: str = "info",
 ):
     """
     Run the streaming server.
@@ -498,20 +651,14 @@ def run_server(
     # Configure logging
     logging.basicConfig(
         level=getattr(logging, log_level.upper()),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Create app
     app = create_app(db_path)
 
     # Run with uvicorn
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        log_level=log_level,
-        access_log=True
-    )
+    uvicorn.run(app, host=host, port=port, log_level=log_level, access_log=True)
 
 
 if __name__ == "__main__":
