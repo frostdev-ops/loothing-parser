@@ -770,14 +770,14 @@ class QueryAPI:
 
         return {
             "database": {
-                "total_encounters": row[0],
-                "total_characters": row[1],
-                "total_blocks": row[2],
-                "total_events": row[3],
-                "total_compressed_bytes": row[4],
-                "total_uncompressed_bytes": row[5],
+                "total_encounters": row[0] or 0,
+                "total_characters": row[1] or 0,
+                "total_blocks": row[2] or 0,
+                "total_events": row[3] or 0,
+                "total_compressed_bytes": total_compressed,
+                "total_uncompressed_bytes": total_uncompressed,
                 "compression_ratio": compression_ratio,
-                "space_saved_mb": (row[5] - row[4]) / (1024 * 1024) if row[5] else 0,
+                "space_saved_mb": (total_uncompressed - total_compressed) / (1024 * 1024) if total_uncompressed > 0 else 0,
             },
             "query_api": self.stats,
             "cache": self.cache.stats(),
