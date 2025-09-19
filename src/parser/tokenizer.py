@@ -396,6 +396,48 @@ class LineTokenizer:
 
         return prefix_params, suffix_params
 
+    def _handle_acl_params(self, event_type: str, params: List[Any]) -> List[Any]:
+        """
+        Handle Advanced Combat Logging (ACL) parameters.
+
+        ACL inserts 18 additional parameters before damage/heal amounts:
+        unitGUID, ownerGUID, currentHP, maxHP, attackPower, spellPower, armor,
+        absorb, powerType1-7 (7 params), x, y, map, facing, ilvl
+
+        Args:
+            event_type: The event type
+            params: Parameters after prefix params
+
+        Returns:
+            Actual suffix parameters with ACL params skipped
+        """
+        # Events that have damage/heal amounts that could be affected by ACL
+        acl_affected_events = [
+            "DAMAGE", "HEAL", "ABSORBED", "MISSED", "HEALED",
+            "ENERGIZE", "DRAIN", "LEECH"
+        ]
+
+        # Check if this event type could have ACL parameters
+        has_acl_suffix = any(suffix in event_type for suffix in acl_affected_events)
+
+        if not has_acl_suffix:
+            # Non-ACL affected events, return params as-is
+            return params
+
+        # Detect ACL presence by parameter count
+        # For SPELL_DAMAGE with ACL: we expect at least 18 ACL + 6+ damage params = 24+ total
+        # For SWING_DAMAGE with ACL: we expect at least 18 ACL + 6+ damage params = 24+ total
+        # For SPELL_HEAL with ACL: we expect at least 18 ACL + 4+ heal params = 22+ total
+
+        expected_min_acl_params = 22  # Conservative threshold
+
+        if len(params) >= expected_min_acl_params:
+            # Likely has ACL parameters - skip first 18 params
+            return params[18:]
+        else:
+            # No ACL or insufficient params, return as-is
+            return params
+
     def get_stats(self) -> Dict[str, int]:
         """
         Get parsing statistics.
