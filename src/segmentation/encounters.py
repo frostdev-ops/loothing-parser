@@ -12,6 +12,7 @@ from src.parser.events import BaseEvent, EncounterEvent, ChallengeModeEvent
 
 class FightType(Enum):
     """Type of combat encounter."""
+
     RAID_BOSS = "raid_boss"
     MYTHIC_PLUS = "mythic_plus"
     DUNGEON_BOSS = "dungeon_boss"
@@ -25,6 +26,7 @@ class Fight:
     """
     Represents a single combat encounter or segment.
     """
+
     fight_id: int
     fight_type: FightType
     start_time: datetime
@@ -43,18 +45,31 @@ class Fight:
         """Add an event to this fight."""
         self.events.append(event)
 
-        # Track participants
+        # Track source participants
         if event.source_guid and event.source_guid != "0000000000000000":
             if event.source_guid not in self.participants:
                 self.participants[event.source_guid] = {
-                    'name': event.source_name,
-                    'first_seen': event.timestamp,
-                    'last_seen': event.timestamp,
-                    'is_player': event.is_player_source(),
-                    'is_pet': event.is_pet_source()
+                    "name": event.source_name,
+                    "first_seen": event.timestamp,
+                    "last_seen": event.timestamp,
+                    "is_player": event.is_player_source(),
+                    "is_pet": event.is_pet_source(),
                 }
             else:
-                self.participants[event.source_guid]['last_seen'] = event.timestamp
+                self.participants[event.source_guid]["last_seen"] = event.timestamp
+
+        # Track destination participants (for healing received, damage taken, etc.)
+        if event.dest_guid and event.dest_guid != "0000000000000000":
+            if event.dest_guid not in self.participants:
+                self.participants[event.dest_guid] = {
+                    "name": event.dest_name,
+                    "first_seen": event.timestamp,
+                    "last_seen": event.timestamp,
+                    "is_player": event.is_player_dest(),
+                    "is_pet": event.dest_guid.startswith("Pet-") if event.dest_guid else False,
+                }
+            else:
+                self.participants[event.dest_guid]["last_seen"] = event.timestamp
 
     def finalize(self):
         """Finalize the fight with calculated metrics."""
@@ -69,7 +84,7 @@ class Fight:
 
     def get_player_count(self) -> int:
         """Get the number of players in this fight."""
-        return sum(1 for p in self.participants.values() if p['is_player'])
+        return sum(1 for p in self.participants.values() if p["is_player"])
 
     def get_duration_str(self) -> str:
         """Get human-readable duration string."""
@@ -138,7 +153,9 @@ class EncounterSegmenter:
 
         # Start new encounter
         self.fight_counter += 1
-        fight_type = FightType.RAID_BOSS if event.difficulty_id >= 14 else FightType.DUNGEON_BOSS
+        fight_type = (
+            FightType.RAID_BOSS if event.difficulty_id >= 14 else FightType.DUNGEON_BOSS
+        )
 
         self.current_fight = Fight(
             fight_id=self.fight_counter,
@@ -147,7 +164,7 @@ class EncounterSegmenter:
             encounter_id=event.encounter_id,
             encounter_name=event.encounter_name,
             difficulty=event.difficulty_id,
-            metadata={'group_size': event.group_size, 'instance_id': event.instance_id}
+            metadata={"group_size": event.group_size, "instance_id": event.instance_id},
         )
         self.current_fight.add_event(event)
 
@@ -159,7 +176,9 @@ class EncounterSegmenter:
             self.current_fight.add_event(event)
             self.current_fight.end_time = event.timestamp
             self.current_fight.success = event.success
-            self.current_fight.duration = event.duration / 1000.0 if event.duration else None
+            self.current_fight.duration = (
+                event.duration / 1000.0 if event.duration else None
+            )
             self.current_fight.finalize()
 
             # Store and clear current fight
@@ -171,7 +190,9 @@ class EncounterSegmenter:
 
         return None
 
-    def _handle_challenge_mode_start(self, event: ChallengeModeEvent) -> Optional[Fight]:
+    def _handle_challenge_mode_start(
+        self, event: ChallengeModeEvent
+    ) -> Optional[Fight]:
         """Handle CHALLENGE_MODE_START event."""
         # End any current fight
         completed_fight = None
@@ -190,10 +211,10 @@ class EncounterSegmenter:
             encounter_name=event.zone_name,
             keystone_level=event.keystone_level,
             metadata={
-                'instance_id': event.instance_id,
-                'challenge_id': event.challenge_id,
-                'affix_ids': event.affix_ids
-            }
+                "instance_id": event.instance_id,
+                "challenge_id": event.challenge_id,
+                "affix_ids": event.affix_ids,
+            },
         )
         self.current_challenge_mode.add_event(event)
 
@@ -220,7 +241,7 @@ class EncounterSegmenter:
     def _handle_combat_event(self, event: BaseEvent):
         """Handle regular combat events."""
         # Skip non-combat events
-        if event.event_type in ['COMBAT_LOG_VERSION', 'ZONE_CHANGE', 'MAP_CHANGE']:
+        if event.event_type in ["COMBAT_LOG_VERSION", "ZONE_CHANGE", "MAP_CHANGE"]:
             return
 
         # Add to current encounter if active
@@ -239,8 +260,11 @@ class EncounterSegmenter:
         # Check if we should start a new trash segment
         if self.current_fight and self.current_fight.fight_type == FightType.TRASH:
             # Check for timeout
-            if (self.last_combat_time and
-                    event.timestamp - self.last_combat_time > timedelta(seconds=self.trash_timeout)):
+            if (
+                self.last_combat_time
+                and event.timestamp - self.last_combat_time
+                > timedelta(seconds=self.trash_timeout)
+            ):
                 # End current trash segment and start new one
                 self.current_fight.finalize()
                 self.fights.append(self.current_fight)
@@ -252,14 +276,14 @@ class EncounterSegmenter:
             self.current_fight = Fight(
                 fight_id=self.fight_counter,
                 fight_type=FightType.TRASH,
-                start_time=event.timestamp
+                start_time=event.timestamp,
             )
 
         self.current_fight.add_event(event)
 
     def _is_combat_event(self, event: BaseEvent) -> bool:
         """Check if an event represents active combat."""
-        combat_keywords = ['DAMAGE', 'HEAL', 'CAST', 'AURA', 'SUMMON']
+        combat_keywords = ["DAMAGE", "HEAL", "CAST", "AURA", "SUMMON"]
         return any(keyword in event.event_type for keyword in combat_keywords)
 
     def finalize(self) -> List[Fight]:
@@ -291,12 +315,14 @@ class EncounterSegmenter:
         """
         fight_types = {}
         for fight in self.fights:
-            fight_types[fight.fight_type.value] = fight_types.get(fight.fight_type.value, 0) + 1
+            fight_types[fight.fight_type.value] = (
+                fight_types.get(fight.fight_type.value, 0) + 1
+            )
 
         return {
-            'total_fights': len(self.fights),
-            'fight_types': fight_types,
-            'successful_kills': sum(1 for f in self.fights if f.success is True),
-            'wipes': sum(1 for f in self.fights if f.success is False),
-            'incomplete': sum(1 for f in self.fights if not f.is_complete())
+            "total_fights": len(self.fights),
+            "fight_types": fight_types,
+            "successful_kills": sum(1 for f in self.fights if f.success is True),
+            "wipes": sum(1 for f in self.fights if f.success is False),
+            "incomplete": sum(1 for f in self.fights if not f.is_complete()),
         }
