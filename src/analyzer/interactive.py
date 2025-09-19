@@ -352,7 +352,13 @@ class InteractiveAnalyzer:
                 if abs(
                     (m_plus_run.start_time - fight.start_time).total_seconds()
                 ) < time_tolerance and m_plus_run.dungeon_name in (fight.encounter_name or ""):
-                    return m_plus_run.characters if hasattr(m_plus_run, "characters") else {}
+                    return (
+                        m_plus_run.overall_characters
+                        if hasattr(m_plus_run, "overall_characters")
+                        else m_plus_run.characters
+                        if hasattr(m_plus_run, "characters")
+                        else {}
+                    )
 
         # For dungeon bosses within M+, find from segments
         elif fight.fight_type == FightType.DUNGEON_BOSS:
@@ -1228,12 +1234,7 @@ class InteractiveAnalyzer:
     def _perform_search(self, query: str) -> Dict[str, List[Dict[str, Any]]]:
         """Perform search across all data."""
         query_lower = query.lower()
-        results = {
-            'players': [],
-            'spells': [],
-            'encounters': [],
-            'events': []
-        }
+        results = {"players": [], "spells": [], "encounters": [], "events": []}
 
         # Search players
         all_players = set()
@@ -1245,21 +1246,21 @@ class InteractiveAnalyzer:
                         all_players.add(char.character_name)
 
         for player in all_players:
-            results['players'].append({
-                'name': player,
-                'type': 'Player',
-                'description': f"Player: {player}"
-            })
+            results["players"].append(
+                {"name": player, "type": "Player", "description": f"Player: {player}"}
+            )
 
         # Search encounters
         for fight in self.fights:
             if fight.encounter_name and query_lower in fight.encounter_name.lower():
-                results['encounters'].append({
-                    'name': fight.encounter_name,
-                    'type': fight.fight_type.value.title(),
-                    'description': f"{fight.fight_type.value.title()}: {fight.encounter_name}",
-                    'fight': fight
-                })
+                results["encounters"].append(
+                    {
+                        "name": fight.encounter_name,
+                        "type": fight.fight_type.value.title(),
+                        "description": f"{fight.fight_type.value.title()}: {fight.encounter_name}",
+                        "fight": fight,
+                    }
+                )
 
         # Search spells/abilities
         spell_matches = set()
@@ -1271,48 +1272,56 @@ class InteractiveAnalyzer:
             for char in characters.values():
                 # Search damage spells
                 for damage_event in char.damage_done:
-                    if hasattr(damage_event, 'spell_name') and damage_event.spell_name:
+                    if hasattr(damage_event, "spell_name") and damage_event.spell_name:
                         if query_lower in damage_event.spell_name.lower():
-                            spell_matches.add((damage_event.spell_name, 'Damage Spell'))
+                            spell_matches.add((damage_event.spell_name, "Damage Spell"))
 
                 # Search healing spells
                 for heal_event in char.healing_done:
-                    if hasattr(heal_event, 'spell_name') and heal_event.spell_name:
+                    if hasattr(heal_event, "spell_name") and heal_event.spell_name:
                         if query_lower in heal_event.spell_name.lower():
-                            spell_matches.add((heal_event.spell_name, 'Healing Spell'))
+                            spell_matches.add((heal_event.spell_name, "Healing Spell"))
 
                 # Search buffs
                 for buff in char.buffs_gained:
-                    if hasattr(buff, 'spell_name') and buff.spell_name:
+                    if hasattr(buff, "spell_name") and buff.spell_name:
                         if query_lower in buff.spell_name.lower():
-                            spell_matches.add((buff.spell_name, 'Buff/Aura'))
+                            spell_matches.add((buff.spell_name, "Buff/Aura"))
 
         for spell_name, spell_type in spell_matches:
-            results['spells'].append({
-                'name': spell_name,
-                'type': spell_type,
-                'description': f"{spell_type}: {spell_name}"
-            })
+            results["spells"].append(
+                {
+                    "name": spell_name,
+                    "type": spell_type,
+                    "description": f"{spell_type}: {spell_name}",
+                }
+            )
 
         # Search event types
-        if query_lower in 'damage':
-            results['events'].append({
-                'name': 'Damage Events',
-                'type': 'Event Type',
-                'description': 'All damage-dealing events'
-            })
-        if query_lower in 'healing':
-            results['events'].append({
-                'name': 'Healing Events',
-                'type': 'Event Type',
-                'description': 'All healing events'
-            })
-        if query_lower in 'death':
-            results['events'].append({
-                'name': 'Death Events',
-                'type': 'Event Type',
-                'description': 'All player death events'
-            })
+        if query_lower in "damage":
+            results["events"].append(
+                {
+                    "name": "Damage Events",
+                    "type": "Event Type",
+                    "description": "All damage-dealing events",
+                }
+            )
+        if query_lower in "healing":
+            results["events"].append(
+                {
+                    "name": "Healing Events",
+                    "type": "Event Type",
+                    "description": "All healing events",
+                }
+            )
+        if query_lower in "death":
+            results["events"].append(
+                {
+                    "name": "Death Events",
+                    "type": "Event Type",
+                    "description": "All player death events",
+                }
+            )
 
         return results
 
@@ -1344,18 +1353,18 @@ class InteractiveAnalyzer:
         for category_name, category_results in results.items():
             for result in category_results:
                 category_color = {
-                    'players': 'green',
-                    'spells': 'blue',
-                    'encounters': 'yellow',
-                    'events': 'magenta'
-                }.get(category_name, 'white')
+                    "players": "green",
+                    "spells": "blue",
+                    "encounters": "yellow",
+                    "events": "magenta",
+                }.get(category_name, "white")
 
                 table.add_row(
                     str(result_index),
                     f"[{category_color}]{category_name.title()}[/{category_color}]",
-                    result['type'],
-                    result['name'],
-                    result['description']
+                    result["type"],
+                    result["name"],
+                    result["description"],
                 )
 
                 all_results.append(result)
@@ -1400,15 +1409,17 @@ class InteractiveAnalyzer:
         self.console.clear()
         self.console.print(f"[bold cyan]Details: {result['name']}[/bold cyan]\n")
 
-        if 'fight' in result:
+        if "fight" in result:
             # Encounter details
-            fight = result['fight']
+            fight = result["fight"]
             characters = self._get_encounter_characters(fight)
             if characters:
                 panel = self.display_builder.create_encounter_detail(fight, characters)
                 self.console.print(panel)
             else:
-                self.console.print(f"[yellow]No detailed data available for {result['name']}[/yellow]")
+                self.console.print(
+                    f"[yellow]No detailed data available for {result['name']}[/yellow]"
+                )
         else:
             # Generic result details
             self.console.print(f"Name: {result['name']}")
@@ -1416,8 +1427,8 @@ class InteractiveAnalyzer:
             self.console.print(f"Description: {result['description']}")
 
             # Show usage statistics if it's a spell
-            if result['type'] in ['Damage Spell', 'Healing Spell', 'Buff/Aura']:
-                usage_stats = self._get_spell_usage_stats(result['name'])
+            if result["type"] in ["Damage Spell", "Healing Spell", "Buff/Aura"]:
+                usage_stats = self._get_spell_usage_stats(result["name"])
                 if usage_stats:
                     self.console.print("\n[bold]Usage Statistics:[/bold]")
                     for stat, value in usage_stats.items():
@@ -1429,11 +1440,11 @@ class InteractiveAnalyzer:
     def _get_spell_usage_stats(self, spell_name: str) -> Dict[str, Any]:
         """Get usage statistics for a specific spell."""
         stats = {
-            'Total Uses': 0,
-            'Total Damage': 0,
-            'Total Healing': 0,
-            'Users': set(),
-            'Encounters Used': set()
+            "Total Uses": 0,
+            "Total Damage": 0,
+            "Total Healing": 0,
+            "Users": set(),
+            "Encounters Used": set(),
         }
 
         for fight in self.fights:
@@ -1445,43 +1456,46 @@ class InteractiveAnalyzer:
             for char in characters.values():
                 # Check damage events
                 for damage_event in char.damage_done:
-                    if hasattr(damage_event, 'spell_name') and damage_event.spell_name == spell_name:
-                        stats['Total Uses'] += 1
-                        stats['Total Damage'] += damage_event.amount
-                        stats['Users'].add(char.character_name)
+                    if (
+                        hasattr(damage_event, "spell_name")
+                        and damage_event.spell_name == spell_name
+                    ):
+                        stats["Total Uses"] += 1
+                        stats["Total Damage"] += damage_event.amount
+                        stats["Users"].add(char.character_name)
                         encounter_used = True
 
                 # Check healing events
                 for heal_event in char.healing_done:
-                    if hasattr(heal_event, 'spell_name') and heal_event.spell_name == spell_name:
-                        stats['Total Uses'] += 1
-                        stats['Total Healing'] += heal_event.amount
-                        stats['Users'].add(char.character_name)
+                    if hasattr(heal_event, "spell_name") and heal_event.spell_name == spell_name:
+                        stats["Total Uses"] += 1
+                        stats["Total Healing"] += heal_event.amount
+                        stats["Users"].add(char.character_name)
                         encounter_used = True
 
                 # Check buff events
                 for buff in char.buffs_gained:
-                    if hasattr(buff, 'spell_name') and buff.spell_name == spell_name:
-                        stats['Total Uses'] += 1
-                        stats['Users'].add(char.character_name)
+                    if hasattr(buff, "spell_name") and buff.spell_name == spell_name:
+                        stats["Total Uses"] += 1
+                        stats["Users"].add(char.character_name)
                         encounter_used = True
 
             if encounter_used:
-                stats['Encounters Used'].add(fight.encounter_name or 'Unknown')
+                stats["Encounters Used"].add(fight.encounter_name or "Unknown")
 
         # Format for display
         formatted_stats = {
-            'Total Uses': f"{stats['Total Uses']:,}",
-            'Unique Users': len(stats['Users']),
-            'Encounters': len(stats['Encounters Used'])
+            "Total Uses": f"{stats['Total Uses']:,}",
+            "Unique Users": len(stats["Users"]),
+            "Encounters": len(stats["Encounters Used"]),
         }
 
-        if stats['Total Damage'] > 0:
-            formatted_stats['Total Damage'] = f"{stats['Total Damage']:,}"
-        if stats['Total Healing'] > 0:
-            formatted_stats['Total Healing'] = f"{stats['Total Healing']:,}"
+        if stats["Total Damage"] > 0:
+            formatted_stats["Total Damage"] = f"{stats['Total Damage']:,}"
+        if stats["Total Healing"] > 0:
+            formatted_stats["Total Healing"] = f"{stats['Total Healing']:,}"
 
-        return formatted_stats if stats['Total Uses'] > 0 else {}
+        return formatted_stats if stats["Total Uses"] > 0 else {}
 
     def _handle_export(self) -> bool:
         """Handle export functionality."""
@@ -1490,6 +1504,7 @@ class InteractiveAnalyzer:
 
         # Export options
         from rich.table import Table
+
         table = Table(title="Export Formats")
         table.add_column("Option", width=8)
         table.add_column("Format", width=15)
@@ -1504,9 +1519,7 @@ class InteractiveAnalyzer:
         self.console.print(table)
 
         choice = Prompt.ask(
-            "Select export format",
-            choices=["1", "2", "3", "4", "5", "b", "q"],
-            default="b"
+            "Select export format", choices=["1", "2", "3", "4", "5", "b", "q"], default="b"
         )
 
         if choice.lower() == "q":
@@ -1515,13 +1528,7 @@ class InteractiveAnalyzer:
             self.navigation.go_back()
             return True
         else:
-            format_map = {
-                "1": "json",
-                "2": "csv",
-                "3": "html",
-                "4": "markdown",
-                "5": "summary"
-            }
+            format_map = {"1": "json", "2": "csv", "3": "html", "4": "markdown", "5": "summary"}
 
             if choice in format_map:
                 self._export_data(format_map[choice])
@@ -1542,71 +1549,73 @@ class InteractiveAnalyzer:
             if format_type == "json":
                 filename = f"{base_filename}.json"
                 export_data = {
-                    'encounters': [],
-                    'players': {},
-                    'summary': {
-                        'total_encounters': len(self.fights),
-                        'successful_encounters': sum(1 for f in self.fights if f.success),
-                        'export_timestamp': timestamp
-                    }
+                    "encounters": [],
+                    "players": {},
+                    "summary": {
+                        "total_encounters": len(self.fights),
+                        "successful_encounters": sum(1 for f in self.fights if f.success),
+                        "export_timestamp": timestamp,
+                    },
                 }
 
                 # Add encounter data
                 for fight in self.fights:
                     encounter_data = {
-                        'name': fight.encounter_name,
-                        'type': fight.fight_type.value,
-                        'success': fight.success,
-                        'duration': fight.duration,
-                        'player_count': fight.get_player_count()
+                        "name": fight.encounter_name,
+                        "type": fight.fight_type.value,
+                        "success": fight.success,
+                        "duration": fight.duration,
+                        "player_count": fight.get_player_count(),
                     }
 
                     characters = self._get_encounter_characters(fight)
                     if characters:
-                        encounter_data['characters'] = {}
+                        encounter_data["characters"] = {}
                         for guid, char in characters.items():
-                            encounter_data['characters'][char.character_name] = {
-                                'total_damage': char.total_damage_done,
-                                'total_healing': char.total_healing_done,
-                                'deaths': char.death_count
+                            encounter_data["characters"][char.character_name] = {
+                                "total_damage": char.total_damage_done,
+                                "total_healing": char.total_healing_done,
+                                "deaths": char.death_count,
                             }
 
-                    export_data['encounters'].append(encounter_data)
+                    export_data["encounters"].append(encounter_data)
 
-                with open(filename, 'w') as f:
+                with open(filename, "w") as f:
                     json.dump(export_data, f, indent=2, default=str)
 
             elif format_type == "csv":
                 filename = f"{base_filename}.csv"
-                with open(filename, 'w', newline='') as f:
+                with open(filename, "w", newline="") as f:
                     writer = csv.writer(f)
-                    writer.writerow(['Encounter', 'Type', 'Success', 'Duration', 'Players'])
+                    writer.writerow(["Encounter", "Type", "Success", "Duration", "Players"])
 
                     for fight in self.fights:
-                        writer.writerow([
-                            fight.encounter_name or 'Unknown',
-                            fight.fight_type.value,
-                            'Success' if fight.success else 'Wipe',
-                            fight.get_duration_str(),
-                            fight.get_player_count()
-                        ])
+                        writer.writerow(
+                            [
+                                fight.encounter_name or "Unknown",
+                                fight.fight_type.value,
+                                "Success" if fight.success else "Wipe",
+                                fight.get_duration_str(),
+                                fight.get_player_count(),
+                            ]
+                        )
 
             elif format_type == "html":
                 filename = f"{base_filename}.html"
                 html_content = self._generate_html_report()
-                with open(filename, 'w') as f:
+                with open(filename, "w") as f:
                     f.write(html_content)
 
             elif format_type == "markdown":
                 filename = f"{base_filename}.md"
                 md_content = self._generate_markdown_report()
-                with open(filename, 'w') as f:
+                with open(filename, "w") as f:
                     f.write(md_content)
 
             elif format_type == "summary":
                 filename = f"{base_filename}.txt"
                 summary_content = self._generate_text_summary()
-                with open(filename, 'w') as f:
+                with open(filename, "w") as f:
                     f.write(summary_content)
 
             self.console.print(f"[green]✓ Data exported to: {filename}[/green]")
