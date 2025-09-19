@@ -88,6 +88,10 @@ class InteractiveAnalyzer:
                 return self._handle_players_list()
             elif self.navigation.current_view == ViewMode.PLAYER_DETAIL:
                 return self._handle_player_detail()
+            elif self.navigation.current_view == ViewMode.SEARCH:
+                return self._handle_search()
+            elif self.navigation.current_view == ViewMode.EXPORT:
+                return self._handle_export()
             else:
                 # Not implemented views
                 self.console.print("[yellow]This feature is not yet implemented.[/yellow]")
@@ -1035,7 +1039,9 @@ class InteractiveAnalyzer:
         # Display detailed timeline in segments
         self._display_timeline_segments(fight, timeline_data, characters)
 
-    def _generate_detailed_timeline(self, fight: Fight, characters: Dict[str, CharacterEventStream]) -> List[Dict[str, Any]]:
+    def _generate_detailed_timeline(
+        self, fight: Fight, characters: Dict[str, CharacterEventStream]
+    ) -> List[Dict[str, Any]]:
         """Generate detailed second-by-second timeline data."""
         timeline = []
         fight_duration = int(fight.duration) if fight.duration else 0
@@ -1052,12 +1058,12 @@ class InteractiveAnalyzer:
             end_time = min((i + 1) * interval, fight_duration)
 
             interval_data = {
-                'start': start_time,
-                'end': end_time,
-                'damage': {},
-                'healing': {},
-                'deaths': [],
-                'major_events': []
+                "start": start_time,
+                "end": end_time,
+                "damage": {},
+                "healing": {},
+                "deaths": [],
+                "major_events": [],
             }
 
             # Aggregate data for this interval
@@ -1084,24 +1090,28 @@ class InteractiveAnalyzer:
                         continue
 
                 if char_damage > 0:
-                    interval_data['damage'][char.character_name] = char_damage
+                    interval_data["damage"][char.character_name] = char_damage
                 if char_healing > 0:
-                    interval_data['healing'][char.character_name] = char_healing
+                    interval_data["healing"][char.character_name] = char_healing
 
                 # Check for deaths in this interval
                 for death in char.deaths:
                     death_time = (death.datetime - fight.start_time).total_seconds()
                     if start_time <= death_time < end_time:
-                        interval_data['deaths'].append({
-                            'player': char.character_name,
-                            'time': death_time
-                        })
+                        interval_data["deaths"].append(
+                            {"player": char.character_name, "time": death_time}
+                        )
 
             timeline.append(interval_data)
 
         return timeline
 
-    def _display_timeline_segments(self, fight: Fight, timeline_data: List[Dict[str, Any]], characters: Dict[str, CharacterEventStream]):
+    def _display_timeline_segments(
+        self,
+        fight: Fight,
+        timeline_data: List[Dict[str, Any]],
+        characters: Dict[str, CharacterEventStream],
+    ):
         """Display timeline in manageable segments."""
         from rich.table import Table
         from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -1117,7 +1127,9 @@ class InteractiveAnalyzer:
             start_idx = current_page * segments_per_page
             end_idx = min(start_idx + segments_per_page, total_segments)
 
-            table = Table(title=f"Detailed Timeline - {fight.encounter_name or 'Unknown'} (Page {current_page + 1}/{max_pages})")
+            table = Table(
+                title=f"Detailed Timeline - {fight.encounter_name or 'Unknown'} (Page {current_page + 1}/{max_pages})"
+            )
             table.add_column("Time", width=10)
             table.add_column("Top DPS", width=25)
             table.add_column("Top HPS", width=25)
@@ -1131,27 +1143,24 @@ class InteractiveAnalyzer:
                 time_range = f"{interval['start']}-{interval['end']}s"
 
                 # Top DPS in this interval
-                top_dps = sorted(interval['damage'].items(), key=lambda x: x[1], reverse=True)[:3]
+                top_dps = sorted(interval["damage"].items(), key=lambda x: x[1], reverse=True)[:3]
                 dps_text = ", ".join([f"{name}: {dmg:,.0f}" for name, dmg in top_dps])
 
                 # Top HPS in this interval
-                top_hps = sorted(interval['healing'].items(), key=lambda x: x[1], reverse=True)[:3]
+                top_hps = sorted(interval["healing"].items(), key=lambda x: x[1], reverse=True)[:3]
                 hps_text = ", ".join([f"{name}: {heal:,.0f}" for name, heal in top_hps])
 
                 # Events in this interval
                 events = []
-                for death in interval['deaths']:
+                for death in interval["deaths"]:
                     events.append(f"💀 {death['player']} died")
-                for event in interval['major_events']:
+                for event in interval["major_events"]:
                     events.append(event)
 
                 events_text = ", ".join(events) if events else "No major events"
 
                 table.add_row(
-                    time_range,
-                    dps_text or "No damage",
-                    hps_text or "No healing",
-                    events_text
+                    time_range, dps_text or "No damage", hps_text or "No healing", events_text
                 )
 
             self.console.print(table)
