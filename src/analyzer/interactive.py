@@ -355,9 +355,7 @@ class InteractiveAnalyzer:
                     return (
                         m_plus_run.overall_characters
                         if hasattr(m_plus_run, "overall_characters")
-                        else m_plus_run.characters
-                        if hasattr(m_plus_run, "characters")
-                        else {}
+                        else m_plus_run.characters if hasattr(m_plus_run, "characters") else {}
                     )
 
         # For dungeon bosses within M+, find from segments
@@ -366,8 +364,8 @@ class InteractiveAnalyzer:
                 # Check if this boss is part of an M+ run
                 for segment in getattr(m_plus_run, "segments", []):
                     if (
-                        hasattr(segment, "boss_name")
-                        and segment.boss_name == fight.encounter_name
+                        hasattr(segment, "segment_name")
+                        and segment.segment_name == fight.encounter_name
                         and abs((segment.start_time - fight.start_time).total_seconds())
                         < time_tolerance
                     ):
