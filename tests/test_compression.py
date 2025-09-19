@@ -36,7 +36,8 @@ def sample_events():
     events.append(
         TimestampedEvent(
             timestamp=base_time,
-            sequence=0,
+            datetime=datetime.fromtimestamp(base_time),
+            category="spell_cast",
             event=SpellEvent(
                 timestamp=datetime.fromtimestamp(base_time),
                 event_type="SPELL_CAST_START",
@@ -59,7 +60,8 @@ def sample_events():
     events.append(
         TimestampedEvent(
             timestamp=base_time + 1.0,
-            sequence=1,
+            datetime=datetime.fromtimestamp(base_time + 1.0),
+            category="damage_done",
             event=DamageEvent(
                 timestamp=datetime.fromtimestamp(base_time + 1.0),
                 event_type="SPELL_DAMAGE",
@@ -91,7 +93,8 @@ def sample_events():
     events.append(
         TimestampedEvent(
             timestamp=base_time + 2.0,
-            sequence=2,
+            datetime=datetime.fromtimestamp(base_time + 2.0),
+            category="unit_died",
             event=BaseEvent(
                 timestamp=datetime.fromtimestamp(base_time + 2.0),
                 event_type="UNIT_DIED",
