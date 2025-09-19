@@ -13,6 +13,10 @@ if [ ! -f "$DB_PATH" ]; then
     # Create database directory if it doesn't exist
     mkdir -p "$(dirname "$DB_PATH")"
 
+    # Ensure proper permissions for the appuser
+    chown -R appuser:appuser "$(dirname "$DB_PATH")"
+    chmod 755 "$(dirname "$DB_PATH")"
+
     # Run database migrations
     if [ -d "/app/migrations" ]; then
         echo "Running database migrations..."
