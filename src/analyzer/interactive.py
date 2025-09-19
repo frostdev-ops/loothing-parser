@@ -379,17 +379,60 @@ class InteractiveAnalyzer:
             for guid, participant in fight.participants.items():
                 if participant["is_player"]:
                     characters[guid] = CharacterEventStream(
-                        character_guid=guid,
-                        character_name=participant["name"] or "Unknown"
+                        character_guid=guid, character_name=participant["name"] or "Unknown"
                     )
 
             # Process fight events to populate metrics
             if characters and fight.events:
-                self._populate_character_metrics_from_events(characters, fight.events, fight.duration or 0)
+                self._populate_character_metrics_from_events(
+                    characters, fight.events, fight.duration or 0
+                )
 
             return characters if characters else None
 
         return None
+
+    def _populate_character_metrics_from_events(self, characters: Dict[str, CharacterEventStream], events: List[BaseEvent], duration: float):
+        """
+        Populate character metrics by parsing fight events.
+
+        Args:
+            characters: Dictionary of character streams to populate
+            events: List of events from the fight
+            duration: Fight duration in seconds
+        """
+        from src.parser.events import DamageEvent, HealEvent
+
+        for event in events:
+            # Track damage done
+            if isinstance(event, DamageEvent) and event.source_guid in characters:
+                characters[event.source_guid].total_damage_done += event.amount
+                # Add to all_events for chronological tracking
+                characters[event.source_guid].all_events.append((event.timestamp, "damage", event.amount))
+
+            # Track healing done
+            elif isinstance(event, HealEvent) and event.source_guid in characters:
+                characters[event.source_guid].total_healing_done += event.amount
+                characters[event.source_guid].all_events.append((event.timestamp, "heal", event.amount))
+
+            # Track damage taken
+            elif isinstance(event, DamageEvent) and event.dest_guid in characters:
+                characters[event.dest_guid].total_damage_taken += event.amount
+
+            # Track deaths
+            elif event.event_type == "UNIT_DIED" and event.dest_guid in characters:
+                characters[event.dest_guid].death_count += 1
+                characters[event.dest_guid].all_events.append((event.timestamp, "death", 0))
+
+        # Calculate activity percentages and metrics
+        for character in characters.values():
+            if duration > 0:
+                # Sort events chronologically
+                character.all_events.sort()
+                # Calculate basic activity (simplified - assume 90% active if they have events)
+                character.activity_percentage = 90.0 if character.all_events else 0.0
+                # Calculate activity time for metrics
+                character.activity_time = duration * (character.activity_percentage / 100.0)
 
     def _show_help(self):
         """Show help panel."""
