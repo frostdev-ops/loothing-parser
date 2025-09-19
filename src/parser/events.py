@@ -403,6 +403,34 @@ class EventFactory:
         return event
 
     @classmethod
+    def _create_spell_base_event(cls, parsed_line) -> SpellEvent:
+        """Create spell event with common and spell-specific parameters."""
+        event = SpellEvent(
+            timestamp=parsed_line.timestamp,
+            event_type=parsed_line.event_type,
+            raw_line=parsed_line.raw_line,
+        )
+
+        # Add base parameters if available
+        if len(parsed_line.base_params) >= 8:
+            event.source_guid = parsed_line.base_params[0]
+            event.source_name = parsed_line.base_params[1]
+            event.source_flags = cls._safe_int(parsed_line.base_params[2])
+            event.source_raid_flags = cls._safe_int(parsed_line.base_params[3])
+            event.dest_guid = parsed_line.base_params[4]
+            event.dest_name = parsed_line.base_params[5]
+            event.dest_flags = cls._safe_int(parsed_line.base_params[6])
+            event.dest_raid_flags = cls._safe_int(parsed_line.base_params[7])
+
+        # Add spell parameters if present
+        if parsed_line.prefix_params and len(parsed_line.prefix_params) >= 3:
+            event.spell_id = cls._safe_int(parsed_line.prefix_params[0])
+            event.spell_name = parsed_line.prefix_params[1]
+            event.spell_school = cls._safe_int(parsed_line.prefix_params[2])
+
+        return event
+
+    @classmethod
     def _create_encounter_event(cls, parsed_line) -> EncounterEvent:
         """Create encounter start/end event."""
         event = EncounterEvent(
