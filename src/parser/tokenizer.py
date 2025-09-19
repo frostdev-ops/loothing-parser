@@ -130,7 +130,7 @@ class LineTokenizer:
 
     def _split_params(self, params_str: str) -> List[str]:
         """
-        Split parameter string by commas, handling quoted strings.
+        Split parameter string by commas, handling quoted strings and nested structures.
 
         Args:
             params_str: Comma-separated parameter string
@@ -141,14 +141,32 @@ class LineTokenizer:
         params = []
         current = []
         in_quotes = False
+        bracket_depth = 0
+        paren_depth = 0
 
         for char in params_str:
             if char == '"' and (not current or current[-1] != "\\"):
                 in_quotes = not in_quotes
                 current.append(char)
-            elif char == "," and not in_quotes:
-                params.append("".join(current).strip())
-                current = []
+            elif not in_quotes:
+                if char == '[':
+                    bracket_depth += 1
+                    current.append(char)
+                elif char == ']':
+                    bracket_depth -= 1
+                    current.append(char)
+                elif char == '(':
+                    paren_depth += 1
+                    current.append(char)
+                elif char == ')':
+                    paren_depth -= 1
+                    current.append(char)
+                elif char == "," and bracket_depth == 0 and paren_depth == 0:
+                    # Only split on commas at top level
+                    params.append("".join(current).strip())
+                    current = []
+                else:
+                    current.append(char)
             else:
                 current.append(char)
 
@@ -156,13 +174,19 @@ class LineTokenizer:
         if current:
             params.append("".join(current).strip())
 
-        # Clean up parameters (remove quotes, convert types)
+        # Clean up parameters (remove quotes, convert types, parse nested structures)
         cleaned = []
         for param in params:
             if param.startswith('"') and param.endswith('"'):
                 cleaned.append(param[1:-1])
             elif param == "nil":
                 cleaned.append(None)
+            elif param.startswith('[') and param.endswith(']'):
+                # Parse array
+                cleaned.append(self._parse_array(param))
+            elif param.startswith('(') and param.endswith(')'):
+                # Parse tuple
+                cleaned.append(self._parse_tuple(param))
             else:
                 # Try to convert to appropriate type
                 cleaned.append(self._convert_param(param))
