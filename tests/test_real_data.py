@@ -150,11 +150,15 @@ class TestRealDataParser:
                     if events_from_line:
                         # Convert to timestamped events for compression
                         for event in events_from_line:
-                            timestamped_event = {
-                                "timestamp": event.timestamp,
-                                "event_type": event.event_type,
-                                "data": event.__dict__,
-                            }
+                            from src.models.character_events import TimestampedEvent
+                            from datetime import datetime
+
+                            timestamped_event = TimestampedEvent(
+                                timestamp=event.timestamp.timestamp(),
+                                datetime=event.timestamp,
+                                event=event,
+                                category="test_data"
+                            )
                             events.append(timestamped_event)
 
         if events:
