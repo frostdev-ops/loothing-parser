@@ -23,7 +23,7 @@ from src.models.encounter_models import (
     Difficulty,
     SegmentType,
 )
-from models.character_events import CharacterEventStream
+from src.models.character_events import CharacterEventStream
 
 logger = logging.getLogger(__name__)
 
