@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # Main streaming server application
+  streaming-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wow-combat-parser
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persistent data storage
+      - ./data:/app/data
+      - ./logs:/app/logs
+      # Optional: Mount real combat logs for testing
+      - ./examples:/app/examples:ro
+    environment:
+      - DB_PATH=/app/data/combat_logs.db
+      - LOG_LEVEL=info
+      - HOST=0.0.0.0
+      - PORT=8000
+      - API_KEY=${API_KEY:-default-development-key}
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - combat-parser-network
+
+  # Nginx reverse proxy with WebSocket support
+  nginx:
+    image: nginx:alpine
+    container_name: wow-combat-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      # Optional: Static files
+      - ./static:/usr/share/nginx/html:ro
+    depends_on:
+      - streaming-server
+    restart: unless-stopped
+    networks:
+      - combat-parser-network
+
+  # Optional: Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: wow-combat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - combat-parser-network
+
+  # Optional: Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: wow-combat-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - combat-parser-network
+
+  # Optional: Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: wow-combat-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    networks:
+      - combat-parser-network
+
+# Volumes for persistent data
+volumes:
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# Network for service communication
+networks:
+  combat-parser-network:
+    driver: bridge
