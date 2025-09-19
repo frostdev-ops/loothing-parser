@@ -279,12 +279,12 @@ class TestRealDataParser:
                     events_from_line = list(parser._process_line(line))
                     for event in events_from_line:
                         if event and hasattr(event, "source_name"):
-                        source_name = getattr(event, "source_name", None)
-                        if source_name and source_name.startswith("Player-"):
-                            # This is a player event
-                            if source_name not in character_events:
-                                character_events[source_name] = []
-                            character_events[source_name].append(event)
+                            source_name = getattr(event, "source_name", None)
+                            if source_name and source_name.startswith("Player-"):
+                                # This is a player event
+                                if source_name not in character_events:
+                                    character_events[source_name] = []
+                                character_events[source_name].append(event)
 
         # Validate we found some player events
         if character_events:
