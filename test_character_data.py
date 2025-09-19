@@ -20,7 +20,8 @@ def test_character_data():
 
     # Segment encounters
     segmenter = EnhancedSegmenter()
-    segmenter.process_events(events)
+    for event in events:
+        segmenter.process_event(event)
     enhanced_data = segmenter.finalize()
     print(f"Found {len(enhanced_data.get('raid_encounters', []))} raid encounters")
     print(f"Found {len(enhanced_data.get('mythic_plus_runs', []))} M+ runs")
