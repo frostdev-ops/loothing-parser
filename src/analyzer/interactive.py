@@ -84,6 +84,10 @@ class InteractiveAnalyzer:
                 return self._handle_encounters_list()
             elif self.navigation.current_view == ViewMode.ENCOUNTER_DETAIL:
                 return self._handle_encounter_detail()
+            elif self.navigation.current_view == ViewMode.PLAYERS:
+                return self._handle_players_list()
+            elif self.navigation.current_view == ViewMode.PLAYER_DETAIL:
+                return self._handle_player_detail()
             else:
                 # Not implemented views
                 self.console.print("[yellow]This feature is not yet implemented.[/yellow]")
@@ -471,6 +475,7 @@ class InteractiveAnalyzer:
 
         # Main HPS table
         from rich.table import Table
+
         table = Table(title=f"HPS Breakdown - {fight.encounter_name or 'Unknown'}")
         table.add_column("Rank", width=4)
         table.add_column("Player", width=20)
@@ -482,8 +487,14 @@ class InteractiveAnalyzer:
 
         for i, (name, hps, char) in enumerate(hps_rankings[:10], 1):
             rank_color = "gold1" if i <= 3 else "white"
-            efficiency = (char.total_healing_done / (char.total_healing_done + char.total_overhealing) * 100) if (char.total_healing_done + char.total_overhealing) > 0 else 0
-            efficiency_color = "green" if efficiency >= 80 else "yellow" if efficiency >= 60 else "red"
+            efficiency = (
+                (char.total_healing_done / (char.total_healing_done + char.total_overhealing) * 100)
+                if (char.total_healing_done + char.total_overhealing) > 0
+                else 0
+            )
+            efficiency_color = (
+                "green" if efficiency >= 80 else "yellow" if efficiency >= 60 else "red"
+            )
             death_color = "red" if char.death_count > 0 else "green"
 
             table.add_row(
@@ -493,7 +504,7 @@ class InteractiveAnalyzer:
                 f"[{rank_color}]{char.total_healing_done:,}[/{rank_color}]",
                 f"[{rank_color}]{char.total_overhealing:,}[/{rank_color}]",
                 f"[{efficiency_color}]{efficiency:.1f}%[/{efficiency_color}]",
-                f"[{death_color}]{char.death_count}[/{death_color}]"
+                f"[{death_color}]{char.death_count}[/{death_color}]",
             )
 
         self.console.print(table)
@@ -519,7 +530,15 @@ class InteractiveAnalyzer:
             self.console.print(f"  Raid HPS: {encounter_metrics['raid_hps']:,.0f}")
             self.console.print(f"  Total Healing: {encounter_metrics['total_healing']:,}")
             self.console.print(f"  Total Overhealing: {encounter_metrics['total_overhealing']:,}")
-            overall_efficiency = (encounter_metrics['total_healing'] / (encounter_metrics['total_healing'] + encounter_metrics['total_overhealing']) * 100) if (encounter_metrics['total_healing'] + encounter_metrics['total_overhealing']) > 0 else 0
+            overall_efficiency = (
+                (
+                    encounter_metrics["total_healing"]
+                    / (encounter_metrics["total_healing"] + encounter_metrics["total_overhealing"])
+                    * 100
+                )
+                if (encounter_metrics["total_healing"] + encounter_metrics["total_overhealing"]) > 0
+                else 0
+            )
             self.console.print(f"  Overall Efficiency: {overall_efficiency:.1f}%")
 
         self.console.print("\n[dim]Press any key to return...[/dim]")
