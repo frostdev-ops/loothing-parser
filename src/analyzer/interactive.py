@@ -834,6 +834,7 @@ class InteractiveAnalyzer:
 
         # Display timeline
         from rich.table import Table
+
         table = Table(title=f"Events Timeline - {fight.encounter_name or 'Unknown'}")
         table.add_column("Time", width=8)
         table.add_column("Event Type", width=15)
@@ -850,41 +851,45 @@ class InteractiveAnalyzer:
                 "Damage Spike": "orange",
                 "Healing Spike": "blue",
                 "Boss Ability": "magenta",
-                "Phase Change": "cyan"
-            }.get(event['type'], "white")
+                "Phase Change": "cyan",
+            }.get(event["type"], "white")
 
             impact_color = {
                 "Critical": "red",
                 "High": "yellow",
                 "Medium": "blue",
-                "Low": "dim"
-            }.get(event['impact'], "white")
+                "Low": "dim",
+            }.get(event["impact"], "white")
 
             table.add_row(
                 f"[{time_color}]{event['time']}[/{time_color}]",
                 f"[{type_color}]{event['type']}[/{type_color}]",
-                event['player'],
-                event['description'],
-                f"[{impact_color}]{event['impact']}[/{impact_color}]"
+                event["player"],
+                event["description"],
+                f"[{impact_color}]{event['impact']}[/{impact_color}]",
             )
 
         self.console.print(table)
 
         # Summary of key events
-        deaths = [e for e in timeline_events if e['type'] == 'Death']
-        resurrections = [e for e in timeline_events if e['type'] == 'Resurrection']
-        major_cds = [e for e in timeline_events if e['type'] == 'Major Cooldown']
+        deaths = [e for e in timeline_events if e["type"] == "Death"]
+        resurrections = [e for e in timeline_events if e["type"] == "Resurrection"]
+        major_cds = [e for e in timeline_events if e["type"] == "Major Cooldown"]
 
         self.console.print(f"\n[bold]Timeline Summary:[/bold]")
         self.console.print(f"  Deaths: {len(deaths)}")
         self.console.print(f"  Battle Resurrections: {len(resurrections)}")
         self.console.print(f"  Major Cooldowns Used: {len(major_cds)}")
-        self.console.print(f"  Total events shown: {min(50, len(timeline_events))} / {len(timeline_events)}")
+        self.console.print(
+            f"  Total events shown: {min(50, len(timeline_events))} / {len(timeline_events)}"
+        )
 
         self.console.print("\n[dim]Press any key to return...[/dim]")
         self._wait_for_key()
 
-    def _generate_timeline_events(self, fight: Fight, characters: Dict[str, CharacterEventStream]) -> List[Dict[str, Any]]:
+    def _generate_timeline_events(
+        self, fight: Fight, characters: Dict[str, CharacterEventStream]
+    ) -> List[Dict[str, Any]]:
         """Generate a chronological list of important events."""
         events = []
         fight_start = fight.start_time
@@ -901,7 +906,7 @@ class InteractiveAnalyzer:
             31821: "Aura Mastery",
             64843: "Divine Favor",
             498: "Divine Protection",
-            642: "Divine Shield"
+            642: "Divine Shield",
         }
 
         for guid, char in characters.items():
@@ -911,35 +916,44 @@ class InteractiveAnalyzer:
                 minutes = int(relative_time.total_seconds() // 60)
                 seconds = int(relative_time.total_seconds() % 60)
 
-                events.append({
-                    'timestamp': death.timestamp,
-                    'time': f"{minutes}:{seconds:02d}",
-                    'type': 'Death',
-                    'player': char.character_name,
-                    'description': f"{char.character_name} died",
-                    'impact': 'Critical'
-                })
+                events.append(
+                    {
+                        "timestamp": death.timestamp,
+                        "time": f"{minutes}:{seconds:02d}",
+                        "type": "Death",
+                        "player": char.character_name,
+                        "description": f"{char.character_name} died",
+                        "impact": "Critical",
+                    }
+                )
 
             # Track major damage spikes (top 10% of damage events)
             if char.damage_done:
                 damage_amounts = [event.amount for event in char.damage_done]
                 if damage_amounts:
-                    high_damage_threshold = sorted(damage_amounts, reverse=True)[min(len(damage_amounts)//10, len(damage_amounts)-1)]
+                    high_damage_threshold = sorted(damage_amounts, reverse=True)[
+                        min(len(damage_amounts) // 10, len(damage_amounts) - 1)
+                    ]
                     for damage_event in char.damage_done:
-                        if damage_event.amount >= high_damage_threshold and damage_event.amount > 50000:
+                        if (
+                            damage_event.amount >= high_damage_threshold
+                            and damage_event.amount > 50000
+                        ):
                             try:
                                 relative_time = damage_event.timestamp - fight_start
                                 minutes = int(relative_time.total_seconds() // 60)
                                 seconds = int(relative_time.total_seconds() % 60)
 
-                                events.append({
-                                    'timestamp': damage_event.timestamp.timestamp(),
-                                    'time': f"{minutes}:{seconds:02d}",
-                                    'type': 'Damage Spike',
-                                    'player': char.character_name,
-                                    'description': f"{damage_event.spell_name or 'Unknown'}: {damage_event.amount:,} damage",
-                                    'impact': 'High'
-                                })
+                                events.append(
+                                    {
+                                        "timestamp": damage_event.timestamp.timestamp(),
+                                        "time": f"{minutes}:{seconds:02d}",
+                                        "type": "Damage Spike",
+                                        "player": char.character_name,
+                                        "description": f"{damage_event.spell_name or 'Unknown'}: {damage_event.amount:,} damage",
+                                        "impact": "High",
+                                    }
+                                )
                             except:
                                 continue
 
@@ -947,46 +961,55 @@ class InteractiveAnalyzer:
             if char.healing_done:
                 healing_amounts = [event.amount for event in char.healing_done]
                 if healing_amounts:
-                    high_healing_threshold = sorted(healing_amounts, reverse=True)[min(len(healing_amounts)//10, len(healing_amounts)-1)]
+                    high_healing_threshold = sorted(healing_amounts, reverse=True)[
+                        min(len(healing_amounts) // 10, len(healing_amounts) - 1)
+                    ]
                     for heal_event in char.healing_done:
-                        if heal_event.amount >= high_healing_threshold and heal_event.amount > 30000:
+                        if (
+                            heal_event.amount >= high_healing_threshold
+                            and heal_event.amount > 30000
+                        ):
                             try:
                                 relative_time = heal_event.timestamp - fight_start
                                 minutes = int(relative_time.total_seconds() // 60)
                                 seconds = int(relative_time.total_seconds() % 60)
 
-                                events.append({
-                                    'timestamp': heal_event.timestamp.timestamp(),
-                                    'time': f"{minutes}:{seconds:02d}",
-                                    'type': 'Healing Spike',
-                                    'player': char.character_name,
-                                    'description': f"{heal_event.spell_name or 'Unknown'}: {heal_event.amount:,} healing",
-                                    'impact': 'Medium'
-                                })
+                                events.append(
+                                    {
+                                        "timestamp": heal_event.timestamp.timestamp(),
+                                        "time": f"{minutes}:{seconds:02d}",
+                                        "type": "Healing Spike",
+                                        "player": char.character_name,
+                                        "description": f"{heal_event.spell_name or 'Unknown'}: {heal_event.amount:,} healing",
+                                        "impact": "Medium",
+                                    }
+                                )
                             except:
                                 continue
 
             # Track major cooldown usage
             for buff in char.buffs_gained:
-                if hasattr(buff, 'spell_id') and buff.spell_id in major_cooldowns:
+                if hasattr(buff, "spell_id") and buff.spell_id in major_cooldowns:
                     try:
                         relative_time = buff.timestamp - fight_start
                         minutes = int(relative_time.total_seconds() // 60)
                         seconds = int(relative_time.total_seconds() % 60)
 
-                        events.append({
-                            'timestamp': buff.timestamp.timestamp(),
-                            'time': f"{minutes}:{seconds:02d}",
-                            'type': 'Major Cooldown',
-                            'player': char.character_name,
-                            'description': f"Used {major_cooldowns[buff.spell_id]}",
-                            'impact': 'High'
-                        })
+                        events.append(
+                            {
+                                "timestamp": buff.timestamp.timestamp(),
+                                "time": f"{minutes}:{seconds:02d}",
+                                "type": "Major Cooldown",
+                                "player": char.character_name,
+                                "description": f"Used {major_cooldowns[buff.spell_id]}",
+                                "impact": "High",
+                            }
+                        )
                     except:
                         continue
 
         # Sort events by timestamp
-        events.sort(key=lambda x: x['timestamp'])
+        events.sort(key=lambda x: x["timestamp"])
 
         return events
 
@@ -994,8 +1017,172 @@ class InteractiveAnalyzer:
         self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
     ):
         """Show detailed timeline view."""
-        self.console.print("[yellow]Timeline details not yet implemented[/yellow]")
-        self._wait_for_key()
+        self.console.clear()
+
+        if not characters or not fight.duration:
+            self.console.print("[red]No character data available for detailed timeline[/red]")
+            self._wait_for_key()
+            return
+
+        # Generate detailed timeline with second-by-second breakdown
+        timeline_data = self._generate_detailed_timeline(fight, characters)
+
+        if not timeline_data:
+            self.console.print("[yellow]No timeline data available[/yellow]")
+            self._wait_for_key()
+            return
+
+        # Display detailed timeline in segments
+        self._display_timeline_segments(fight, timeline_data, characters)
+
+    def _generate_detailed_timeline(self, fight: Fight, characters: Dict[str, CharacterEventStream]) -> List[Dict[str, Any]]:
+        """Generate detailed second-by-second timeline data."""
+        timeline = []
+        fight_duration = int(fight.duration) if fight.duration else 0
+
+        if fight_duration == 0:
+            return timeline
+
+        # Create timeline buckets (5-second intervals)
+        interval = 5  # seconds
+        num_intervals = (fight_duration // interval) + 1
+
+        for i in range(num_intervals):
+            start_time = i * interval
+            end_time = min((i + 1) * interval, fight_duration)
+
+            interval_data = {
+                'start': start_time,
+                'end': end_time,
+                'damage': {},
+                'healing': {},
+                'deaths': [],
+                'major_events': []
+            }
+
+            # Aggregate data for this interval
+            for guid, char in characters.items():
+                char_damage = 0
+                char_healing = 0
+
+                # Calculate damage in this interval
+                for damage_event in char.damage_done:
+                    try:
+                        event_time = (damage_event.timestamp - fight.start_time).total_seconds()
+                        if start_time <= event_time < end_time:
+                            char_damage += damage_event.amount
+                    except:
+                        continue
+
+                # Calculate healing in this interval
+                for heal_event in char.healing_done:
+                    try:
+                        event_time = (heal_event.timestamp - fight.start_time).total_seconds()
+                        if start_time <= event_time < end_time:
+                            char_healing += heal_event.amount
+                    except:
+                        continue
+
+                if char_damage > 0:
+                    interval_data['damage'][char.character_name] = char_damage
+                if char_healing > 0:
+                    interval_data['healing'][char.character_name] = char_healing
+
+                # Check for deaths in this interval
+                for death in char.deaths:
+                    death_time = (death.datetime - fight.start_time).total_seconds()
+                    if start_time <= death_time < end_time:
+                        interval_data['deaths'].append({
+                            'player': char.character_name,
+                            'time': death_time
+                        })
+
+            timeline.append(interval_data)
+
+        return timeline
+
+    def _display_timeline_segments(self, fight: Fight, timeline_data: List[Dict[str, Any]], characters: Dict[str, CharacterEventStream]):
+        """Display timeline in manageable segments."""
+        from rich.table import Table
+        from rich.progress import Progress, SpinnerColumn, TextColumn
+
+        segments_per_page = 10
+        total_segments = len(timeline_data)
+        current_page = 0
+        max_pages = (total_segments - 1) // segments_per_page + 1
+
+        while True:
+            self.console.clear()
+
+            start_idx = current_page * segments_per_page
+            end_idx = min(start_idx + segments_per_page, total_segments)
+
+            table = Table(title=f"Detailed Timeline - {fight.encounter_name or 'Unknown'} (Page {current_page + 1}/{max_pages})")
+            table.add_column("Time", width=10)
+            table.add_column("Top DPS", width=25)
+            table.add_column("Top HPS", width=25)
+            table.add_column("Events", width=30)
+
+            for i in range(start_idx, end_idx):
+                if i >= len(timeline_data):
+                    break
+
+                interval = timeline_data[i]
+                time_range = f"{interval['start']}-{interval['end']}s"
+
+                # Top DPS in this interval
+                top_dps = sorted(interval['damage'].items(), key=lambda x: x[1], reverse=True)[:3]
+                dps_text = ", ".join([f"{name}: {dmg:,.0f}" for name, dmg in top_dps])
+
+                # Top HPS in this interval
+                top_hps = sorted(interval['healing'].items(), key=lambda x: x[1], reverse=True)[:3]
+                hps_text = ", ".join([f"{name}: {heal:,.0f}" for name, heal in top_hps])
+
+                # Events in this interval
+                events = []
+                for death in interval['deaths']:
+                    events.append(f"💀 {death['player']} died")
+                for event in interval['major_events']:
+                    events.append(event)
+
+                events_text = ", ".join(events) if events else "No major events"
+
+                table.add_row(
+                    time_range,
+                    dps_text or "No damage",
+                    hps_text or "No healing",
+                    events_text
+                )
+
+            self.console.print(table)
+
+            # Navigation controls
+            choices = ["b"]
+            nav_text = "[B]ack"
+
+            if current_page > 0:
+                choices.append("p")
+                nav_text += " | [P]revious"
+
+            if current_page < max_pages - 1:
+                choices.append("n")
+                nav_text += " | [N]ext"
+
+            choices.append("q")
+            nav_text += " | [Q]uit"
+
+            self.console.print(f"\n{nav_text}")
+            choice = Prompt.ask("Navigate", choices=choices, default="b")
+
+            if choice.lower() == "q":
+                return
+            elif choice.lower() == "b":
+                self._wait_for_key()
+                return
+            elif choice.lower() == "p" and current_page > 0:
+                current_page -= 1
+            elif choice.lower() == "n" and current_page < max_pages - 1:
+                current_page += 1
 
     def _wait_for_key(self):
         """Wait for user to press any key."""
