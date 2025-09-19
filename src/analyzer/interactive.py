@@ -380,7 +380,9 @@ class InteractiveAnalyzer:
 
             # First pass: use the is_player flag
             for guid, participant in fight.participants.items():
-                debug_participants.append(f"{guid[:20]}...={participant.get('is_player', 'No flag')}")
+                debug_participants.append(
+                    f"{guid[:20]}...={participant.get('is_player', 'No flag')}"
+                )
                 if participant.get("is_player", False):
                     player_count += 1
                     characters[guid] = CharacterEventStream(
@@ -397,8 +399,9 @@ class InteractiveAnalyzer:
                         )
 
             # Debug logging - uncomment to debug player detection
-            # print(f"Fight {fight.encounter_name}: Found {player_count} players from {len(fight.participants)} participants")
-            # print(f"Participants: {debug_participants[:3]}")  # Show first 3
+            if player_count == 0:
+                print(f"DEBUG: Fight {fight.encounter_name}: Found {player_count} players from {len(fight.participants)} participants")
+                print(f"DEBUG: Participants: {debug_participants[:3]}")  # Show first 3
 
             # Process fight events to populate metrics
             if characters and fight.events:
