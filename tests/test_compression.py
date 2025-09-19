@@ -235,8 +235,10 @@ class TestEventCompressor:
 
     def test_error_handling_none_input(self, compressor):
         """Test error handling with None input."""
-        with pytest.raises((TypeError, AttributeError)):
-            compressor.compress_events(None)
+        # The compressor should handle None gracefully and return empty results
+        compressed_data, stats = compressor.compress_events(None)
+        assert compressed_data == b""
+        assert stats["event_count"] == 0
 
     def test_different_event_types_compression(self, compressor):
         """Test compression with different event types."""
