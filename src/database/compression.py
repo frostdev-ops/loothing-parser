@@ -482,6 +482,14 @@ class CompressionStats:
         """Record decompression operation."""
         self.decompression_times.append(decompression_time)
 
+    def clear(self):
+        """Reset all compression statistics."""
+        self.total_uncompressed = 0
+        self.total_compressed = 0
+        self.total_events = 0
+        self.compression_times = []
+        self.decompression_times = []
+
     @property
     def overall_ratio(self) -> float:
         """Calculate overall compression ratio."""
