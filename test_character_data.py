@@ -8,6 +8,7 @@ from src.parser.parser import CombatLogParser
 from src.segmentation.encounters import EncounterSegmenter
 from src.analyzer.interactive import InteractiveAnalyzer
 
+
 def test_character_data():
     """Test that character data is properly populated and accessible."""
     print("Testing character data population...")
@@ -19,12 +20,13 @@ def test_character_data():
 
     # Segment encounters using basic segmenter
     segmenter = EncounterSegmenter()
-    fights = segmenter.segment_encounters(events)
-    print(f"Found {len(fights)} fights")
+    for event in events:
+        segmenter.process_event(event)
+    print(f"Found {len(segmenter.fights)} fights")
 
     # Create analyzer with basic data
     analyzer = InteractiveAnalyzer()
-    analyzer.load_data(events, None)  # No enhanced data - will trigger fallback
+    analyzer.load_data(segmenter.fights, None)  # No enhanced data - will trigger fallback
 
     print(f"\nTesting {len(analyzer.fights)} fights for character data:")
 
@@ -46,6 +48,7 @@ def test_character_data():
             print("  No character data available")
 
     print("\nTest completed!")
+
 
 if __name__ == "__main__":
     test_character_data()
