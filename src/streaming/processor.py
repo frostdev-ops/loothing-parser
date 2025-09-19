@@ -82,7 +82,7 @@ class StreamProcessor:
         self._contexts: Dict[str, ProcessingContext] = {}
 
         # Global tokenizer (thread-safe)
-        self._tokenizer = CombatLogTokenizer()
+        self._tokenizer = LineTokenizer()
 
         # Performance tracking
         self._global_stats = {
