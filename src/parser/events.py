@@ -413,19 +413,19 @@ class EventFactory:
 
         params = parsed_line.suffix_params
         if len(params) >= 4:
-            event.encounter_id = params[0]
+            event.encounter_id = cls._safe_int(params[0])
             event.encounter_name = params[1]
-            event.difficulty_id = params[2]
-            event.group_size = params[3]
+            event.difficulty_id = cls._safe_int(params[2])
+            event.group_size = cls._safe_int(params[3])
 
         # ENCOUNTER_START has instance_id parameter
         if parsed_line.event_type == "ENCOUNTER_START" and len(params) > 4:
-            event.instance_id = params[4]
+            event.instance_id = cls._safe_int(params[4])
 
         # ENCOUNTER_END has additional parameters
         if parsed_line.event_type == "ENCOUNTER_END" and len(params) >= 6:
-            event.success = params[4] == 1  # params[4] is the success field
-            event.duration = params[5]  # params[5] is the duration_ms field
+            event.success = cls._safe_int(params[4]) == 1  # params[4] is the success field
+            event.duration = cls._safe_int(params[5])  # params[5] is the duration_ms field
 
         return event
 
