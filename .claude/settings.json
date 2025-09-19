@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/home/james/.nvm/versions/node/v20.19.3/lib/node_modules/rins_hooks/hooks/code-formatter/index.js\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

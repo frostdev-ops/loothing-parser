@@ -11,5 +11,5 @@ __all__ = [
     "RaidEncounter",
     "MythicPlusRun",
     "CombatSegment",
-    "Phase"
+    "Phase",
 ]

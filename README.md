@@ -47,12 +47,14 @@ python test_all.py
 ### Performance
 
 The parser achieves excellent performance through:
+
 - Stream-based processing (no full file loading)
 - Efficient tokenization with compiled regex
 - Defensive parsing that handles unknown events
 - Optimized event routing
 
 Benchmarks on example files:
+
 - **Average Speed**: 27,639 events/second
 - **Large Files**: 610MB processed in 3.9 seconds
 - **Error Rate**: 0% across 800,000 test events
@@ -68,7 +70,9 @@ Benchmarks on example files:
 ## Known Limitations
 
 ### No LOOT Events in Logs
+
 WoW combat logs don't contain item drop/loot distribution events. Loot tracking requires:
+
 - Integration with WoW API for item data
 - Custom addon to export loot data
 - Manual entry system
@@ -133,6 +137,7 @@ loothing-parser/
 ## Contributing
 
 This parser is designed to be extensible. Key extension points:
+
 - Add new event types in `src/parser/events.py`
 - Custom segmentation logic in `src/segmentation/`
 - New output formats in `src/output/`

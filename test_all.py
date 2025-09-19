@@ -9,7 +9,7 @@ import time
 from collections import Counter
 
 # Add src directory to path
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from parser.parser import CombatLogParser
 from segmentation.encounters import EncounterSegmenter, FightType
@@ -22,10 +22,12 @@ console = Console()
 
 def test_all_files():
     """Test parser on all example files."""
-    examples_dir = Path('examples')
-    log_files = sorted(examples_dir.glob('*.txt'), key=lambda f: f.stat().st_size)
+    examples_dir = Path("examples")
+    log_files = sorted(examples_dir.glob("*.txt"), key=lambda f: f.stat().st_size)
 
-    console.print("[bold cyan]═══ WoW Combat Log Parser - Full Test Suite ═══[/bold cyan]\n")
+    console.print(
+        "[bold cyan]═══ WoW Combat Log Parser - Full Test Suite ═══[/bold cyan]\n"
+    )
     console.print(f"Found {len(log_files)} test files\n")
 
     results = []
@@ -78,15 +80,15 @@ def test_all_files():
 
         # Collect results
         result = {
-            'file': log_file.name,
-            'size_mb': file_size,
-            'events': event_count,
-            'fights': len(fights),
-            'errors': len(parser.parse_errors),
-            'time': elapsed,
-            'events_per_sec': event_count / elapsed if elapsed > 0 else 0,
-            'top_events': event_types.most_common(3),
-            'sample_encounters': sample_encounters
+            "file": log_file.name,
+            "size_mb": file_size,
+            "events": event_count,
+            "fights": len(fights),
+            "errors": len(parser.parse_errors),
+            "time": elapsed,
+            "events_per_sec": event_count / elapsed if elapsed > 0 else 0,
+            "top_events": event_types.most_common(3),
+            "sample_encounters": sample_encounters,
         }
         results.append(result)
 
@@ -95,14 +97,18 @@ def test_all_files():
         total_time += elapsed
 
         # Show quick summary
-        console.print(f"  ✓ Events: {event_count:,} | Fights: {len(fights)} | "
-                     f"Time: {elapsed:.1f}s | Speed: {result['events_per_sec']:.0f} ev/s")
+        console.print(
+            f"  ✓ Events: {event_count:,} | Fights: {len(fights)} | "
+            f"Time: {elapsed:.1f}s | Speed: {result['events_per_sec']:.0f} ev/s"
+        )
 
         # Show sample encounters
         if sample_encounters:
             for enc in sample_encounters[:2]:
                 name = enc.encounter_name or "Trash"
-                result_str = "Kill" if enc.success else "Wipe" if enc.success is False else "?"
+                result_str = (
+                    "Kill" if enc.success else "Wipe" if enc.success is False else "?"
+                )
                 console.print(f"    • {name} ({result_str})")
 
         console.print()
@@ -122,13 +128,13 @@ def test_all_files():
 
     for result in results:
         table.add_row(
-            result['file'][:30],
+            result["file"][:30],
             f"{result['size_mb']:.1f}",
             f"{result['events']:,}",
-            str(result['fights']),
-            str(result['errors']),
+            str(result["fights"]),
+            str(result["errors"]),
             f"{result['time']:.1f}",
-            f"{result['events_per_sec']:.0f}"
+            f"{result['events_per_sec']:.0f}",
         )
 
     console.print(table)
@@ -147,13 +153,15 @@ def test_all_files():
         console.print(f"  • {event_type}: {count:,} ({percentage:.1f}%)")
 
     # Check for LOOT events
-    loot_events = [evt for evt in all_event_types if 'LOOT' in evt]
+    loot_events = [evt for evt in all_event_types if "LOOT" in evt]
     if loot_events:
         console.print(f"\n[bold green]Found LOOT events![/bold green]")
         for evt in loot_events:
             console.print(f"  • {evt}: {all_event_types[evt]}")
     else:
-        console.print("\n[bold yellow]Note: No LOOT events found in any log files[/bold yellow]")
+        console.print(
+            "\n[bold yellow]Note: No LOOT events found in any log files[/bold yellow]"
+        )
         console.print("  Loot tracking will need to be implemented via:")
         console.print("  • WoW API integration for item data")
         console.print("  • Addon data export")
@@ -162,15 +170,23 @@ def test_all_files():
     # Performance analysis
     console.print(f"\n[bold]Performance Analysis:[/bold]")
     if results:
-        fastest = max(results, key=lambda r: r['events_per_sec'])
-        slowest = min(results, key=lambda r: r['events_per_sec'])
-        console.print(f"  • Fastest: {fastest['file']} @ {fastest['events_per_sec']:.0f} ev/s")
-        console.print(f"  • Slowest: {slowest['file']} @ {slowest['events_per_sec']:.0f} ev/s")
+        fastest = max(results, key=lambda r: r["events_per_sec"])
+        slowest = min(results, key=lambda r: r["events_per_sec"])
+        console.print(
+            f"  • Fastest: {fastest['file']} @ {fastest['events_per_sec']:.0f} ev/s"
+        )
+        console.print(
+            f"  • Slowest: {slowest['file']} @ {slowest['events_per_sec']:.0f} ev/s"
+        )
 
-        largest = max(results, key=lambda r: r['size_mb'])
-        console.print(f"  • Largest file: {largest['file']} ({largest['size_mb']:.1f} MB)")
-        console.print(f"    Processed in {largest['time']:.1f}s @ {largest['events_per_sec']:.0f} ev/s")
+        largest = max(results, key=lambda r: r["size_mb"])
+        console.print(
+            f"  • Largest file: {largest['file']} ({largest['size_mb']:.1f} MB)"
+        )
+        console.print(
+            f"    Processed in {largest['time']:.1f}s @ {largest['events_per_sec']:.0f} ev/s"
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_all_files()

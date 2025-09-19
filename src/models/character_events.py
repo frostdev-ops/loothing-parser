@@ -12,6 +12,7 @@ from ..parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent
 
 class ResourceType(Enum):
     """Types of character resources."""
+
     MANA = 0
     RAGE = 1
     FOCUS = 2
@@ -34,6 +35,7 @@ class TimestampedEvent:
     """
     Wrapper for events with precise timestamp and categorization.
     """
+
     timestamp: float  # Unix timestamp with microseconds
     datetime: datetime
     event: BaseEvent
@@ -47,6 +49,7 @@ class TimestampedEvent:
 @dataclass
 class DeathEvent:
     """Represents a character death."""
+
     timestamp: float
     datetime: datetime
     killing_blow: Optional[BaseEvent] = None
@@ -57,6 +60,7 @@ class DeathEvent:
 @dataclass
 class ResourceEvent:
     """Tracks resource changes (mana, energy, etc.)."""
+
     timestamp: float
     datetime: datetime
     resource_type: ResourceType
@@ -68,6 +72,7 @@ class ResourceEvent:
 @dataclass
 class CastEvent:
     """Tracks spell casts."""
+
     timestamp: float
     datetime: datetime
     spell_id: int
@@ -133,7 +138,9 @@ class CharacterEventStream:
     death_count: int = 0
 
     # Active auras at any given time (for state reconstruction)
-    active_buffs: Dict[int, AuraEvent] = field(default_factory=dict)  # spell_id -> event
+    active_buffs: Dict[int, AuraEvent] = field(
+        default_factory=dict
+    )  # spell_id -> event
     active_debuffs: Dict[int, AuraEvent] = field(default_factory=dict)
 
     # Performance metrics
@@ -153,7 +160,7 @@ class CharacterEventStream:
             timestamp=event.timestamp.timestamp(),
             datetime=event.timestamp,
             event=event,
-            category=category
+            category=category,
         )
 
         # Add to main list
@@ -250,16 +257,26 @@ class CharacterEventStream:
                 time_dead += death.resurrect_time - death.timestamp
             else:
                 # Dead until end of encounter
-                end_time = self.all_events[-1].timestamp if self.all_events else death.timestamp
+                end_time = (
+                    self.all_events[-1].timestamp
+                    if self.all_events
+                    else death.timestamp
+                )
                 time_dead += end_time - death.timestamp
 
         self.time_alive = encounter_duration - time_dead
 
         # Calculate activity (casting or dealing damage/healing)
-        active_events = len(self.damage_done) + len(self.healing_done) + len(self.casts_succeeded)
+        active_events = (
+            len(self.damage_done) + len(self.healing_done) + len(self.casts_succeeded)
+        )
         total_possible_gcds = self.time_alive / 1.5  # Assume 1.5s GCD
 
-        self.activity_percentage = min(100, (active_events / total_possible_gcds) * 100) if total_possible_gcds > 0 else 0
+        self.activity_percentage = (
+            min(100, (active_events / total_possible_gcds) * 100)
+            if total_possible_gcds > 0
+            else 0
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -269,27 +286,27 @@ class CharacterEventStream:
             Dictionary representation of character stream
         """
         return {
-            'character_guid': self.character_guid,
-            'character_name': self.character_name,
-            'class': self.class_name,
-            'spec': self.spec_name,
-            'item_level': self.item_level,
-            'metrics': {
-                'damage_done': self.total_damage_done,
-                'healing_done': self.total_healing_done,
-                'damage_taken': self.total_damage_taken,
-                'healing_received': self.total_healing_received,
-                'overhealing': self.total_overhealing,
-                'deaths': self.death_count,
-                'activity_percentage': round(self.activity_percentage, 1),
-                'time_alive_seconds': round(self.time_alive, 1)
+            "character_guid": self.character_guid,
+            "character_name": self.character_name,
+            "class": self.class_name,
+            "spec": self.spec_name,
+            "item_level": self.item_level,
+            "metrics": {
+                "damage_done": self.total_damage_done,
+                "healing_done": self.total_healing_done,
+                "damage_taken": self.total_damage_taken,
+                "healing_received": self.total_healing_received,
+                "overhealing": self.total_overhealing,
+                "deaths": self.death_count,
+                "activity_percentage": round(self.activity_percentage, 1),
+                "time_alive_seconds": round(self.time_alive, 1),
             },
-            'event_counts': {
-                'total_events': len(self.all_events),
-                'damage_events': len(self.damage_done),
-                'healing_events': len(self.healing_done),
-                'buff_events': len(self.buffs_gained),
-                'debuff_events': len(self.debuffs_gained),
-                'cast_events': len(self.casts_succeeded)
-            }
+            "event_counts": {
+                "total_events": len(self.all_events),
+                "damage_events": len(self.damage_done),
+                "healing_events": len(self.healing_done),
+                "buff_events": len(self.buffs_gained),
+                "debuff_events": len(self.debuffs_gained),
+                "cast_events": len(self.casts_succeeded),
+            },
         }
