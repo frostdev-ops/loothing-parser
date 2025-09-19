@@ -292,6 +292,14 @@ def create_tables(db: DatabaseManager) -> None:
 
     logger.info("Creating database indices for fast queries...")
 
+    # Log files indices
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_log_hash ON log_files(file_hash)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_log_processed ON log_files(processed_at)"
+    )
+
     # Encounters indices
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)"
