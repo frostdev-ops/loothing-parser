@@ -419,16 +419,9 @@ class InteractiveAnalyzer:
         """
         from src.parser.events import DamageEvent, HealEvent
 
-        damage_event_count = 0
-        heal_event_count = 0
-        total_damage_processed = 0
-        total_healing_processed = 0
-
         for event in events:
             # Track damage done
             if isinstance(event, DamageEvent) and event.source_guid in characters:
-                damage_event_count += 1
-                total_damage_processed += event.amount
                 characters[event.source_guid].total_damage_done += event.amount
                 # Add to all_events for chronological tracking
                 characters[event.source_guid].all_events.append(
@@ -437,8 +430,6 @@ class InteractiveAnalyzer:
 
             # Track healing done
             elif isinstance(event, HealEvent) and event.source_guid in characters:
-                heal_event_count += 1
-                total_healing_processed += event.amount
                 characters[event.source_guid].total_healing_done += event.amount
                 characters[event.source_guid].all_events.append(
                     (event.timestamp, "heal", event.amount)
