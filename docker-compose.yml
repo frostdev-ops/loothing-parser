@@ -1,11 +1,12 @@
-version: '3.8'
-
 services:
   # Main streaming server application
   streaming-server:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        USER_ID: "${USER_ID:-1000}"
+        GROUP_ID: "${GROUP_ID:-1000}"
     container_name: wow-combat-parser
     ports:
       - "8000:8000"
@@ -34,16 +35,12 @@ services:
 
   # Nginx reverse proxy with WebSocket support
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
     container_name: wow-combat-nginx
     ports:
       - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-      # Optional: Static files
-      - ./static:/usr/share/nginx/html:ro
     depends_on:
       - streaming-server
     restart: unless-stopped
