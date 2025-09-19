@@ -44,7 +44,9 @@ class DatabaseManager:
                 test_file.touch()
                 test_file.unlink()
             except (PermissionError, OSError) as e:
-                logger.error(f"No write permission to database directory {self.db_path.parent}: {e}")
+                logger.error(
+                    f"No write permission to database directory {self.db_path.parent}: {e}"
+                )
                 raise RuntimeError(f"Cannot write to database directory: {e}")
 
             self.connection = sqlite3.connect(
@@ -132,9 +134,7 @@ def create_tables(db: DatabaseManager) -> None:
             file_size INTEGER NOT NULL,
             processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             event_count INTEGER DEFAULT 0,
-            encounter_count INTEGER DEFAULT 0,
-            INDEX idx_log_hash(file_hash),
-            INDEX idx_log_processed(processed_at)
+            encounter_count INTEGER DEFAULT 0
         )
     """
     )
