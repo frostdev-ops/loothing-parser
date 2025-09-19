@@ -333,18 +333,18 @@ class InteractiveAnalyzer:
             for raid_encounter in raid_encounters:
                 if (
                     raid_encounter.encounter_id == fight.encounter_id
-                    and abs((raid_encounter.start_time - fight.start_time).total_seconds()) < time_tolerance
+                    and abs((raid_encounter.start_time - fight.start_time).total_seconds())
+                    < time_tolerance
                 ):
                     return raid_encounter.characters
 
         # For mythic plus dungeons, find matching run
         elif fight.fight_type == FightType.MYTHIC_PLUS:
             for m_plus_run in mythic_plus_runs:
-                if (
-                    abs((m_plus_run.start_time - fight.start_time).total_seconds()) < time_tolerance
-                    and m_plus_run.dungeon_name in (fight.encounter_name or "")
-                ):
-                    return m_plus_run.characters if hasattr(m_plus_run, 'characters') else {}
+                if abs(
+                    (m_plus_run.start_time - fight.start_time).total_seconds()
+                ) < time_tolerance and m_plus_run.dungeon_name in (fight.encounter_name or ""):
+                    return m_plus_run.characters if hasattr(m_plus_run, "characters") else {}
 
         # For dungeon bosses within M+, find from segments
         elif fight.fight_type == FightType.DUNGEON_BOSS:
@@ -354,7 +354,8 @@ class InteractiveAnalyzer:
                     if (
                         hasattr(segment, "boss_name")
                         and segment.boss_name == fight.encounter_name
-                        and abs((segment.start_time - fight.start_time).total_seconds()) < time_tolerance
+                        and abs((segment.start_time - fight.start_time).total_seconds())
+                        < time_tolerance
                     ):
                         return getattr(segment, "characters", {})
 
@@ -364,8 +365,7 @@ class InteractiveAnalyzer:
             for guid, participant in fight.participants.items():
                 if participant["is_player"]:
                     characters[guid] = CharacterEventStream(
-                        character_guid=guid,
-                        character_name=participant["name"] or "Unknown"
+                        character_guid=guid, character_name=participant["name"] or "Unknown"
                     )
             return characters if characters else None
 
@@ -382,7 +382,67 @@ class InteractiveAnalyzer:
         self, fight: Fight, characters: Optional[Dict[str, CharacterEventStream]]
     ):
         """Show detailed DPS breakdown."""
-        self.console.print("[yellow]DPS details not yet implemented[/yellow]")
+        self.console.clear()
+
+        if not characters or not fight.duration:
+            self.console.print("[red]No character data available for DPS analysis[/red]")
+            self._wait_for_key()
+            return
+
+        # Create DPS rankings table
+        dps_rankings = self.metrics_calculator.get_dps_rankings(characters, fight.duration)
+
+        # Main DPS table
+        from rich.table import Table
+        table = Table(title=f"DPS Breakdown - {fight.encounter_name or 'Unknown'}")
+        table.add_column("Rank", width=4)
+        table.add_column("Player", width=20)
+        table.add_column("DPS", width=12, justify="right")
+        table.add_column("Total Damage", width=15, justify="right")
+        table.add_column("Activity %", width=10, justify="right")
+        table.add_column("Deaths", width=7, justify="center")
+
+        for i, (name, dps, char) in enumerate(dps_rankings[:10], 1):
+            rank_color = "gold1" if i <= 3 else "white"
+            activity_color = "green" if char.activity_percentage >= 90 else "yellow" if char.activity_percentage >= 75 else "red"
+            death_color = "red" if char.death_count > 0 else "green"
+
+            table.add_row(
+                f"[{rank_color}]{i}[/{rank_color}]",
+                f"[{rank_color}]{name}[/{rank_color}]",
+                f"[{rank_color}]{dps:,.0f}[/{rank_color}]",
+                f"[{rank_color}]{char.total_damage_done:,}[/{rank_color}]",
+                f"[{activity_color}]{char.activity_percentage:.1f}%[/{activity_color}]",
+                f"[{death_color}]{char.death_count}[/{death_color}]"
+            )
+
+        self.console.print(table)
+
+        # Top abilities breakdown
+        if dps_rankings:
+            top_abilities = self.metrics_calculator.get_top_abilities(characters, "damage")
+            if top_abilities:
+                self.console.print("\n[bold cyan]Top Damage Abilities:[/bold cyan]")
+                abilities_table = Table()
+                abilities_table.add_column("Player", width=20)
+                abilities_table.add_column("Ability", width=25)
+                abilities_table.add_column("Total Damage", width=15, justify="right")
+
+                for char_name, spell_name, total in top_abilities[:10]:
+                    abilities_table.add_row(char_name, spell_name, f"{total:,}")
+
+                self.console.print(abilities_table)
+
+        # Overall stats
+        encounter_metrics = self.metrics_calculator.calculate_encounter_metrics(fight, characters)
+        if encounter_metrics:
+            self.console.print(f"\n[bold]Encounter Summary:[/bold]")
+            self.console.print(f"  Raid DPS: {encounter_metrics['raid_dps']:,.0f}")
+            self.console.print(f"  Total Damage: {encounter_metrics['total_damage']:,}")
+            self.console.print(f"  Average Activity: {encounter_metrics['activity_avg']:.1f}%")
+            self.console.print(f"  Total Deaths: {encounter_metrics['total_deaths']}")
+
+        self.console.print("\n[dim]Press any key to return...[/dim]")
         self._wait_for_key()
 
     def _show_hps_details(
