@@ -122,7 +122,7 @@ class EventCompressor:
         start_time = time.time()
 
         # Decompress with zstd
-        serialized = self.decompressor.decompress(compressed_data)
+        serialized = zstd.decompress(compressed_data)
 
         # Deserialize from bytes
         columnar_data = self._deserialize_columnar(serialized)
