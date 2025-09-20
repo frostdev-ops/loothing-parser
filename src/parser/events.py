@@ -743,15 +743,15 @@ class EventFactory:
             # spell_power, armor, resources, position, etc. (19 fields total)
             damage_offset = 19
 
-        # Damage parameters: total_damage, actual_damage, school, resisted, blocked, absorbed, critical, glancing, crushing
-        # overkill = total_damage - actual_damage
+        # Damage parameters: pre_mitigation_damage, actual_damage, school, resisted, blocked, absorbed, critical, glancing, crushing
+        # For Advanced Combat Logging, position 19 is pre-mitigation, position 20 is actual damage
+        # Overkill is not reliably available in this format
         min_params_needed = damage_offset + 6
         if len(params) >= min_params_needed:
-            total_damage = cls._safe_int(params[damage_offset])
+            pre_mitigation_damage = cls._safe_int(params[damage_offset])
             actual_damage = cls._safe_int(params[damage_offset + 1])
-            overkill = max(0, total_damage - actual_damage)
             damage_event.amount = actual_damage  # Actual damage dealt (what target took)
-            damage_event.overkill = overkill  # Calculated overkill
+            damage_event.overkill = 0  # Overkill not available in Advanced Combat Logging
             damage_event.school = cls._safe_int(params[damage_offset + 2])
             damage_event.resisted = cls._safe_int(params[damage_offset + 3])
             damage_event.blocked = cls._safe_int(params[damage_offset + 4])
