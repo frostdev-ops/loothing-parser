@@ -7,18 +7,19 @@ Tracks client connections, authentication state, and processing context.
 import time
 import asyncio
 import logging
-from typing import Dict, Any, Optional, Set
+from typing import Dict, Any, Optional, Set, List
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 
-from api.models import SessionStart, StreamStats
+from ..api.models import SessionStart, StreamStats
 
 logger = logging.getLogger(__name__)
 
 
 class SessionStatus(Enum):
     """Client session status."""
+
     CONNECTING = "connecting"
     ACTIVE = "active"
     IDLE = "idle"
@@ -67,7 +68,8 @@ class StreamSession:
     # Session metadata
     client_version: Optional[str] = None
     character_name: Optional[str] = None
-    realm: Optional[str] = None
+    server: Optional[str] = None
+    region: Optional[str] = None
     user_agent: Optional[str] = None
     remote_address: Optional[str] = None
 
@@ -178,7 +180,7 @@ class StreamSession:
             encounters_active=1 if self.encounter_context else 0,
             characters_tracked=len(self.character_context),
             uptime_seconds=current_time - self.created_at,
-            last_event_time=self.metrics.last_event_time
+            last_event_time=self.metrics.last_event_time,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -198,7 +200,7 @@ class StreamSession:
             "rate_limit": {
                 "events_per_minute": self.rate_limit_events_per_minute,
                 "events_this_minute": self.events_this_minute,
-                "within_limit": self.check_rate_limit()
+                "within_limit": self.check_rate_limit(),
             },
             "metrics": {
                 "total_events": self.metrics.total_events,
@@ -207,12 +209,12 @@ class StreamSession:
                 "uptime_seconds": self.metrics.uptime_seconds,
                 "parse_errors": self.metrics.parse_errors,
                 "bytes_received": self.metrics.bytes_received,
-                "pending_sequences": len(self.pending_sequences)
+                "pending_sequences": len(self.pending_sequences),
             },
             "context": {
                 "encounter_active": bool(self.encounter_context),
-                "characters_tracked": len(self.character_context)
-            }
+                "characters_tracked": len(self.character_context),
+            },
         }
 
 
@@ -268,7 +270,7 @@ class SessionManager:
         client_id: str,
         session_id: str,
         api_key: str,
-        metadata: Optional[SessionStart] = None
+        metadata: Optional[SessionStart] = None,
     ) -> StreamSession:
         """
         Create a new streaming session.
@@ -294,9 +296,7 @@ class SessionManager:
             del self._sessions[session_id]
 
         session = StreamSession(
-            client_id=client_id,
-            session_id=session_id,
-            api_key=api_key
+            client_id=client_id, session_id=session_id, api_key=api_key
         )
 
         if metadata:
@@ -383,7 +383,12 @@ class SessionManager:
 
         total_events = sum(s.metrics.total_events for s in sessions)
         active_sessions = [s for s in sessions if s.status == SessionStatus.ACTIVE]
-        avg_events_per_second = sum(s.metrics.events_per_second for s in active_sessions) / len(active_sessions) if active_sessions else 0.0
+        avg_events_per_second = (
+            sum(s.metrics.events_per_second for s in active_sessions)
+            / len(active_sessions)
+            if active_sessions
+            else 0.0
+        )
 
         return {
             "total_sessions": len(sessions),
