@@ -676,10 +676,13 @@ class EventFactory:
             # SPELL_ events and others use event.__dict__
             damage_event = DamageEvent(**event.__dict__)
 
-        # Damage parameters: amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing
+        # Damage parameters: total_damage, actual_damage, school, resisted, blocked, absorbed, critical, glancing, crushing
+        # overkill = total_damage - actual_damage
         if len(params) >= 6:
-            damage_event.amount = cls._safe_int(params[0])
-            damage_event.overkill = cls._safe_int(params[1])
+            total_damage = cls._safe_int(params[0])
+            actual_damage = cls._safe_int(params[1])
+            damage_event.amount = total_damage  # Total damage (including overkill)
+            damage_event.overkill = max(0, total_damage - actual_damage)  # Calculate overkill correctly
             damage_event.school = cls._safe_int(params[2])
             damage_event.resisted = cls._safe_int(params[3])
             damage_event.blocked = cls._safe_int(params[4])
