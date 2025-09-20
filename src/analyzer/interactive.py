@@ -115,6 +115,8 @@ class InteractiveAnalyzer:
                         "damage_done": char.damage_done if hasattr(char, "damage_done") else 0,
                         "healing_done": char.healing_done if hasattr(char, "healing_done") else 0,
                         "damage_taken": char.damage_taken if hasattr(char, "damage_taken") else 0,
+                        "is_player": guid.startswith("Player-") if guid else False,
+                        "is_pet": guid.startswith("Pet-") if guid else False,
                     }
 
             fights.append(fight)
