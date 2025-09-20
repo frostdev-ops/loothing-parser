@@ -299,18 +299,16 @@ def analyze(log_file, interactive, threads, no_parallel):
         # Parsing summary
         processing_time = (datetime.now() - start_time).total_seconds()
         console.print(f"\n[bold green]✓ Parsing Complete[/bold green]")
+        total_events = sum(len(fight.events) for fight in fights) if fights else 0
         console.print(f"  Events: {total_events:,}")
         console.print(f"  Time: {processing_time:.1f}s")
         console.print(f"  Encounters: {len(fights)}")
-        if parser.parse_errors:
-            console.print(f"  [yellow]Warnings: {len(parser.parse_errors)}[/yellow]")
+        if parse_errors:
+            console.print(f"  [yellow]Warnings: {len(parse_errors)}[/yellow]")
 
-        # Prepare enhanced data for analyzer
-        enhanced_data = {
-            "raid_encounters": raid_encounters,
-            "mythic_plus_runs": mythic_plus_runs,
-            "stats": enhanced_segmenter.get_stats(),
-        }
+        # Enhanced data already prepared by processors (just add stats if needed)
+        if "stats" not in enhanced_data:
+            enhanced_data["stats"] = {}
 
         # Launch interactive analyzer
         console.print("\n[bold cyan]Launching Interactive Analyzer...[/bold cyan]")
