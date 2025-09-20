@@ -262,7 +262,7 @@ class EventCategorizer:
         """Categorize resurrection events."""
         categories = {}
 
-        dest_guid = self._resolve_pet_owner(event.dest_guid)
+        dest_guid, _ = self._resolve_pet_owner(event.dest_guid)
         if dest_guid and self._is_tracked_character(dest_guid):
             categories[dest_guid] = "resurrected"
 
@@ -278,11 +278,11 @@ class EventCategorizer:
         """Categorize interrupt events."""
         categories = {}
 
-        source_guid = self._resolve_pet_owner(event.source_guid)
+        source_guid, _ = self._resolve_pet_owner(event.source_guid)
         if source_guid and self._is_tracked_character(source_guid):
             categories[source_guid] = "interrupt_done"
 
-        dest_guid = self._resolve_pet_owner(event.dest_guid)
+        dest_guid, _ = self._resolve_pet_owner(event.dest_guid)
         if dest_guid and self._is_tracked_character(dest_guid):
             categories[dest_guid] = "interrupt_received"
 
@@ -292,7 +292,7 @@ class EventCategorizer:
         """Categorize dispel events."""
         categories = {}
 
-        source_guid = self._resolve_pet_owner(event.source_guid)
+        source_guid, _ = self._resolve_pet_owner(event.source_guid)
         if source_guid and self._is_tracked_character(source_guid):
             categories[source_guid] = "dispel_done"
 
@@ -306,13 +306,13 @@ class EventCategorizer:
         if hasattr(event, "amount_absorbed") and event.amount_absorbed > 0:
             # Track who provided the shield (if available)
             if hasattr(event, "absorber_guid") and event.absorber_guid:
-                absorber_guid = self._resolve_pet_owner(event.absorber_guid)
+                absorber_guid, _ = self._resolve_pet_owner(event.absorber_guid)
                 if absorber_guid and self._is_tracked_character(absorber_guid):
                     categories[absorber_guid] = "damage_absorbed_by_shield"
 
             # Track who was protected by the shield
             if hasattr(event, "target_guid") and event.target_guid:
-                target_guid = self._resolve_pet_owner(event.target_guid)
+                target_guid, _ = self._resolve_pet_owner(event.target_guid)
                 if target_guid and self._is_tracked_character(target_guid):
                     categories[target_guid] = "damage_absorbed_for_me"
 
