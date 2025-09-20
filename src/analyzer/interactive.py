@@ -426,7 +426,6 @@ class InteractiveAnalyzer:
             characters: Dictionary of character streams to populate
             fight: Fight object containing events and duration info
         """
-        from src.parser.events import DamageEvent, HealEvent
         from src.models.combat_periods import CombatPeriodDetector
         from src.models.character_events import TimestampedEvent
 
