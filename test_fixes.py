@@ -21,7 +21,7 @@ def test_parser_fixes():
 
     # Parse the file
     parser = EventParser()
-    segmenter = EnhancedEncounterSegmenter()
+    segmenter = EnhancedSegmenter()
 
     print("Parsing events...")
     event_count = 0
