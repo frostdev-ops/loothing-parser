@@ -216,6 +216,18 @@ class CharacterEventStream:
             if event.spell_id and event.spell_id in self.active_debuffs:
                 del self.active_debuffs[event.spell_id]
 
+        elif category == "damage_absorbed_by_shield":
+            # This character provided a shield that absorbed damage
+            self.absorption_provided.append(event)
+            if hasattr(event, 'amount_absorbed'):
+                self.total_damage_absorbed_by_shields += event.amount_absorbed
+
+        elif category == "damage_absorbed_for_me":
+            # This character received protection from a shield
+            self.absorption_received.append(event)
+            if hasattr(event, 'amount_absorbed'):
+                self.total_damage_absorbed_for_me += event.amount_absorbed
+
     def add_death(self, death_event: DeathEvent):
         """Record a character death."""
         self.deaths.append(death_event)
