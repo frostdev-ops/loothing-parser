@@ -29,7 +29,9 @@ console = Console()
 
 def display_encounter_hierarchy(encounter):
     """Display encounter hierarchy as a tree."""
-    tree = Tree(f"[bold cyan]{encounter.encounter_name}[/bold cyan] +{encounter.keystone_level or 0}")
+    tree = Tree(
+        f"[bold cyan]{encounter.encounter_name}[/bold cyan] +{encounter.keystone_level or 0}"
+    )
 
     # Add encounter info
     info_branch = tree.add("[yellow]Info[/yellow]")
@@ -38,6 +40,7 @@ def display_encounter_hierarchy(encounter):
     info_branch.add(f"Success: {'✓' if encounter.success else '✗'}")
     if encounter.affixes:
         from src.config.wow_data import get_affix_name
+
         affix_names = [get_affix_name(affix) for affix in encounter.affixes]
         info_branch.add(f"Affixes: {', '.join(affix_names)}")
 
@@ -90,25 +93,33 @@ def test_with_log_file(log_path):
     console.print(f"File size: {log_path.stat().st_size / 1024 / 1024:.1f} MB")
 
     # Parse the log
-    parser = CombatLogParser()
+    from src.parser.tokenizer import LineTokenizer
+    from src.parser.events import EventFactory
+
+    tokenizer = LineTokenizer()
+    event_factory = EventFactory()
     segmenter = UnifiedSegmenter()
 
     line_count = 0
     parse_start = datetime.now()
 
-    with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             line_count += 1
             try:
-                event = parser.parse_line(line.strip())
-                if event:
-                    segmenter.process_event(event)
+                parsed = tokenizer.parse_line(line.strip())
+                if parsed:
+                    event = event_factory.create_event(parsed)
+                    if event:
+                        segmenter.process_event(event)
             except Exception as e:
                 if line_count < 10:  # Only show first few errors
                     console.print(f"[red]Parse error on line {line_count}: {e}[/red]")
 
     parse_time = (datetime.now() - parse_start).total_seconds()
-    console.print(f"Parsed {line_count:,} lines in {parse_time:.1f}s ({line_count/parse_time:.0f} lines/sec)")
+    console.print(
+        f"Parsed {line_count:,} lines in {parse_time:.1f}s ({line_count/parse_time:.0f} lines/sec)"
+    )
 
     # Get encounters
     encounters = segmenter.get_encounters()
@@ -140,7 +151,7 @@ def test_with_log_file(log_path):
                     "Boss" if fight.is_boss else ("Trash" if fight.is_trash else "Normal"),
                     f"{fight.duration:.1f}s" if fight.duration else "-",
                     str(len(fight.enemy_forces)),
-                    "✓" if fight.success else ("✗" if fight.success is False else "-")
+                    "✓" if fight.success else ("✗" if fight.success is False else "-"),
                 )
 
             console.print(table)
@@ -148,7 +159,9 @@ def test_with_log_file(log_path):
     # Also show any standalone dungeon/raid encounters (should be none if working correctly)
     other_encounters = [e for e in encounters if e.encounter_type != EncounterType.MYTHIC_PLUS]
     if other_encounters:
-        console.print(f"\n[yellow]WARNING: Found {len(other_encounters)} non-M+ encounters that might be dungeon bosses:[/yellow]")
+        console.print(
+            f"\n[yellow]WARNING: Found {len(other_encounters)} non-M+ encounters that might be dungeon bosses:[/yellow]"
+        )
         for enc in other_encounters[:5]:
             console.print(f"  - {enc.encounter_name} ({enc.encounter_type.value})")
 
@@ -157,7 +170,9 @@ def test_with_log_file(log_path):
 
 def main():
     """Main test function."""
-    console.print(Panel.fit("[bold]Hierarchical M+ Encounter Structure Test[/bold]", border_style="green"))
+    console.print(
+        Panel.fit("[bold]Hierarchical M+ Encounter Structure Test[/bold]", border_style="green")
+    )
 
     # Find example logs
     examples_dir = Path("examples")
