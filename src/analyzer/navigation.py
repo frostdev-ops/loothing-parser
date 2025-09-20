@@ -4,7 +4,10 @@ Navigation state management for interactive analyzer.
 
 from enum import Enum
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..segmentation.encounters import Fight
 
 
 class ViewMode(Enum):
