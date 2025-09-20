@@ -790,22 +790,16 @@ class EventFactory:
             # spell_power, armor, resources, position, etc. (19 fields total)
             heal_offset = 19
 
-        # Heal parameters: total_heal, base_heal, effective_heal, absorbed, critical
-        # overhealing = total_heal - effective_heal
+        # Heal parameters: heal_amount, overheal_amount, absorbed, critical
+        # Parameters are direct values, no calculation needed
         min_params_needed = heal_offset + 3
         if len(params) >= min_params_needed:
-            total_heal = cls._safe_int(params[heal_offset])
-            effective_heal = (
-                cls._safe_int(params[heal_offset + 2])
-                if len(params) > heal_offset + 2
-                else total_heal
-            )
-            heal_event.amount = total_heal  # Total healing (including overhealing)
-            heal_event.overhealing = max(
-                0, total_heal - effective_heal
-            )  # Calculate overhealing correctly
+            heal_amount = cls._safe_int(params[heal_offset])
+            overheal_amount = cls._safe_int(params[heal_offset + 1])
+            heal_event.amount = heal_amount  # Actual healing done
+            heal_event.overhealing = overheal_amount  # Direct overhealing amount
             heal_event.absorbed = (
-                cls._safe_int(params[heal_offset + 3]) if len(params) > heal_offset + 3 else 0
+                cls._safe_int(params[heal_offset + 2]) if len(params) > heal_offset + 2 else 0
             )
 
         min_params_critical = heal_offset + 5
