@@ -398,12 +398,14 @@ class EventStorage:
             cursor = self.db.execute(
                 """
                 INSERT INTO characters (
-                    character_guid, character_name, class_name, spec_name, encounter_count
-                ) VALUES (?, ?, ?, ?, 1)
+                    character_guid, character_name, server, region, class_name, spec_name, encounter_count
+                ) VALUES (?, ?, ?, ?, ?, ?, 1)
             """,
                 (
                     char_guid,
                     char_stream.character_name,
+                    char_stream.server,
+                    char_stream.region,
                     char_stream.class_name,
                     char_stream.spec_name,
                 ),
