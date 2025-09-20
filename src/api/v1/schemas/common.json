@@ -1,0 +1,360 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.example.com/schemas/common.json",
+  "title": "Common API Schemas",
+  "description": "Reusable schemas for API responses and data structures",
+  "$defs": {
+    "PaginatedResponse": {
+      "type": "object",
+      "required": ["data", "pagination"],
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Array of result items",
+          "items": {}
+        },
+        "pagination": {
+          "$ref": "#/$defs/PaginationMeta"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional response metadata",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "PaginationMeta": {
+      "type": "object",
+      "required": ["total", "limit", "offset", "has_next", "has_previous"],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Total number of items",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Items per page",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Offset from start",
+          "minimum": 0
+        },
+        "has_next": {
+          "type": "boolean",
+          "description": "Whether there is a next page"
+        },
+        "has_previous": {
+          "type": "boolean",
+          "description": "Whether there is a previous page"
+        },
+        "page": {
+          "type": "integer",
+          "description": "Current page number",
+          "minimum": 1
+        },
+        "total_pages": {
+          "type": "integer",
+          "description": "Total number of pages",
+          "minimum": 1
+        },
+        "next_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for next page"
+        },
+        "previous_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for previous page"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TimeRange": {
+      "type": "object",
+      "required": ["start_date", "end_date"],
+      "properties": {
+        "start_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start date and time"
+        },
+        "end_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End date and time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TimeSeriesPoint": {
+      "type": "object",
+      "required": ["timestamp", "value"],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Data point timestamp"
+        },
+        "value": {
+          "type": "number",
+          "description": "Data point value"
+        },
+        "additional_data": {
+          "type": "object",
+          "description": "Additional data for this point",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "TimeSeriesResponse": {
+      "type": "object",
+      "required": ["metric", "data_points", "generated_at"],
+      "properties": {
+        "metric": {
+          "type": "string",
+          "description": "Metric name",
+          "minLength": 1
+        },
+        "data_points": {
+          "type": "array",
+          "description": "Time series data points",
+          "items": {
+            "$ref": "#/$defs/TimeSeriesPoint"
+          }
+        },
+        "summary": {
+          "type": "object",
+          "description": "Summary statistics",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "average": {
+              "type": "number"
+            },
+            "std_deviation": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this response was generated"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Error": {
+      "type": "object",
+      "required": ["error", "message", "code", "timestamp"],
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "Error type",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error message",
+          "minLength": 1
+        },
+        "code": {
+          "type": "integer",
+          "description": "HTTP status code",
+          "minimum": 400,
+          "maximum": 599
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the error occurred"
+        },
+        "details": {
+          "type": "object",
+          "description": "Additional error details",
+          "additionalProperties": true
+        },
+        "trace_id": {
+          "type": "string",
+          "description": "Request trace ID for debugging",
+          "pattern": "^[a-f0-9-]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FilterCriteria": {
+      "type": "object",
+      "description": "Generic filter criteria for queries",
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Field name to filter on",
+          "minLength": 1
+        },
+        "operator": {
+          "type": "string",
+          "description": "Filter operator",
+          "enum": [
+            "equals", "not_equals", "greater_than", "less_than",
+            "greater_equal", "less_equal", "contains", "not_contains",
+            "starts_with", "ends_with", "in", "not_in", "is_null",
+            "is_not_null", "between", "regex"
+          ]
+        },
+        "value": {
+          "description": "Filter value (type depends on field and operator)"
+        },
+        "case_sensitive": {
+          "type": "boolean",
+          "description": "Whether string comparisons are case sensitive",
+          "default": false
+        }
+      },
+      "required": ["field", "operator"],
+      "additionalProperties": false
+    },
+    "SortCriteria": {
+      "type": "object",
+      "required": ["field", "direction"],
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Field to sort by",
+          "minLength": 1
+        },
+        "direction": {
+          "type": "string",
+          "description": "Sort direction",
+          "enum": ["asc", "desc"]
+        },
+        "nulls": {
+          "type": "string",
+          "description": "How to handle null values",
+          "enum": ["first", "last"],
+          "default": "last"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WoWClass": {
+      "type": "string",
+      "description": "World of Warcraft class names",
+      "enum": [
+        "Death Knight", "Demon Hunter", "Druid", "Evoker", "Hunter",
+        "Mage", "Monk", "Paladin", "Priest", "Rogue", "Shaman",
+        "Warlock", "Warrior"
+      ]
+    },
+    "WoWFaction": {
+      "type": "string",
+      "description": "World of Warcraft factions",
+      "enum": ["Alliance", "Horde"]
+    },
+    "EncounterDifficulty": {
+      "type": "string",
+      "description": "Encounter difficulty levels",
+      "enum": ["lfr", "normal", "heroic", "mythic", "mythic_plus", "timewalking"]
+    },
+    "EncounterType": {
+      "type": "string",
+      "description": "Types of encounters",
+      "enum": ["raid", "mythic_plus", "dungeon", "pvp", "world_boss"]
+    },
+    "PlayerRole": {
+      "type": "string",
+      "description": "Player roles in encounters",
+      "enum": ["tank", "healer", "dps"]
+    },
+    "PerformanceMetric": {
+      "type": "string",
+      "description": "Performance metrics that can be analyzed",
+      "enum": [
+        "dps", "hps", "dtps", "damage_done", "healing_done", "damage_taken",
+        "deaths", "activity_percentage", "survivability", "parse_percentile",
+        "interrupts", "dispels", "item_level", "duration"
+      ]
+    },
+    "AggregationFunction": {
+      "type": "string",
+      "description": "Available aggregation functions",
+      "enum": ["avg", "min", "max", "sum", "count", "stddev", "variance", "median"]
+    },
+    "SearchScope": {
+      "type": "string",
+      "description": "Search scope options",
+      "enum": ["characters", "encounters", "guilds", "all"]
+    },
+    "TrendDirection": {
+      "type": "string",
+      "description": "Trend direction indicators",
+      "enum": ["increasing", "decreasing", "stable"]
+    },
+    "EventSeverity": {
+      "type": "string",
+      "description": "Event severity levels",
+      "enum": ["info", "warning", "error", "critical"]
+    },
+    "ApiResponse": {
+      "type": "object",
+      "description": "Standard API response wrapper",
+      "required": ["success", "timestamp"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "Whether the request was successful"
+        },
+        "data": {
+          "description": "Response data (if successful)"
+        },
+        "error": {
+          "$ref": "#/$defs/Error",
+          "description": "Error information (if failed)"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Response timestamp"
+        },
+        "request_id": {
+          "type": "string",
+          "description": "Unique request identifier"
+        },
+        "rate_limit": {
+          "type": "object",
+          "description": "Rate limiting information",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "remaining": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reset_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
