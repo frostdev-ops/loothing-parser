@@ -231,7 +231,11 @@ def display_unified_summary(encounters, total_events, parse_errors, processing_t
                         "",
                         f"[dim]→ Fights[/dim]",
                         f"[dim]Bosses: {len(boss_fights)}, Trash: {len(trash_fights)}[/dim]",
-                        "", "", "", "", ""
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
                     )
 
         console.print(enc_table)
@@ -255,7 +259,9 @@ def display_unified_summary(encounters, total_events, parse_errors, processing_t
 
         if all_characters:
             # Sort by total damage
-            top_dps = sorted(all_characters.items(), key=lambda x: x[1]["total_damage"], reverse=True)[:5]
+            top_dps = sorted(
+                all_characters.items(), key=lambda x: x[1]["total_damage"], reverse=True
+            )[:5]
 
             perf_table = Table(title="\n[bold]Top Performers (by total damage)[/bold]")
             perf_table.add_column("Player", style="green")
@@ -268,7 +274,7 @@ def display_unified_summary(encounters, total_events, parse_errors, processing_t
                 perf_table.add_row(
                     data["name"],
                     f"{data['total_damage']:,}",
-                    f"{data['total_healing']:,}" if data['total_healing'] > 1000 else "-",
+                    f"{data['total_healing']:,}" if data["total_healing"] > 1000 else "-",
                     str(data["encounters"]),
                     str(data["deaths"]) if data["deaths"] > 0 else "-",
                 )
@@ -332,26 +338,40 @@ def export_unified_csv(encounters, output_file):
 
     with open(output_file, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "Type", "Name", "Difficulty", "Keystone", "Start", "End",
-            "Duration", "Success", "Players", "Deaths", "DPS", "HPS"
-        ])
+        writer.writerow(
+            [
+                "Type",
+                "Name",
+                "Difficulty",
+                "Keystone",
+                "Start",
+                "End",
+                "Duration",
+                "Success",
+                "Players",
+                "Deaths",
+                "DPS",
+                "HPS",
+            ]
+        )
 
         for enc in encounters:
-            writer.writerow([
-                enc.encounter_type.value,
-                enc.encounter_name,
-                enc.difficulty or "",
-                enc.keystone_level or "",
-                enc.start_time.isoformat() if enc.start_time else "",
-                enc.end_time.isoformat() if enc.end_time else "",
-                f"{enc.duration:.1f}" if enc.duration else "",
-                enc.success if enc.success is not None else "",
-                enc.metrics.player_count,
-                enc.metrics.total_deaths,
-                f"{enc.metrics.raid_dps:.0f}" if enc.metrics.raid_dps else "",
-                f"{enc.metrics.raid_hps:.0f}" if enc.metrics.raid_hps else "",
-            ])
+            writer.writerow(
+                [
+                    enc.encounter_type.value,
+                    enc.encounter_name,
+                    enc.difficulty or "",
+                    enc.keystone_level or "",
+                    enc.start_time.isoformat() if enc.start_time else "",
+                    enc.end_time.isoformat() if enc.end_time else "",
+                    f"{enc.duration:.1f}" if enc.duration else "",
+                    enc.success if enc.success is not None else "",
+                    enc.metrics.player_count,
+                    enc.metrics.total_deaths,
+                    f"{enc.metrics.raid_dps:.0f}" if enc.metrics.raid_dps else "",
+                    f"{enc.metrics.raid_hps:.0f}" if enc.metrics.raid_hps else "",
+                ]
+            )
 
     console.print(f"[green]Exported {len(encounters)} encounters to {output_file}[/green]")
 
@@ -502,9 +522,8 @@ def export_csv(fights, output_file):
     help="Disable parallel processing (force sequential)",
 )
 def analyze(log_file, interactive, threads, no_parallel):
-    """Analyze a combat log file with interactive exploration."""
+    """Analyze a combat log file with interactive exploration using unified segmentation."""
     from .analyzer import InteractiveAnalyzer
-    from .segmentation.enhanced import EnhancedSegmenter
 
     log_path = Path(log_file)
 
