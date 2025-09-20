@@ -38,6 +38,7 @@ from ..streaming.processor import StreamProcessor
 from ..streaming.session import SessionManager, StreamSession, SessionStatus
 from src.database.schema import DatabaseManager, create_tables
 from src.database.query import QueryAPI
+from src.config.loader import load_and_apply_config
 
 logger = logging.getLogger(__name__)
 
@@ -136,9 +137,7 @@ class StreamingServer:
             )
 
             session.websocket_connected = True
-            session.remote_address = (
-                websocket.client.host if websocket.client else "unknown"
-            )
+            session.remote_address = websocket.client.host if websocket.client else "unknown"
 
             # Track connection
             auth_manager.track_connection(client_id, session_id)
@@ -210,15 +209,11 @@ class StreamingServer:
             except WebSocketDisconnect:
                 break
             except json.JSONDecodeError as e:
-                error_response = StreamResponse(
-                    type="error", message=f"Invalid JSON: {e}"
-                )
+                error_response = StreamResponse(type="error", message=f"Invalid JSON: {e}")
                 await websocket.send_text(error_response.model_dump_json())
             except Exception as e:
                 logger.error(f"Error handling message: {e}")
-                error_response = StreamResponse(
-                    type="error", message=f"Processing error: {e}"
-                )
+                error_response = StreamResponse(type="error", message=f"Processing error: {e}")
                 await websocket.send_text(error_response.model_dump_json())
 
     async def _handle_log_line(
@@ -339,9 +334,7 @@ class StreamingServer:
         """Handle encounter state updates (broadcast to relevant clients)."""
         # For now, just log the update
         # In the future, this could broadcast to Discord or other services
-        logger.info(
-            f"Encounter update: {encounter_update.boss_name} - {encounter_update.status}"
-        )
+        logger.info(f"Encounter update: {encounter_update.boss_name} - {encounter_update.status}")
 
     def get_server_stats(self) -> Dict[str, Any]:
         """Get comprehensive server statistics."""
@@ -446,51 +439,35 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
 
         # Server metrics
         server_stats = stats["server"]
-        metrics.append(
-            f"loothing_server_uptime_seconds {server_stats['uptime_seconds']}"
-        )
+        metrics.append(f"loothing_server_uptime_seconds {server_stats['uptime_seconds']}")
         metrics.append(f"loothing_server_running {int(server_stats['running'])}")
-        metrics.append(
-            f"loothing_websocket_connections_active {server_stats['active_websockets']}"
-        )
+        metrics.append(f"loothing_websocket_connections_active {server_stats['active_websockets']}")
 
         # Processing metrics
         processing_stats = stats["processing"]
-        metrics.append(
-            f"loothing_processing_contexts_active {processing_stats['active_contexts']}"
-        )
+        metrics.append(f"loothing_processing_contexts_active {processing_stats['active_contexts']}")
         metrics.append(
             f"loothing_processing_lines_total {processing_stats['total_lines_processed']}"
         )
         metrics.append(
             f"loothing_processing_events_total {processing_stats['total_events_generated']}"
         )
-        metrics.append(
-            f"loothing_processing_errors_total {processing_stats['total_parse_errors']}"
-        )
+        metrics.append(f"loothing_processing_errors_total {processing_stats['total_parse_errors']}")
         metrics.append(
             f"loothing_processing_lines_per_second {processing_stats['lines_per_second']}"
         )
         metrics.append(
             f"loothing_processing_events_per_second {processing_stats['events_per_second']}"
         )
-        metrics.append(
-            f"loothing_processing_error_rate_percent {processing_stats['error_rate']}"
-        )
+        metrics.append(f"loothing_processing_error_rate_percent {processing_stats['error_rate']}")
 
         # Database metrics
         db_stats = stats["database"]
-        metrics.append(
-            f"loothing_database_encounters_total {db_stats['total_encounters']}"
-        )
-        metrics.append(
-            f"loothing_database_characters_total {db_stats['total_characters']}"
-        )
+        metrics.append(f"loothing_database_encounters_total {db_stats['total_encounters']}")
+        metrics.append(f"loothing_database_characters_total {db_stats['total_characters']}")
         metrics.append(f"loothing_database_blocks_total {db_stats['total_blocks']}")
         metrics.append(f"loothing_database_events_total {db_stats['total_events']}")
-        metrics.append(
-            f"loothing_database_compressed_bytes {db_stats['total_compressed_bytes']}"
-        )
+        metrics.append(f"loothing_database_compressed_bytes {db_stats['total_compressed_bytes']}")
         metrics.append(
             f"loothing_database_uncompressed_bytes {db_stats['total_uncompressed_bytes']}"
         )
@@ -499,17 +476,13 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
         auth_stats = stats["authentication"]
         metrics.append(f"loothing_auth_api_keys_total {auth_stats['total_api_keys']}")
         metrics.append(f"loothing_auth_api_keys_active {auth_stats['active_api_keys']}")
-        metrics.append(
-            f"loothing_auth_connections_total {auth_stats['total_active_connections']}"
-        )
+        metrics.append(f"loothing_auth_connections_total {auth_stats['total_active_connections']}")
         metrics.append(f"loothing_auth_clients_unique {auth_stats['unique_clients']}")
 
         # Session metrics
         session_stats = stats["sessions"]
         metrics.append(f"loothing_sessions_total {session_stats['total_sessions']}")
-        metrics.append(
-            f"loothing_sessions_events_total {session_stats['total_events_processed']}"
-        )
+        metrics.append(f"loothing_sessions_events_total {session_stats['total_events_processed']}")
         metrics.append(
             f"loothing_sessions_events_per_second_avg {session_stats['average_events_per_second']}"
         )
@@ -536,20 +509,14 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
         return encounter.model_dump()
 
     @app.get("/characters/{character_name}/metrics")
-    async def get_character_metrics(
-        character_name: str, encounter_id: Optional[int] = Query(None)
-    ):
+    async def get_character_metrics(character_name: str, encounter_id: Optional[int] = Query(None)):
         """Get character performance metrics."""
         if encounter_id:
-            metrics = _server_instance.query_api.get_character_metrics(
-                encounter_id, character_name
-            )
+            metrics = _server_instance.query_api.get_character_metrics(encounter_id, character_name)
         else:
             # Get recent metrics
             metrics = _server_instance.query_api.get_top_performers(limit=1)
-            metrics = [
-                m for m in metrics if m.character_name.lower() == character_name.lower()
-            ]
+            metrics = [m for m in metrics if m.character_name.lower() == character_name.lower()]
 
         return [metric.model_dump() for metric in metrics]
 
@@ -662,9 +629,7 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
             optimize_database(_server_instance.db)
             return {"status": "success", "message": "Database optimization completed"}
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Optimization failed: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Optimization failed: {str(e)}")
 
     @app.get("/export/encounters/{encounter_id}")
     async def export_encounter(
@@ -691,9 +656,7 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
             writer = csv.writer(output)
 
             # Write encounter header
-            writer.writerow(
-                ["encounter_id", "boss_name", "difficulty", "success", "combat_length"]
-            )
+            writer.writerow(["encounter_id", "boss_name", "difficulty", "success", "combat_length"])
             writer.writerow(
                 [
                     encounter.encounter_id,
