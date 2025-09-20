@@ -128,7 +128,8 @@ class CombatLogStreamer:
             client_id=self.client_id,
             client_version="1.0.0",
             character_name="TestCharacter",
-            realm="TestRealm",
+            server="TestRealm",
+            region="US",
             log_start_time=time.time(),
         )
 
