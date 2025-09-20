@@ -12,6 +12,7 @@ from src.parser.parser import CombatLogParser
 from src.segmentation.enhanced import EnhancedSegmenter
 from src.segmentation.encounters import EncounterSegmenter
 
+
 def test_fixes():
     """Test our parser fixes on the problematic log file."""
     log_file = "examples/WoWCombatLog-091925_190638.txt"
@@ -54,7 +55,7 @@ def test_fixes():
     print(f"Found {len(mythic_plus_runs)} M+ runs")
 
     # Find Operation: Floodgate runs
-    floodgate_runs = [run for run in mythic_plus_runs if 'Floodgate' in run.dungeon_name]
+    floodgate_runs = [run for run in mythic_plus_runs if "Floodgate" in run.dungeon_name]
 
     if floodgate_runs:
         # Test the last complete run
@@ -67,28 +68,41 @@ def test_fixes():
             # Calculate totals
             total_damage = sum(char.total_damage_done for char in run.overall_characters.values())
             total_healing = sum(char.total_healing_done for char in run.overall_characters.values())
+            total_overhealing = sum(char.total_overhealing for char in run.overall_characters.values())
 
             print(f"\nDamage & Healing:")
             print(f"  Total Damage: {total_damage:,}")
             print(f"  Total Healing: {total_healing:,}")
+            print(f"  Total Overhealing: {total_overhealing:,}")
+            print(f"  Raw Healing (healing + overhealing): {total_healing + total_overhealing:,}")
 
             # Check activity
-            active_chars = [char for char in run.overall_characters.values()
-                           if char.activity_percentage > 0]
+            active_chars = [
+                char for char in run.overall_characters.values() if char.activity_percentage > 0
+            ]
 
             if active_chars:
-                avg_activity = sum(char.activity_percentage for char in active_chars) / len(active_chars)
+                avg_activity = sum(char.activity_percentage for char in active_chars) / len(
+                    active_chars
+                )
                 print(f"  Avg Activity: {avg_activity:.1f}%")
 
                 # Top DPS
-                top_dps = sorted(run.overall_characters.values(),
-                               key=lambda x: x.total_damage_done, reverse=True)[:3]
+                top_dps = sorted(
+                    run.overall_characters.values(), key=lambda x: x.total_damage_done, reverse=True
+                )[:3]
 
                 print(f"\nTop 3 DPS:")
                 for i, char in enumerate(top_dps, 1):
-                    dps = char.get_combat_dps() if char.combat_time > 0 else char.get_dps(run.actual_time_seconds)
-                    print(f"  {i}. {char.character_name}: {char.total_damage_done:,} damage, "
-                          f"{dps:,.0f} DPS, {char.activity_percentage:.1f}% activity")
+                    dps = (
+                        char.get_combat_dps()
+                        if char.combat_time > 0
+                        else char.get_dps(run.actual_time_seconds)
+                    )
+                    print(
+                        f"  {i}. {char.character_name}: {char.total_damage_done:,} damage, "
+                        f"{dps:,.0f} DPS, {char.activity_percentage:.1f}% activity"
+                    )
 
             # Verification
             print(f"\n" + "=" * 40)
@@ -109,10 +123,13 @@ def test_fixes():
             else:
                 print("✗ Activity calculation broken")
 
-            chars_with_combat_time = [char for char in run.overall_characters.values()
-                                     if char.combat_time > 0]
+            chars_with_combat_time = [
+                char for char in run.overall_characters.values() if char.combat_time > 0
+            ]
             if len(chars_with_combat_time) > 0:
-                avg_combat_time = sum(char.combat_time for char in chars_with_combat_time) / len(chars_with_combat_time)
+                avg_combat_time = sum(char.combat_time for char in chars_with_combat_time) / len(
+                    chars_with_combat_time
+                )
                 print(f"✓ Combat time calculation working (avg {avg_combat_time:.1f}s)")
             else:
                 print("✗ Combat time calculation broken")
@@ -121,6 +138,7 @@ def test_fixes():
             print("✗ No character data found")
     else:
         print("✗ No Floodgate runs found")
+
 
 if __name__ == "__main__":
     test_fixes()
