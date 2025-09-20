@@ -16,6 +16,7 @@ from ..segmentation.encounters import Fight, FightType
 from ..parser.events import BaseEvent, DamageEvent, HealEvent
 from ..models.encounter_models import RaidEncounter, MythicPlusRun
 from ..models.character_events import CharacterEventStream
+from ..models.unified_encounter import UnifiedEncounter, EncounterType
 
 
 class InteractiveAnalyzer:
@@ -26,7 +27,7 @@ class InteractiveAnalyzer:
     and detailed combat statistics.
     """
 
-    def __init__(self, fights: List[Fight], enhanced_data: Optional[Dict[str, Any]] = None):
+    def __init__(self, encounters: List[UnifiedEncounter], enhanced_data: Optional[Dict[str, Any]] = None):
         """
         Initialize the interactive analyzer.
 
