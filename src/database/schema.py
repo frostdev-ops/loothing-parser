@@ -104,6 +104,54 @@ class DatabaseManager:
         return cursor.fetchone() is not None
 
 
+def _migrate_character_schema(db: DatabaseManager) -> None:
+    """
+    Migrate characters table to use server/region columns instead of realm.
+
+    Args:
+        db: Database manager instance
+    """
+    # Check if old schema exists (has realm column but no server/region)
+    cursor = db.execute("PRAGMA table_info(characters)")
+    columns = {row[1]: row[2] for row in cursor.fetchall()}
+
+    if 'realm' in columns and 'server' not in columns:
+        logger.info("Migrating characters table to new schema with server/region columns")
+
+        # Add new columns
+        db.execute("ALTER TABLE characters ADD COLUMN server TEXT")
+        db.execute("ALTER TABLE characters ADD COLUMN region TEXT")
+
+        # Migrate existing data: parse realm column for server-region format
+        from src.models.character import parse_character_name
+
+        cursor = db.execute("SELECT character_id, character_name, realm FROM characters WHERE realm IS NOT NULL")
+        for char_id, char_name, realm in cursor.fetchall():
+            # Try to parse the realm as server-region or just server
+            if realm and '-' in realm:
+                parts = realm.split('-')
+                if len(parts) == 2:
+                    server, region = parts
+                    db.execute(
+                        "UPDATE characters SET server = ?, region = ? WHERE character_id = ?",
+                        (server, region, char_id)
+                    )
+                else:
+                    # Just use as server
+                    db.execute(
+                        "UPDATE characters SET server = ? WHERE character_id = ?",
+                        (realm, char_id)
+                    )
+            else:
+                # Use as server
+                db.execute(
+                    "UPDATE characters SET server = ? WHERE character_id = ?",
+                    (realm, char_id)
+                )
+
+        logger.info("Character schema migration completed")
+
+
 def create_tables(db: DatabaseManager) -> None:
     """
     Create all tables and indices for combat log storage.
@@ -121,6 +169,9 @@ def create_tables(db: DatabaseManager) -> None:
         )
     """
     )
+
+    # Run migrations
+    _migrate_character_schema(db)
 
     # Log files tracking (prevent duplicate processing)
     db.execute(
@@ -329,7 +380,9 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)")
 
     # Characters indices
-    db.execute("CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, server, region)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, server, region)"
+    )
     db.execute("CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name, spec_name)"
