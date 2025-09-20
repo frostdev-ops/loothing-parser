@@ -1,0 +1,471 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.example.com/schemas/encounter.json",
+  "title": "Encounter Schema",
+  "description": "Schema for WoW encounter data",
+  "type": "object",
+  "required": ["id", "boss_name", "encounter_type", "start_time", "success"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "description": "Unique encounter identifier",
+      "minimum": 1
+    },
+    "boss_name": {
+      "type": "string",
+      "description": "Boss or encounter name",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "encounter_type": {
+      "type": "string",
+      "description": "Type of encounter",
+      "enum": ["raid", "mythic_plus", "dungeon", "pvp", "world_boss"]
+    },
+    "difficulty": {
+      "type": "string",
+      "description": "Encounter difficulty",
+      "enum": ["lfr", "normal", "heroic", "mythic", "mythic_plus", "timewalking"]
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Encounter start timestamp"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Encounter end timestamp"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Encounter duration in seconds",
+      "minimum": 0,
+      "maximum": 7200
+    },
+    "success": {
+      "type": "boolean",
+      "description": "Whether the encounter was successful"
+    },
+    "wipe_percentage": {
+      "type": "number",
+      "description": "Boss health percentage when wiped (if failed)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "raid_size": {
+      "type": "integer",
+      "description": "Number of players in the encounter",
+      "minimum": 1,
+      "maximum": 40
+    },
+    "guild_name": {
+      "type": "string",
+      "description": "Guild name for the encounter",
+      "maxLength": 100
+    },
+    "zone_name": {
+      "type": "string",
+      "description": "Zone or instance name",
+      "maxLength": 100,
+      "examples": ["Aberrus, the Shadowed Crucible", "Amirdrassil, the Dream's Hope"]
+    },
+    "keystone_level": {
+      "type": "integer",
+      "description": "Mythic+ keystone level (if applicable)",
+      "minimum": 2,
+      "maximum": 35
+    },
+    "affixes": {
+      "type": "array",
+      "description": "Mythic+ affixes (if applicable)",
+      "items": {
+        "type": "string",
+        "maxLength": 50
+      },
+      "maxItems": 4,
+      "uniqueItems": true,
+      "examples": [["Tyrannical", "Inspiring", "Grievous"]]
+    },
+    "total_damage": {
+      "type": "integer",
+      "description": "Total damage done by all players",
+      "minimum": 0
+    },
+    "total_healing": {
+      "type": "integer",
+      "description": "Total healing done by all players",
+      "minimum": 0
+    },
+    "participants": {
+      "type": "array",
+      "description": "Encounter participants",
+      "items": {
+        "$ref": "#/$defs/Participant"
+      },
+      "minItems": 1,
+      "maxItems": 40
+    },
+    "damage_breakdown": {
+      "type": "array",
+      "description": "Damage breakdown by participant",
+      "items": {
+        "$ref": "#/$defs/DamageEntry"
+      }
+    },
+    "healing_breakdown": {
+      "type": "array",
+      "description": "Healing breakdown by participant",
+      "items": {
+        "$ref": "#/$defs/HealingEntry"
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "description": "Encounter timeline events",
+      "items": {
+        "$ref": "#/$defs/TimelineEvent"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional encounter metadata",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Participant": {
+      "type": "object",
+      "required": ["character_name", "class_name"],
+      "properties": {
+        "character_name": {
+          "type": "string",
+          "description": "Character name",
+          "minLength": 2,
+          "maxLength": 50
+        },
+        "class_name": {
+          "type": "string",
+          "description": "Character class",
+          "enum": [
+            "Death Knight", "Demon Hunter", "Druid", "Evoker", "Hunter",
+            "Mage", "Monk", "Paladin", "Priest", "Rogue", "Shaman",
+            "Warlock", "Warrior"
+          ]
+        },
+        "spec_name": {
+          "type": "string",
+          "description": "Character specialization",
+          "maxLength": 50
+        },
+        "role": {
+          "type": "string",
+          "description": "Player role in encounter",
+          "enum": ["tank", "healer", "dps"]
+        },
+        "dps": {
+          "type": "number",
+          "description": "Damage per second",
+          "minimum": 0
+        },
+        "hps": {
+          "type": "number",
+          "description": "Healing per second",
+          "minimum": 0
+        },
+        "dtps": {
+          "type": "number",
+          "description": "Damage taken per second",
+          "minimum": 0
+        },
+        "damage_done": {
+          "type": "integer",
+          "description": "Total damage done",
+          "minimum": 0
+        },
+        "healing_done": {
+          "type": "integer",
+          "description": "Total healing done",
+          "minimum": 0
+        },
+        "damage_taken": {
+          "type": "integer",
+          "description": "Total damage taken",
+          "minimum": 0
+        },
+        "deaths": {
+          "type": "integer",
+          "description": "Number of deaths",
+          "minimum": 0
+        },
+        "interrupts": {
+          "type": "integer",
+          "description": "Number of interrupts",
+          "minimum": 0
+        },
+        "dispels": {
+          "type": "integer",
+          "description": "Number of dispels",
+          "minimum": 0
+        },
+        "activity_percentage": {
+          "type": "number",
+          "description": "Activity percentage",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "item_level": {
+          "type": "number",
+          "description": "Character item level",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "additionalProperties": false
+    },
+    "DamageEntry": {
+      "type": "object",
+      "required": ["character_name", "total_damage"],
+      "properties": {
+        "character_name": {
+          "type": "string",
+          "description": "Character name",
+          "minLength": 2,
+          "maxLength": 50
+        },
+        "total_damage": {
+          "type": "integer",
+          "description": "Total damage done",
+          "minimum": 0
+        },
+        "spell_breakdown": {
+          "type": "array",
+          "description": "Damage breakdown by spell",
+          "items": {
+            "$ref": "#/$defs/SpellDamage"
+          }
+        },
+        "target_breakdown": {
+          "type": "object",
+          "description": "Damage breakdown by target",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "HealingEntry": {
+      "type": "object",
+      "required": ["character_name", "total_healing"],
+      "properties": {
+        "character_name": {
+          "type": "string",
+          "description": "Character name",
+          "minLength": 2,
+          "maxLength": 50
+        },
+        "total_healing": {
+          "type": "integer",
+          "description": "Total healing done",
+          "minimum": 0
+        },
+        "overhealing": {
+          "type": "integer",
+          "description": "Total overhealing",
+          "minimum": 0
+        },
+        "spell_breakdown": {
+          "type": "array",
+          "description": "Healing breakdown by spell",
+          "items": {
+            "$ref": "#/$defs/SpellHealing"
+          }
+        },
+        "target_breakdown": {
+          "type": "object",
+          "description": "Healing breakdown by target",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "SpellDamage": {
+      "type": "object",
+      "required": ["spell_name", "spell_id", "damage", "hits"],
+      "properties": {
+        "spell_name": {
+          "type": "string",
+          "description": "Spell name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "spell_id": {
+          "type": "integer",
+          "description": "Spell ID",
+          "minimum": 1
+        },
+        "damage": {
+          "type": "integer",
+          "description": "Total damage from this spell",
+          "minimum": 0
+        },
+        "hits": {
+          "type": "integer",
+          "description": "Number of hits",
+          "minimum": 0
+        },
+        "crits": {
+          "type": "integer",
+          "description": "Number of critical hits",
+          "minimum": 0
+        },
+        "misses": {
+          "type": "integer",
+          "description": "Number of misses",
+          "minimum": 0
+        },
+        "average_damage": {
+          "type": "number",
+          "description": "Average damage per hit",
+          "minimum": 0
+        },
+        "max_hit": {
+          "type": "integer",
+          "description": "Maximum single hit damage",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "SpellHealing": {
+      "type": "object",
+      "required": ["spell_name", "spell_id", "healing", "hits"],
+      "properties": {
+        "spell_name": {
+          "type": "string",
+          "description": "Spell name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "spell_id": {
+          "type": "integer",
+          "description": "Spell ID",
+          "minimum": 1
+        },
+        "healing": {
+          "type": "integer",
+          "description": "Total healing from this spell",
+          "minimum": 0
+        },
+        "overhealing": {
+          "type": "integer",
+          "description": "Total overhealing from this spell",
+          "minimum": 0
+        },
+        "hits": {
+          "type": "integer",
+          "description": "Number of heals",
+          "minimum": 0
+        },
+        "crits": {
+          "type": "integer",
+          "description": "Number of critical heals",
+          "minimum": 0
+        },
+        "average_healing": {
+          "type": "number",
+          "description": "Average healing per cast",
+          "minimum": 0
+        },
+        "max_heal": {
+          "type": "integer",
+          "description": "Maximum single heal amount",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "TimelineEvent": {
+      "type": "object",
+      "required": ["timestamp", "event_type"],
+      "properties": {
+        "timestamp": {
+          "type": "number",
+          "description": "Event timestamp (seconds from encounter start)",
+          "minimum": 0
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Type of event",
+          "enum": [
+            "phase_change", "death", "ability_cast", "damage_spike",
+            "healing_cd", "interrupt", "dispel", "mechanic_failure"
+          ]
+        },
+        "character": {
+          "type": "string",
+          "description": "Character involved in event",
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "description": "Event description",
+          "maxLength": 500
+        },
+        "severity": {
+          "type": "string",
+          "description": "Event severity",
+          "enum": ["info", "warning", "error", "critical"]
+        },
+        "data": {
+          "type": "object",
+          "description": "Additional event data",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "id": 12345,
+      "boss_name": "Fyrakk the Blazing",
+      "encounter_type": "raid",
+      "difficulty": "heroic",
+      "start_time": "2024-01-15T20:30:00Z",
+      "end_time": "2024-01-15T20:38:25Z",
+      "duration": 505.0,
+      "success": true,
+      "raid_size": 20,
+      "guild_name": "Earthen Ring",
+      "zone_name": "Amirdrassil, the Dream's Hope",
+      "total_damage": 125000000,
+      "total_healing": 35000000,
+      "participants": [
+        {
+          "character_name": "Thrall",
+          "class_name": "Shaman",
+          "spec_name": "Enhancement",
+          "role": "dps",
+          "dps": 142500.5,
+          "hps": 12000.2,
+          "dtps": 8500.1,
+          "damage_done": 71963752,
+          "healing_done": 6060101,
+          "damage_taken": 4292551,
+          "deaths": 0,
+          "interrupts": 3,
+          "dispels": 1,
+          "activity_percentage": 89.5,
+          "item_level": 489.5
+        }
+      ]
+    }
+  ]
+}
