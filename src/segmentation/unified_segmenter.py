@@ -67,9 +67,17 @@ class UnifiedSegmenter:
         try:
             # Handle encounter boundaries
             if event.event_type == "ENCOUNTER_START":
-                self._start_raid_encounter(event)
+                # Check if we're inside a M+ run
+                if self.current_encounter and self.current_encounter.encounter_type == EncounterType.MYTHIC_PLUS:
+                    self._start_dungeon_boss(event)
+                else:
+                    self._start_raid_encounter(event)
             elif event.event_type == "ENCOUNTER_END":
-                self._end_raid_encounter(event)
+                # Check if we're inside a M+ run
+                if self.current_encounter and self.current_encounter.encounter_type == EncounterType.MYTHIC_PLUS:
+                    self._end_dungeon_boss(event)
+                else:
+                    self._end_raid_encounter(event)
             elif event.event_type == "CHALLENGE_MODE_START":
                 self._start_mythic_plus(event)
             elif event.event_type == "CHALLENGE_MODE_END":
