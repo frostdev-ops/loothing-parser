@@ -16,7 +16,6 @@ from rich import print as rprint
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.parser.parser import CombatLogParser
 from src.segmentation.unified_segmenter import UnifiedSegmenter
 from src.models.unified_encounter import EncounterType
 from src.config.loader import load_and_apply_config
