@@ -72,12 +72,18 @@ def test_dps_hps():
             if hasattr(event, "source_guid") and event.source_guid in characters:
                 characters[event.source_guid].add_event(event)
 
-        # Calculate DPS/HPS
-        print(f"\nPlayer performance:")
+        # Calculate DPS/HPS using fight duration
+        fight_duration = fight.duration
+        print(f"\nPlayer performance (fight duration: {fight_duration:.1f}s):")
         for guid, char in characters.items():
-            dps = char.get_dps()
-            hps = char.get_hps()
-            print(f"{char.player_name}: DPS={dps:.0f}, HPS={hps:.0f}")
+            # Use encounter DPS/HPS (total time based)
+            encounter_dps = char.get_dps(fight_duration)
+            encounter_hps = char.get_hps(fight_duration)
+            # Use combat DPS/HPS (combat time only)
+            combat_dps = char.get_combat_dps()
+            combat_hps = char.get_combat_hps()
+            print(f"{char.player_name}: Encounter DPS={encounter_dps:.0f}, HPS={encounter_hps:.0f}")
+            print(f"  Combat DPS={combat_dps:.0f}, HPS={combat_hps:.0f} (combat time: {char.combat_time:.1f}s)")
 
 
 if __name__ == "__main__":
