@@ -171,7 +171,11 @@ class MetricsCalculator:
         total_damage = sum(char.total_damage_done for char in characters.values())
         dps_players = len([char for char in characters.values() if char.total_damage_done > 0])
 
-        duration_for_dps = fight.combat_duration if fight.combat_duration and fight.combat_duration > 0 else fight.duration
+        duration_for_dps = (
+            fight.combat_duration
+            if fight.combat_duration and fight.combat_duration > 0
+            else fight.duration
+        )
         if dps_players > 0 and duration_for_dps > 0:
             avg_dps = total_damage / (dps_players * duration_for_dps)
             efficiency["avg_dps_per_player"] = avg_dps
@@ -221,7 +225,11 @@ class MetricsCalculator:
                     key = f"{char.character_name}:{event.spell_name}"
                     if key not in ability_totals:
                         ability_totals[key] = 0
-                    ability_totals[key] += getattr(event, "amount", 0)
+                    # Use appropriate amount based on event type
+                    if ability_type == "healing" and hasattr(event, "effective_healing"):
+                        ability_totals[key] += event.effective_healing
+                    else:
+                        ability_totals[key] += getattr(event, "amount", 0)
 
         # Sort and return top abilities
         sorted_abilities = sorted(ability_totals.items(), key=lambda x: x[1], reverse=True)
