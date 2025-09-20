@@ -30,6 +30,11 @@ def test_damage_fixes():
             spell_absorbed_count += 1
             if hasattr(event, "amount_absorbed"):
                 total_absorbed_damage += event.amount_absorbed
+                if spell_absorbed_count <= 3:  # Debug first few
+                    print(f"SPELL_ABSORBED #{spell_absorbed_count}: type={type(event)}, amount={event.amount_absorbed}")
+                    print(f"  attacker_guid={getattr(event, 'attacker_guid', 'MISSING')}")
+                    print(f"  absorber_guid={getattr(event, 'absorber_guid', 'MISSING')}")
+                    print(f"  target_guid={getattr(event, 'target_guid', 'MISSING')}")
 
         # Track overkill in damage events
         if hasattr(event, "overkill") and event.overkill > 0:
