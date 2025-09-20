@@ -119,23 +119,32 @@ class UnifiedSegmenter:
 
     def _route_to_characters(self, event: BaseEvent):
         """Route events to appropriate character streams."""
+        logger = logging.getLogger(__name__)
+
         # Handle source character
         if event.source_guid:
             source_guid = self._resolve_pet_owner(event.source_guid)
             if source_guid and source_guid.startswith("Player-"):
                 char = self.current_encounter.add_character(source_guid, event.source_name)
+                logger.debug(f"Routing {event.event_type} to source player {char.character_name} ({source_guid})")
                 self._add_event_to_character(char, event, "source")
+            else:
+                logger.debug(f"Not routing {event.event_type}: source_guid {event.source_guid} -> {source_guid} (not player)")
 
         # Handle destination character
         if event.dest_guid:
             dest_guid = self._resolve_pet_owner(event.dest_guid)
             if dest_guid and dest_guid.startswith("Player-"):
                 char = self.current_encounter.add_character(dest_guid, event.dest_name)
+                logger.debug(f"Routing {event.event_type} to dest player {char.character_name} ({dest_guid})")
                 self._add_event_to_character(char, event, "dest")
+            else:
+                logger.debug(f"Not routing {event.event_type}: dest_guid {event.dest_guid} -> {dest_guid} (not player)")
 
     def _add_event_to_character(self, char: EnhancedCharacter, event: BaseEvent, role: str):
         """Add event to character with proper categorization."""
         import logging
+
         logger = logging.getLogger(__name__)
 
         # Determine category based on event type and role
@@ -146,13 +155,17 @@ class UnifiedSegmenter:
                 category = "damage_done"
             elif role == "dest":
                 category = "damage_taken"
-            logger.debug(f"Damage event: {event.event_type}, role: {role}, category: {category}, isinstance: {isinstance(event, DamageEvent)}")
+            logger.debug(
+                f"Damage event: {event.event_type}, role: {role}, category: {category}, isinstance: {isinstance(event, DamageEvent)}"
+            )
         elif isinstance(event, HealEvent) or "_HEAL" in event.event_type:
             if role == "source":
                 category = "healing_done"
             elif role == "dest":
                 category = "healing_received"
-            logger.debug(f"Heal event: {event.event_type}, role: {role}, category: {category}, isinstance: {isinstance(event, HealEvent)}")
+            logger.debug(
+                f"Heal event: {event.event_type}, role: {role}, category: {category}, isinstance: {isinstance(event, HealEvent)}"
+            )
         elif isinstance(event, AuraEvent):
             if role == "dest":
                 if event.event_type == "SPELL_AURA_APPLIED":
@@ -161,10 +174,14 @@ class UnifiedSegmenter:
                     category = "buff_lost" if self._is_buff(event) else "debuff_lost"
 
         if category:
-            logger.debug(f"Adding event to {char.character_name}: {category}, amount: {getattr(event, 'amount', 'N/A')}")
+            logger.debug(
+                f"Adding event to {char.character_name}: {category}, amount: {getattr(event, 'amount', 'N/A')}"
+            )
             char.add_event(event, category)
         else:
-            logger.debug(f"No category for event: {event.event_type}, role: {role}, type: {type(event).__name__}")
+            logger.debug(
+                f"No category for event: {event.event_type}, role: {role}, type: {type(event).__name__}"
+            )
 
     def _track_npc_abilities(self, event: BaseEvent):
         """Track NPC abilities for fight analysis."""
