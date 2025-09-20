@@ -421,8 +421,9 @@ class UnifiedSegmenter:
         self.current_encounter = None
 
     def _resolve_pet_owner(self, guid: str) -> str:
-        """Resolve pet GUIDs to their owner's GUID."""
-        if guid and guid.startswith("Pet-"):
+        """Resolve pet/guardian/summon GUIDs to their owner's GUID."""
+        # Check if this is any type of summoned entity that could belong to a player
+        if guid and (guid.startswith("Pet-") or guid.startswith("Creature-")):
             return self.pet_owners.get(guid, guid)
         return guid
 
