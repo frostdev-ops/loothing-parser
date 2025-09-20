@@ -497,6 +497,9 @@ class EventFactory:
             event.spell_name = parsed_line.prefix_params[1]
             event.spell_school = cls._safe_int(parsed_line.prefix_params[2])
 
+        # Parse character names into components
+        event._parse_character_names()
+
         return event
 
     @classmethod
