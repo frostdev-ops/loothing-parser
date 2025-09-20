@@ -583,11 +583,14 @@ class InteractiveAnalyzer:
             )
             death_color = "red" if char.death_count > 0 else "green"
 
+            overkill_color = "dim" if char.total_overkill_done == 0 else "yellow"
+
             table.add_row(
                 f"[{rank_color}]{i}[/{rank_color}]",
                 f"[{rank_color}]{name}[/{rank_color}]",
                 f"[{rank_color}]{dps:,.0f}[/{rank_color}]",
                 f"[{rank_color}]{char.total_damage_done:,}[/{rank_color}]",
+                f"[{overkill_color}]{char.total_overkill_done:,}[/{overkill_color}]",
                 f"[{activity_color}]{char.activity_percentage:.1f}%[/{activity_color}]",
                 f"[{death_color}]{char.death_count}[/{death_color}]",
             )
