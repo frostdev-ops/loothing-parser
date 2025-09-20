@@ -304,7 +304,9 @@ class ParallelLogProcessor:
                 logger.error(f"Error calculating raid metrics for {raid_encounter.boss_name}: {e}")
                 self.parse_errors.append(f"Raid metrics calculation failed: {str(e)}")
 
-        logger.info(f"Character metrics calculated for {len(all_mythic_plus_runs)} M+ runs and {len(all_raid_encounters)} raid encounters")
+        logger.info(
+            f"Character metrics calculated for {len(all_mythic_plus_runs)} M+ runs and {len(all_raid_encounters)} raid encounters"
+        )
 
         # Prepare enhanced data
         enhanced_data = {
@@ -406,6 +408,33 @@ class ParallelLogProcessor:
 
         fights = segmenter.finalize()
         raid_encounters, mythic_plus_runs = enhanced_segmenter.finalize()
+
+        # Calculate character metrics for sequential processing too
+        logger.info("Calculating character metrics for sequentially-processed encounters...")
+
+        # Process M+ runs: aggregate character data and calculate metrics
+        for m_plus_run in mythic_plus_runs:
+            try:
+                # Aggregate character data across all segments
+                m_plus_run.aggregate_character_data()
+                # Calculate all metrics including character DPS/HPS
+                m_plus_run.calculate_metrics()
+                logger.debug(f"Calculated metrics for M+ run: {m_plus_run.dungeon_name}")
+            except Exception as e:
+                logger.error(f"Error calculating M+ metrics for {m_plus_run.dungeon_name}: {e}")
+                self.parse_errors.append(f"M+ metrics calculation failed: {str(e)}")
+
+        # Process raid encounters: calculate metrics
+        for raid_encounter in raid_encounters:
+            try:
+                # Calculate all metrics including character DPS/HPS
+                raid_encounter.calculate_metrics()
+                logger.debug(f"Calculated metrics for raid encounter: {raid_encounter.boss_name}")
+            except Exception as e:
+                logger.error(f"Error calculating raid metrics for {raid_encounter.boss_name}: {e}")
+                self.parse_errors.append(f"Raid metrics calculation failed: {str(e)}")
+
+        logger.info(f"Character metrics calculated for {len(mythic_plus_runs)} M+ runs and {len(raid_encounters)} raid encounters")
 
         enhanced_data = {"raid_encounters": raid_encounters, "mythic_plus_runs": mythic_plus_runs}
 
