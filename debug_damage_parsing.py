@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.parser.tokenizer import LineTokenizer
 from src.parser.events import EventFactory
 
+
 def analyze_damage_line():
     """Analyze a specific damage line to understand parsing."""
 
@@ -31,17 +32,17 @@ def analyze_damage_line():
         print("Failed to parse line!")
         return
 
-    print(f"Timestamp: {parsed['timestamp']}")
-    print(f"Event type: {parsed['event_type']}")
-    print(f"Base params count: {len(parsed['base_params'])}")
-    print(f"Prefix params count: {len(parsed.get('prefix_params', []))}")
-    print(f"Suffix params count: {len(parsed.get('suffix_params', []))}")
+    print(f"Timestamp: {parsed.timestamp}")
+    print(f"Event type: {parsed.event_type}")
+    print(f"Base params count: {len(parsed.base_params)}")
+    print(f"Prefix params count: {len(getattr(parsed, 'prefix_params', []))}")
+    print(f"Suffix params count: {len(getattr(parsed, 'suffix_params', []))}")
     print()
 
     # Show the suffix params (where damage should be)
-    if 'suffix_params' in parsed:
+    if "suffix_params" in parsed:
         print("Suffix parameters (damage info):")
-        for i, param in enumerate(parsed['suffix_params'][:15]):  # First 15 params
+        for i, param in enumerate(parsed["suffix_params"][:15]):  # First 15 params
             print(f"  [{i}]: {param}")
         print()
 
@@ -51,11 +52,11 @@ def analyze_damage_line():
 
     if event:
         print(f"Event created: {type(event).__name__}")
-        if hasattr(event, 'amount'):
+        if hasattr(event, "amount"):
             print(f"Damage amount extracted: {event.amount:,}")
-        if hasattr(event, 'overkill'):
+        if hasattr(event, "overkill"):
             print(f"Overkill: {event.overkill}")
-        if hasattr(event, 'absorbed'):
+        if hasattr(event, "absorbed"):
             print(f"Absorbed: {event.absorbed}")
         print()
 
@@ -65,7 +66,7 @@ def analyze_damage_line():
 
     # After the ACL params (19 fields), we have damage params
     # From the line: 442823,632603,-1,1,0,0,0,nil,nil,nil,AOE
-    suffix = parsed.get('suffix_params', [])
+    suffix = parsed.get("suffix_params", [])
     if len(suffix) > 20:
         # ACL detected (19 ACL params before damage)
         damage_start = 19
@@ -90,6 +91,7 @@ def analyze_damage_line():
     print()
     print("The damage value 442823 is the actual damage dealt.")
     print("The value 632603 might be a damage cap or some other value.")
+
 
 if __name__ == "__main__":
     analyze_damage_line()
