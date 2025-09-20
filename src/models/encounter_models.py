@@ -114,8 +114,15 @@ class RaidEncounter:
             CharacterEventStream for this character
         """
         if character_guid not in self.characters:
+            # Parse character name to get components
+            from .character import parse_character_name
+            parsed = parse_character_name(character_name)
+
             self.characters[character_guid] = CharacterEventStream(
-                character_guid=character_guid, character_name=character_name
+                character_guid=character_guid,
+                character_name=parsed['name'],
+                server=parsed['server'],
+                region=parsed['region']
             )
         return self.characters[character_guid]
 
