@@ -14,6 +14,7 @@ from typing import List, Dict, Any
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.api.models import StreamMessage, StreamResponse, SessionStart
@@ -38,7 +39,7 @@ class MockWebSocket:
         welcome = StreamResponse(
             type="status",
             message="Connected successfully",
-            data={"session_id": "test_session_123"}
+            data={"session_id": "test_session_123"},
         )
         self.messages_to_send.append(welcome.model_dump_json())
 
@@ -82,10 +83,7 @@ class TestWebSocketProtocol:
 
         # Send a message
         test_message = StreamMessage(
-            type="log_line",
-            timestamp=time.time(),
-            line="test log line",
-            sequence=1
+            type="log_line", timestamp=time.time(), line="test log line", sequence=1
         )
 
         await websocket.send(test_message.model_dump_json())
@@ -106,7 +104,7 @@ class TestWebSocketProtocol:
             timestamp=1234567890.123,
             line='9/15/2025 21:30:22.123-4  SPELL_DAMAGE,Player-1234,"Test",0x512,0x0,Target-5678,"Target",0x10a28,0x0,1234,"Spell",0x1,5000,0,0,0,0,0,0,0',
             sequence=42,
-            metadata={"test": "data"}
+            metadata={"test": "data"},
         )
 
         # Serialize
@@ -128,7 +126,7 @@ class TestWebSocketProtocol:
             type="ack",
             message="Message acknowledged",
             sequence_ack=42,
-            data={"processed": True, "lag_ms": 15.5}
+            data={"processed": True, "lag_ms": 15.5},
         )
 
         # Serialize
@@ -148,14 +146,15 @@ class TestWebSocketProtocol:
             client_id="test_client_123",
             client_version="1.0.0",
             character_name="Testcharacter",
-            realm="TestRealm",
-            log_start_time=1234567890.0
+            server="TestRealm",
+            region="US",
+            log_start_time=1234567890.0,
         )
 
         message = StreamMessage(
             type="start_session",
             timestamp=time.time(),
-            metadata=session_start.model_dump()
+            metadata=session_start.model_dump(),
         )
 
         # Serialize and deserialize
@@ -178,11 +177,15 @@ class TestWebSocketProtocol:
 
         # Test missing required fields
         with pytest.raises(Exception):  # Should raise validation error
-            StreamMessage.model_validate_json('{"type": "log_line"}')  # Missing timestamp
+            StreamMessage.model_validate_json(
+                '{"type": "log_line"}'
+            )  # Missing timestamp
 
         # Test invalid message type
         with pytest.raises(Exception):  # Should raise validation error
-            StreamMessage.model_validate_json('{"type": "invalid_type", "timestamp": 1234567890}')
+            StreamMessage.model_validate_json(
+                '{"type": "invalid_type", "timestamp": 1234567890}'
+            )
 
 
 class TestCombatLogStreamer:
@@ -195,7 +198,7 @@ class TestCombatLogStreamer:
             server_url="ws://localhost:8000/stream",
             api_key="test_key",
             client_id="test_client",
-            reconnect_delay=1.0
+            reconnect_delay=1.0,
         )
 
         assert streamer.api_key == "test_key"
@@ -358,35 +361,20 @@ class TestWebSocketMessageFlow:
                     client_id="test_client",
                     client_version="1.0.0",
                     character_name="TestChar",
-                    realm="TestRealm"
-                ).model_dump()
+                    realm="TestRealm",
+                ).model_dump(),
             ),
-
             # Client sends log lines
             StreamMessage(
-                type="log_line",
-                timestamp=time.time(),
-                line="test line 1",
-                sequence=0
+                type="log_line", timestamp=time.time(), line="test line 1", sequence=0
             ),
             StreamMessage(
-                type="log_line",
-                timestamp=time.time(),
-                line="test line 2",
-                sequence=1
+                type="log_line", timestamp=time.time(), line="test line 2", sequence=1
             ),
-
             # Client sends heartbeat
-            StreamMessage(
-                type="heartbeat",
-                timestamp=time.time()
-            ),
-
+            StreamMessage(type="heartbeat", timestamp=time.time()),
             # Client sends session end
-            StreamMessage(
-                type="end_session",
-                timestamp=time.time()
-            )
+            StreamMessage(type="end_session", timestamp=time.time()),
         ]
 
         # Simulate server responses
@@ -394,27 +382,16 @@ class TestWebSocketMessageFlow:
             StreamResponse(
                 type="status",
                 message="Session started",
-                data={"session_id": "test_123"}
+                data={"session_id": "test_123"},
             ),
-            StreamResponse(
-                type="ack",
-                sequence_ack=0,
-                data={"processed": True}
-            ),
-            StreamResponse(
-                type="ack",
-                sequence_ack=1,
-                data={"processed": True}
-            ),
+            StreamResponse(type="ack", sequence_ack=0, data={"processed": True}),
+            StreamResponse(type="ack", sequence_ack=1, data={"processed": True}),
             StreamResponse(
                 type="status",
                 message="Heartbeat received",
-                data={"server_time": time.time()}
+                data={"server_time": time.time()},
             ),
-            StreamResponse(
-                type="status",
-                message="Session ended"
-            )
+            StreamResponse(type="status", message="Session ended"),
         ]
 
         # Verify message structure integrity
@@ -458,7 +435,7 @@ class TestWebSocketMessageFlow:
         error_response = StreamResponse(
             type="error",
             message="Processing failed",
-            data={"error_code": 500, "details": "Database connection lost"}
+            data={"error_code": 500, "details": "Database connection lost"},
         )
 
         # Serialize and deserialize
@@ -473,13 +450,14 @@ class TestWebSocketMessageFlow:
     async def test_large_message_handling(self):
         """Test handling of large messages."""
         # Create a large combat log line (realistic size)
-        large_line = "9/15/2025 21:30:22.123-4  SPELL_DAMAGE," + "Player-1234-567890AB," * 50 + "Test,0x512,0x0,Target,0x10a28,0x0,1234,Spell,0x1,5000,0,0,0,0,0,0,0"
+        large_line = (
+            "9/15/2025 21:30:22.123-4  SPELL_DAMAGE,"
+            + "Player-1234-567890AB," * 50
+            + "Test,0x512,0x0,Target,0x10a28,0x0,1234,Spell,0x1,5000,0,0,0,0,0,0,0"
+        )
 
         message = StreamMessage(
-            type="log_line",
-            timestamp=time.time(),
-            line=large_line,
-            sequence=0
+            type="log_line", timestamp=time.time(), line=large_line, sequence=0
         )
 
         # Should handle large messages without error
@@ -499,7 +477,7 @@ class TestWebSocketMessageFlow:
                 type="log_line",
                 timestamp=time.time() + i * 0.001,  # Rapid succession
                 line=f"test line {i}",
-                sequence=i
+                sequence=i,
             )
             messages.append(message)
 
@@ -515,10 +493,7 @@ class TestWebSocketMessageFlow:
     async def test_malformed_message_recovery(self):
         """Test recovery from malformed messages."""
         valid_message = StreamMessage(
-            type="log_line",
-            timestamp=time.time(),
-            line="valid line",
-            sequence=1
+            type="log_line", timestamp=time.time(), line="valid line", sequence=1
         )
 
         # Valid message should work
@@ -531,8 +506,8 @@ class TestWebSocketMessageFlow:
             '{"type": "log_line"}',  # Missing timestamp
             '{"timestamp": 1234567890}',  # Missing type
             '{"type": "invalid_type", "timestamp": 1234567890}',  # Invalid type
-            'invalid json',  # Not JSON at all
-            '',  # Empty string
+            "invalid json",  # Not JSON at all
+            "",  # Empty string
         ]
 
         for invalid_msg in invalid_messages:
