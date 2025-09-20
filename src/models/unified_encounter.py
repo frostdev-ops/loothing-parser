@@ -118,6 +118,7 @@ class Fight:
         return {
             "fight_id": self.fight_id,
             "fight_name": self.fight_name,
+            "fight_type": "boss" if self.is_boss else ("trash" if self.is_trash else "normal"),
             "players_count": len(self.players),
             "enemy_count": len(self.enemy_forces),
             "start_time": self.start_time.isoformat() if self.start_time else None,
