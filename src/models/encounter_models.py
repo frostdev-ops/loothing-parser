@@ -224,13 +224,14 @@ class CombatSegment:
         if character_guid not in self.characters:
             # Parse character name to get components
             from .character import parse_character_name
+
             parsed = parse_character_name(character_name)
 
             self.characters[character_guid] = CharacterEventStream(
                 character_guid=character_guid,
-                character_name=parsed['name'],
-                server=parsed['server'],
-                region=parsed['region']
+                character_name=parsed["name"],
+                server=parsed["server"],
+                region=parsed["region"],
             )
         return self.characters[character_guid]
 
@@ -331,6 +332,8 @@ class MythicPlusRun:
                     self.overall_characters[char_guid] = CharacterEventStream(
                         character_guid=char_guid,
                         character_name=char_stream.character_name,
+                        server=char_stream.server,
+                        region=char_stream.region,
                         class_name=char_stream.class_name,
                         spec_name=char_stream.spec_name,
                     )
