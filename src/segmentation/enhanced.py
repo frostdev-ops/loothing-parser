@@ -238,6 +238,7 @@ class EnhancedSegmenter:
 
         self.current_mythic_plus.end_time = event.timestamp
         self.current_mythic_plus.completed = event.success
+        self.current_mythic_plus.abandoned = not event.success  # Mark as abandoned if success=0
         # Note: actual_time_seconds will be calculated from start_time and end_time in calculate_metrics()
 
         self._finalize_mythic_plus()
