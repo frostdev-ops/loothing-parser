@@ -70,7 +70,18 @@ def test_dps_hps():
         # Add events to character streams
         for event in fight.events:
             if hasattr(event, "source_guid") and event.source_guid in characters:
-                characters[event.source_guid].add_event(event)
+                # Determine category based on event type
+                category = "unknown"
+                if "DAMAGE" in event.event_type:
+                    category = "damage_done"
+                elif "HEAL" in event.event_type:
+                    category = "healing_done"
+                elif "AURA_APPLIED" in event.event_type:
+                    category = "buff_gained"
+                elif "CAST_SUCCESS" in event.event_type:
+                    category = "cast_succeeded"
+
+                characters[event.source_guid].add_event(event, category)
 
         # Calculate DPS/HPS using fight duration
         fight_duration = fight.duration
