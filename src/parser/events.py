@@ -129,7 +129,8 @@ class HealEvent(SpellEvent):
     @property
     def effective_healing(self) -> int:
         """Calculate effective healing (excluding overhealing)."""
-        return self.amount - self.overhealing
+        # Ensure effective healing is never negative (protect against parsing errors)
+        return max(0, self.amount - self.overhealing)
 
 
 @dataclass
@@ -649,7 +650,6 @@ class EventFactory:
 
             # Note: Absorber GUID/name would need to be extracted from the main absorber info
             # in the base params, not the suffix params
-
 
         return event
 
