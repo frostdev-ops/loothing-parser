@@ -68,13 +68,19 @@ class UnifiedSegmenter:
             # Handle encounter boundaries
             if event.event_type == "ENCOUNTER_START":
                 # Check if we're inside a M+ run
-                if self.current_encounter and self.current_encounter.encounter_type == EncounterType.MYTHIC_PLUS:
+                if (
+                    self.current_encounter
+                    and self.current_encounter.encounter_type == EncounterType.MYTHIC_PLUS
+                ):
                     self._start_dungeon_boss(event)
                 else:
                     self._start_raid_encounter(event)
             elif event.event_type == "ENCOUNTER_END":
                 # Check if we're inside a M+ run
-                if self.current_encounter and self.current_encounter.encounter_type == EncounterType.MYTHIC_PLUS:
+                if (
+                    self.current_encounter
+                    and self.current_encounter.encounter_type == EncounterType.MYTHIC_PLUS
+                ):
                     self._end_dungeon_boss(event)
                 else:
                     self._end_raid_encounter(event)
@@ -295,6 +301,9 @@ class UnifiedSegmenter:
             affixes=event.affix_ids,
             start_time=event.timestamp,
         )
+
+        # Start initial trash segment
+        self.current_encounter.start_fight(f"{event.zone_name} - Trash (Entrance)", event.timestamp)
 
         logger.info(f"Started M+ run: {event.zone_name} +{event.keystone_level}")
 
