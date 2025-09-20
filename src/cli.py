@@ -63,61 +63,102 @@ def cli(verbose):
     help="Disable parallel processing (force sequential)",
 )
 def parse(log_file, output, format, threads, no_parallel):
-    """Parse a combat log file and extract encounters."""
+    """Parse a combat log file and extract encounters using unified segmentation."""
     log_path = Path(log_file)
     console.print(f"[bold green]Parsing combat log:[/bold green] {log_path.name}")
+    console.print(f"[cyan]File size:[/cyan] {log_path.stat().st_size / 1024 / 1024:.1f} MB")
 
-    parser = CombatLogParser()
-    segmenter = EncounterSegmenter()
-
-    # Statistics tracking
-    event_types = Counter()
-    total_events = 0
     start_time = datetime.now()
+    encounters = []
+    parse_errors = []
+    total_events = 0
 
-    # Parse with progress bar
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-        TimeRemainingColumn(),
-        console=console,
-    ) as progress:
-        file_size = log_path.stat().st_size
-        task = progress.add_task(
-            f"[cyan]Processing {file_size / 1024 / 1024:.1f} MB...", total=file_size
-        )
+    if no_parallel:
+        # Sequential processing
+        console.print("[yellow]Using sequential processing (--no-parallel)[/yellow]")
 
-        def update_progress(prog, bytes_read, total_bytes):
-            progress.update(task, completed=bytes_read)
+        tokenizer = LineTokenizer()
+        event_factory = EventFactory()
+        segmenter = UnifiedSegmenter()
 
-        # Process events
-        for event in parser.parse_file(str(log_path), update_progress):
-            total_events += 1
-            event_types[event.event_type] += 1
+        # Parse with progress bar
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeRemainingColumn(),
+            console=console,
+        ) as progress:
+            file_size = log_path.stat().st_size
+            task = progress.add_task(
+                f"[cyan]Processing...", total=file_size
+            )
 
-            # Segment into encounters
-            completed_fight = segmenter.process_event(event)
-            if completed_fight:
-                console.print(
-                    f"[yellow]Fight completed:[/yellow] {completed_fight.encounter_name or 'Trash'} "
-                    f"({'Success' if completed_fight.success else 'Wipe' if completed_fight.success is False else 'Unknown'})"
-                )
+            with open(log_path, "rb") as f:
+                bytes_read = 0
+                for line in f:
+                    bytes_read += len(line)
+                    if bytes_read % 10000 == 0:  # Update progress periodically
+                        progress.update(task, completed=bytes_read)
 
-    # Finalize remaining fights
-    fights = segmenter.finalize()
+                    try:
+                        line_str = line.decode("utf-8", errors="ignore").strip()
+                        if line_str and not line_str.startswith("#"):
+                            parsed = tokenizer.parse_line(line_str)
+                            if parsed:
+                                event = event_factory.create_event(parsed)
+                                if event:
+                                    segmenter.process_event(event)
+                                    total_events += 1
+                    except Exception as e:
+                        if len(parse_errors) < 100:
+                            parse_errors.append(str(e))
+
+                progress.update(task, completed=file_size)
+
+        # Get encounters
+        encounters = segmenter.get_encounters()
+
+        # Calculate metrics
+        console.print("[cyan]Calculating encounter metrics...[/cyan]")
+        for encounter in encounters:
+            encounter.calculate_metrics()
+
+    else:
+        # Parallel processing
+        processor = UnifiedParallelProcessor(max_workers=threads)
+        console.print(f"[cyan]Using parallel processing ({processor.max_workers} threads)[/cyan]")
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("[cyan]Detecting encounter boundaries...", total=None)
+
+            try:
+                encounters = processor.process_file(log_path)
+                total_events = processor.total_events
+                parse_errors = processor.parse_errors[:100]  # Limit errors
+
+                progress.update(task, description="[green]Parallel processing complete!")
+
+            except Exception as e:
+                console.print(f"[red]Parallel processing failed: {e}[/red]")
+                console.print("[yellow]Please try with --no-parallel flag[/yellow]")
+                return
 
     # Calculate processing time
     processing_time = (datetime.now() - start_time).total_seconds()
 
     # Display results
     if format == "summary":
-        display_summary(parser, segmenter, fights, event_types, total_events, processing_time)
+        display_unified_summary(encounters, total_events, parse_errors, processing_time)
     elif format == "json":
-        export_json(fights, output or "output.json")
+        export_unified_json(encounters, output or "output.json")
     elif format == "csv":
-        export_csv(fights, output or "output.csv")
+        export_unified_csv(encounters, output or "output.csv")
 
 
 def display_summary(parser, segmenter, fights, event_types, total_events, processing_time):
