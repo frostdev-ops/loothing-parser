@@ -7,6 +7,14 @@ from typing import Any, Dict, List, Optional, Type
 from dataclasses import dataclass, field
 from enum import Enum
 
+try:
+    from src.config.wow_data import is_flask_buff, is_food_buff, get_spec_name
+except ImportError:
+    # Fallback if config module not available
+    def is_flask_buff(spell_id): return False
+    def is_food_buff(spell_id): return False
+    def get_spec_name(spec_id): return f"Spec {spec_id}"
+
 
 class EventType(Enum):
     """Enumeration of known event types."""
