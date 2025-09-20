@@ -112,9 +112,15 @@ class InteractiveAnalyzer:
                         "name": char.name if hasattr(char, "name") else char.character_name,
                         "class": char.character_class if hasattr(char, "character_class") else None,
                         "spec": char.spec if hasattr(char, "spec") else None,
-                        "damage_done": char.total_damage_done if hasattr(char, "total_damage_done") else 0,
-                        "healing_done": char.total_healing_done if hasattr(char, "total_healing_done") else 0,
-                        "damage_taken": char.total_damage_taken if hasattr(char, "total_damage_taken") else 0,
+                        "damage_done": (
+                            char.total_damage_done if hasattr(char, "total_damage_done") else 0
+                        ),
+                        "healing_done": (
+                            char.total_healing_done if hasattr(char, "total_healing_done") else 0
+                        ),
+                        "damage_taken": (
+                            char.total_damage_taken if hasattr(char, "total_damage_taken") else 0
+                        ),
                         "is_player": guid.startswith("Player-") if guid else False,
                         "is_pet": guid.startswith("Pet-") if guid else False,
                     }
@@ -456,9 +462,14 @@ class InteractiveAnalyzer:
                 )
                 if participant.get("is_player", False):
                     player_count += 1
-                    characters[guid] = CharacterEventStream(
+                    char = CharacterEventStream(
                         character_guid=guid, character_name=participant["name"] or "Unknown"
                     )
+                    # Transfer combat metrics from participants
+                    char.total_damage_done = participant.get("damage_done", 0)
+                    char.total_healing_done = participant.get("healing_done", 0)
+                    char.total_damage_taken = participant.get("damage_taken", 0)
+                    characters[guid] = char
 
             # Fallback: if no players found via flag, detect by GUID pattern
             if player_count == 0:
