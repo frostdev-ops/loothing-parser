@@ -414,6 +414,8 @@ class CharacterEventStream:
         return {
             "character_guid": self.character_guid,
             "character_name": self.character_name,
+            "server": self.server,
+            "region": self.region,
             "class": self.class_name,
             "spec": self.spec_name,
             "item_level": self.item_level,
