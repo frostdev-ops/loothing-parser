@@ -227,10 +227,12 @@ class UnifiedSegmenter:
                     npc.damage_taken += event.amount
 
     def _handle_summon(self, event: BaseEvent):
-        """Handle pet summon events for ownership mapping."""
+        """Handle pet/guardian summon events for ownership mapping."""
         if hasattr(event, "dest_guid") and hasattr(event, "source_guid"):
-            self.pet_owners[event.dest_guid] = event.source_guid
-            logger.debug(f"Mapped pet {event.dest_guid} to owner {event.source_guid}")
+            # Only map summoned entities that could belong to players
+            if event.dest_guid.startswith(("Pet-", "Creature-", "Vehicle-")):
+                self.pet_owners[event.dest_guid] = event.source_guid
+                logger.debug(f"Mapped {event.dest_guid} to owner {event.source_guid}")
 
     def _handle_combatant_info(self, event: CombatantInfo):
         """Handle combatant info events for talent/equipment data."""
