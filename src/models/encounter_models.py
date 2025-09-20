@@ -275,6 +275,7 @@ class MythicPlusRun:
 
     # Success criteria
     completed: bool = False
+    abandoned: bool = False  # True if CHALLENGE_MODE_END had success=0
     in_time: bool = False
     num_deaths: int = 0
     time_remaining: float = 0.0  # Negative if over time
