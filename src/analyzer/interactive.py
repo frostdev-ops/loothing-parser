@@ -44,8 +44,12 @@ class InteractiveAnalyzer:
         self.display_builder = DisplayBuilder()
         self.metrics_calculator = MetricsCalculator()
 
+        # Create compatibility mapping - treat encounters as "fights" for the analyzer
+        # This maintains backward compatibility while using the unified model
+        self.fights = self._convert_encounters_to_fights(encounters)
+
         # Filter state
-        self.filtered_encounters = encounters.copy()
+        self.filtered_fights = self.fights.copy()
         self.current_filters = {}
 
         # Data caches
