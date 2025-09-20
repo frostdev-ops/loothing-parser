@@ -93,7 +93,7 @@ def test_dps_hps():
             # Use combat DPS/HPS (combat time only)
             combat_dps = char.get_combat_dps()
             combat_hps = char.get_combat_hps()
-            print(f"{char.player_name}: Encounter DPS={encounter_dps:.0f}, HPS={encounter_hps:.0f}")
+            print(f"{char.character_name}: Encounter DPS={encounter_dps:.0f}, HPS={encounter_hps:.0f}")
             print(
                 f"  Combat DPS={combat_dps:.0f}, HPS={combat_hps:.0f} (combat time: {char.combat_time:.1f}s)"
             )
