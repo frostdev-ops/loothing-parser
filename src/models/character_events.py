@@ -138,6 +138,10 @@ class CharacterEventStream:
     total_overhealing: int = 0
     death_count: int = 0
 
+    # Absorption tracking
+    total_damage_absorbed_by_shields: int = 0  # Shields I provided for others
+    total_damage_absorbed_for_me: int = 0  # Damage prevented on me
+
     # Active auras at any given time (for state reconstruction)
     active_buffs: Dict[int, AuraEvent] = field(default_factory=dict)  # spell_id -> event
     active_debuffs: Dict[int, AuraEvent] = field(default_factory=dict)
