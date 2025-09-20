@@ -14,6 +14,7 @@ from src.models.combat_periods import CombatPeriod
 
 class EncounterType(Enum):
     """Type of encounter."""
+
     RAID = "raid"
     MYTHIC_PLUS = "mythic_plus"
     DUNGEON = "dungeon"
@@ -56,7 +57,7 @@ class NPCCombatant:
             "deaths": self.deaths,
             "abilities_count": len(self.abilities_used),
             "is_boss": self.is_boss,
-            "is_elite": self.is_elite
+            "is_elite": self.is_elite,
         }
 
 
@@ -84,6 +85,10 @@ class Fight:
 
     # Combat periods (active combat vs downtime)
     combat_periods: List[CombatPeriod] = field(default_factory=list)
+
+    # Fight type
+    is_boss: bool = False  # True for dungeon bosses in M+
+    is_trash: bool = False  # True for trash segments in M+
 
     # Fight outcome
     success: Optional[bool] = None
@@ -120,14 +125,8 @@ class Fight:
             "duration": round(self.duration, 1),
             "combat_time": round(self.combat_time, 1),
             "success": self.success,
-            "players": {
-                guid: char.to_dict()
-                for guid, char in self.players.items()
-            },
-            "enemy_forces": {
-                guid: npc.to_dict()
-                for guid, npc in self.enemy_forces.items()
-            }
+            "players": {guid: char.to_dict() for guid, char in self.players.items()},
+            "enemy_forces": {guid: npc.to_dict() for guid, npc in self.enemy_forces.items()},
         }
 
 
@@ -177,10 +176,10 @@ class EncounterMetrics:
             "composition": {
                 "tanks": self.tanks_count,
                 "healers": self.healers_count,
-                "dps": self.dps_count
+                "dps": self.dps_count,
             },
             "avg_activity": round(self.avg_activity, 1),
-            "avg_item_level": round(self.avg_item_level, 1) if self.avg_item_level else None
+            "avg_item_level": round(self.avg_item_level, 1) if self.avg_item_level else None,
         }
 
 
@@ -238,13 +237,14 @@ class UnifiedEncounter:
         """Add or get a character."""
         if guid not in self.characters:
             from src.models.character import parse_character_name
+
             parsed = parse_character_name(name)
 
             self.characters[guid] = EnhancedCharacter(
                 character_guid=guid,
                 character_name=parsed["name"],
                 server=parsed["server"],
-                region=parsed["region"]
+                region=parsed["region"],
             )
         return self.characters[guid]
 
@@ -272,11 +272,7 @@ class UnifiedEncounter:
     def start_fight(self, fight_name: str, start_time: datetime) -> Fight:
         """Start a new fight segment."""
         fight_id = len(self.fights) + 1
-        fight = Fight(
-            fight_id=fight_id,
-            fight_name=fight_name,
-            start_time=start_time
-        )
+        fight = Fight(fight_id=fight_id, fight_name=fight_name, start_time=start_time)
 
         # Copy current characters to the fight
         for guid, char in self.characters.items():
@@ -334,11 +330,15 @@ class UnifiedEncounter:
         if self.metrics.player_count > 0:
             active_chars = [c for c in self.characters.values() if c.activity_percentage > 0]
             if active_chars:
-                self.metrics.avg_activity = sum(c.activity_percentage for c in active_chars) / len(active_chars)
+                self.metrics.avg_activity = sum(c.activity_percentage for c in active_chars) / len(
+                    active_chars
+                )
 
             chars_with_ilvl = [c for c in self.characters.values() if c.item_level]
             if chars_with_ilvl:
-                self.metrics.avg_item_level = sum(c.item_level for c in chars_with_ilvl) / len(chars_with_ilvl)
+                self.metrics.avg_item_level = sum(c.item_level for c in chars_with_ilvl) / len(
+                    chars_with_ilvl
+                )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -359,8 +359,5 @@ class UnifiedEncounter:
             "in_time": self.in_time,
             "metrics": self.metrics.to_dict(),
             "fights": [fight.to_dict() for fight in self.fights],
-            "characters": {
-                guid: char.to_dict()
-                for guid, char in self.characters.items()
-            }
+            "characters": {guid: char.to_dict() for guid, char in self.characters.items()},
         }
