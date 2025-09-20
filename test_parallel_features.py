@@ -93,15 +93,23 @@ def compare_encounters(sequential_encounters, parallel_encounters):
 
             # Check for ability breakdowns
             if seq_enc.characters and par_enc.characters:
-                seq_with_abilities = sum(1 for c in seq_enc.characters.values()
-                                       if c.damage_by_ability or c.healing_by_ability)
-                par_with_abilities = sum(1 for c in par_enc.characters.values()
-                                       if c.damage_by_ability or c.healing_by_ability)
+                seq_with_abilities = sum(
+                    1
+                    for c in seq_enc.characters.values()
+                    if hasattr(c, 'dps_by_ability') and c.dps_by_ability
+                )
+                par_with_abilities = sum(
+                    1
+                    for c in par_enc.characters.values()
+                    if hasattr(c, 'dps_by_ability') and c.dps_by_ability
+                )
 
                 if seq_with_abilities == par_with_abilities:
                     print(f"    ✓ Characters with ability data: {seq_with_abilities}")
                 else:
-                    print(f"    ❌ Ability data mismatch: {seq_with_abilities} vs {par_with_abilities}")
+                    print(
+                        f"    ❌ Ability data mismatch: {seq_with_abilities} vs {par_with_abilities}"
+                    )
                     success = False
 
         # Compare deaths
@@ -200,7 +208,9 @@ def test_feature_preservation():
 
     if parallel_encounters:
         # Check M+ hierarchical structure
-        mplus_runs = [e for e in parallel_encounters if e.encounter_type == EncounterType.MYTHIC_PLUS]
+        mplus_runs = [
+            e for e in parallel_encounters if e.encounter_type == EncounterType.MYTHIC_PLUS
+        ]
         if mplus_runs:
             print(f"\n✓ M+ Hierarchical Structure Preserved:")
             for mp in mplus_runs:
@@ -225,13 +235,15 @@ def test_feature_preservation():
             sample_char = list(enc_with_abilities.characters.values())[0]
             if sample_char.damage_by_ability:
                 top_abilities = sorted(
-                    sample_char.damage_by_ability.items(),
-                    key=lambda x: x[1],
-                    reverse=True
+                    sample_char.damage_by_ability.items(), key=lambda x: x[1], reverse=True
                 )[:3]
                 print(f"  Sample: {sample_char.name}")
                 for ability, damage in top_abilities:
-                    percent = (damage / sample_char.damage_done * 100) if sample_char.damage_done > 0 else 0
+                    percent = (
+                        (damage / sample_char.damage_done * 100)
+                        if sample_char.damage_done > 0
+                        else 0
+                    )
                     print(f"    - {ability}: {percent:.1f}%")
 
         # Check death tracking
@@ -240,7 +252,7 @@ def test_feature_preservation():
             print(f"\n✓ Death Analysis Preserved:")
             sample_death = enc_with_deaths.deaths[0]
             print(f"  Sample death: {sample_death['victim_name']}")
-            if sample_death.get('recent_events'):
+            if sample_death.get("recent_events"):
                 print(f"    Recent events tracked: {len(sample_death['recent_events'])}")
 
     # 5. Performance comparison
@@ -317,7 +329,13 @@ def test_export_consistency():
         # Check for expected fields
         if data:
             sample = data[0]
-            expected_fields = ["encounter_type", "encounter_name", "duration", "character_count", "death_count"]
+            expected_fields = [
+                "encounter_type",
+                "encounter_name",
+                "duration",
+                "character_count",
+                "death_count",
+            ]
             missing = [f for f in expected_fields if f not in sample]
 
             if not missing:
