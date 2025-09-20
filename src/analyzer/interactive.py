@@ -538,8 +538,8 @@ class InteractiveAnalyzer:
                     )
                 )
 
-            # Track healing done (all healing event types)
-            elif self._is_heal_event(event) and event.source_guid in characters:
+            # Track healing done (all healing event types) - independent check
+            if self._is_heal_event(event) and event.source_guid in characters:
                 heal_amount = self._get_effective_healing(event)
                 characters[event.source_guid].total_healing_done += heal_amount
                 characters[event.source_guid].all_events.append(
@@ -551,8 +551,8 @@ class InteractiveAnalyzer:
                     )
                 )
 
-            # Track damage taken
-            elif self._is_damage_event(event) and event.dest_guid in characters:
+            # Track damage taken - independent check
+            if self._is_damage_event(event) and event.dest_guid in characters:
                 damage_amount = self._get_total_damage(event)
                 characters[event.dest_guid].total_damage_taken += damage_amount
 
