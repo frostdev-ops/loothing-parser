@@ -30,12 +30,20 @@ class MetricsCalculator:
         }
 
         # Calculate raid-wide DPS/HPS using combat duration if available
-        duration_for_metrics = fight.combat_duration if fight.combat_duration and fight.combat_duration > 0 else fight.duration
+        duration_for_metrics = (
+            fight.combat_duration
+            if fight.combat_duration and fight.combat_duration > 0
+            else fight.duration
+        )
         if duration_for_metrics and duration_for_metrics > 0:
             metrics["raid_dps"] = metrics["total_damage"] / duration_for_metrics
             metrics["raid_hps"] = metrics["total_healing"] / duration_for_metrics
             metrics["combat_duration"] = fight.combat_duration
-            metrics["combat_percentage"] = (fight.combat_duration / fight.duration * 100) if fight.duration and fight.combat_duration else 0
+            metrics["combat_percentage"] = (
+                (fight.combat_duration / fight.duration * 100)
+                if fight.duration and fight.combat_duration
+                else 0
+            )
 
         # Calculate average activity
         active_chars = [char for char in characters.values() if char.activity_percentage > 0]
@@ -159,13 +167,16 @@ class MetricsCalculator:
 
         efficiency = {}
 
-        # DPS efficiency (actual vs theoretical max)
+        # DPS efficiency (actual vs theoretical max) - use combat time if available
         total_damage = sum(char.total_damage_done for char in characters.values())
         dps_players = len([char for char in characters.values() if char.total_damage_done > 0])
 
-        if dps_players > 0 and fight.duration > 0:
-            avg_dps = total_damage / (dps_players * fight.duration)
+        duration_for_dps = fight.combat_duration if fight.combat_duration and fight.combat_duration > 0 else fight.duration
+        if dps_players > 0 and duration_for_dps > 0:
+            avg_dps = total_damage / (dps_players * duration_for_dps)
             efficiency["avg_dps_per_player"] = avg_dps
+            efficiency["combat_time_used"] = fight.combat_duration
+            efficiency["total_time"] = fight.duration
 
         # Healing efficiency (effective healing vs overhealing)
         total_healing = sum(char.total_healing_done for char in characters.values())
