@@ -361,6 +361,17 @@ class EnhancedSegmenter:
         if not self.current_mythic_plus:
             return
 
+        # Ensure end_time is set (fallback to last segment end if missing)
+        if not self.current_mythic_plus.end_time:
+            # Use the latest segment end time as fallback
+            latest_end = None
+            for segment in self.current_mythic_plus.segments:
+                if segment.end_time and (not latest_end or segment.end_time > latest_end):
+                    latest_end = segment.end_time
+            if latest_end:
+                self.current_mythic_plus.end_time = latest_end
+                logger.debug(f"Set M+ run end_time to latest segment: {latest_end}")
+
         # Aggregate character data across segments
         self.current_mythic_plus.aggregate_character_data()
 
