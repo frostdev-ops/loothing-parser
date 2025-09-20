@@ -486,12 +486,10 @@ class InteractiveAnalyzer:
                 for m_plus_run in mythic_plus_runs:
                     if abs(
                         (m_plus_run.start_time - fight.start_time).total_seconds()
-                    ) < time_tolerance and m_plus_run.encounter_name in (fight.encounter_name or ""):
-                        return (
-                            m_plus_run.overall_characters
-                            if hasattr(m_plus_run, "overall_characters")
-                            else m_plus_run.characters if hasattr(m_plus_run, "characters") else {}
-                        )
+                    ) < time_tolerance and m_plus_run.encounter_name in (
+                        fight.encounter_name or ""
+                    ):
+                        return m_plus_run.characters
 
             # For dungeon bosses within M+, find from segments
             elif fight.fight_type == FightType.DUNGEON_BOSS:
