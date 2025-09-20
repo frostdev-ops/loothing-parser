@@ -141,6 +141,29 @@ class AuraEvent(SpellEvent):
 
 
 @dataclass
+class AbsorbEvent(BaseEvent):
+    """Event for damage absorption by shields."""
+
+    # Original damage event info
+    attacker_guid: str = ""
+    attacker_name: str = ""
+    target_guid: str = ""
+    target_name: str = ""
+
+    # Absorber info (who provided the shield)
+    absorber_guid: str = ""
+    absorber_name: str = ""
+
+    # Shield spell info
+    shield_spell_id: int = 0
+    shield_spell_name: str = ""
+    shield_spell_school: int = 0
+
+    # Amount absorbed
+    amount_absorbed: int = 0
+
+
+@dataclass
 class EncounterEvent(BaseEvent):
     """Event for raid encounter start/end."""
 
