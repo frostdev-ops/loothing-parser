@@ -329,7 +329,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)")
 
     # Characters indices
-    db.execute("CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, realm)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, server, region)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name, spec_name)"
