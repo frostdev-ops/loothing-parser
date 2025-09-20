@@ -130,6 +130,10 @@ class CharacterEventStream:
     # Resource tracking
     resource_changes: List[ResourceEvent] = field(default_factory=list)
 
+    # Absorption tracking
+    absorption_provided: List[BaseEvent] = field(default_factory=list)  # Shields I provided
+    absorption_received: List[BaseEvent] = field(default_factory=list)  # Shields that protected me
+
     # Aggregated metrics (calculated after all events processed)
     total_damage_done: int = 0
     total_healing_done: int = 0
