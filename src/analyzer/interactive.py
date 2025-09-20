@@ -486,7 +486,7 @@ class InteractiveAnalyzer:
                 for m_plus_run in mythic_plus_runs:
                     if abs(
                         (m_plus_run.start_time - fight.start_time).total_seconds()
-                    ) < time_tolerance and m_plus_run.dungeon_name in (fight.encounter_name or ""):
+                    ) < time_tolerance and m_plus_run.encounter_name in (fight.encounter_name or ""):
                         return (
                             m_plus_run.overall_characters
                             if hasattr(m_plus_run, "overall_characters")
