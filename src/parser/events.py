@@ -90,6 +90,50 @@ class BaseEvent:
             return self.dest_guid.startswith("Player-")
         return False
 
+    def _parse_character_names(self) -> None:
+        """Parse source and destination names into components."""
+        from src.models.character import parse_character_name
+
+        # Parse source name if it's a player
+        if self.source_name and self.is_player_source():
+            parsed = parse_character_name(self.source_name)
+            # Keep original name and add parsed components
+            self.source_name = parsed['name']
+            self.source_server = parsed['server']
+            self.source_region = parsed['region']
+
+        # Parse destination name if it's a player
+        if self.dest_name and self.is_player_dest():
+            parsed = parse_character_name(self.dest_name)
+            # Keep original name and add parsed components
+            self.dest_name = parsed['name']
+            self.dest_server = parsed['server']
+            self.dest_region = parsed['region']
+
+    def get_source_full_name(self) -> Optional[str]:
+        """Get the full source name with server and region."""
+        if not self.source_name:
+            return None
+
+        parts = [self.source_name]
+        if self.source_server:
+            parts.append(self.source_server)
+        if self.source_region:
+            parts.append(self.source_region)
+        return "-".join(parts)
+
+    def get_dest_full_name(self) -> Optional[str]:
+        """Get the full destination name with server and region."""
+        if not self.dest_name:
+            return None
+
+        parts = [self.dest_name]
+        if self.dest_server:
+            parts.append(self.dest_server)
+        if self.dest_region:
+            parts.append(self.dest_region)
+        return "-".join(parts)
+
     def is_pet_source(self) -> bool:
         """Check if the source is a pet."""
         if self.source_guid:
