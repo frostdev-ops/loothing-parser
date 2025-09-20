@@ -306,10 +306,10 @@ class EventCategorizer:
         if hasattr(event, "attacker_guid") and hasattr(event, "amount_absorbed"):
             # This is a properly parsed AbsorbEvent
 
-            # CRITICAL: Credit the attacker with the absorbed damage as damage done
-            attacker_guid = self._resolve_pet_owner(event.attacker_guid)
-            if attacker_guid and self._is_tracked_character(attacker_guid):
-                categories[attacker_guid] = "damage_done_absorbed"
+            # CRITICAL: For SPELL_ABSORBED events, the "attacker" is usually an NPC/creature
+            # The absorbed damage represents damage that would have been done to the target
+            # We should NOT credit NPCs with damage - instead, this represents damage mitigation
+            # However, we still want to track the absorption for the target and absorber
 
             # Track who provided the shield (if available)
             if hasattr(event, "absorber_guid") and event.absorber_guid:
