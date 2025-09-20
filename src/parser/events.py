@@ -631,19 +631,17 @@ class EventFactory:
 
         # Suffix parameters (SPELL_ABSORBED specific)
         params = parsed_line.suffix_params
-        if len(params) >= 7:
-            # Absorber info (who provided the shield)
-            event.absorber_guid = params[0]
-            event.absorber_name = params[1]
+        if len(params) >= 5:
+            # Shield spell info (corrected positions based on actual log format)
+            event.shield_spell_id = cls._safe_int(params[1])
+            event.shield_spell_name = params[2]
+            event.shield_spell_school = cls._safe_int(params[3])
 
-            # Shield spell info
-            event.shield_spell_id = cls._safe_int(params[4])
-            event.shield_spell_name = params[5]
-            event.shield_spell_school = cls._safe_int(params[6])
+            # Amount absorbed
+            event.amount_absorbed = cls._safe_int(params[4])
 
-            # Amount absorbed - corrected position based on actual log format
-            if len(params) >= 5:
-                event.amount_absorbed = cls._safe_int(params[4])
+            # Note: Absorber GUID/name would need to be extracted from the main absorber info
+            # in the base params, not the suffix params
 
             # Debug first few events
             if hasattr(cls, "_debug_count") and cls._debug_count < 3:
