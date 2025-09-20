@@ -347,6 +347,9 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_metrics_performance ON character_metrics(dps DESC, hps DESC)"
     )
     db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_combat_performance ON character_metrics(combat_dps DESC, combat_hps DESC)"
+    )
+    db.execute(
         "CREATE INDEX IF NOT EXISTS idx_metrics_encounter ON character_metrics(encounter_id)"
     )
     db.execute(
