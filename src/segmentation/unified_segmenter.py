@@ -303,7 +303,9 @@ class UnifiedSegmenter:
         )
 
         # Start initial trash segment
-        trash_fight = self.current_encounter.start_fight(f"{event.zone_name} - Trash (Entrance)", event.timestamp)
+        trash_fight = self.current_encounter.start_fight(
+            f"{event.zone_name} - Trash (Entrance)", event.timestamp
+        )
         trash_fight.is_trash = True
 
         logger.info(f"Started M+ run: {event.zone_name} +{event.keystone_level}")
@@ -358,9 +360,10 @@ class UnifiedSegmenter:
         trash_number = (
             len([f for f in self.current_encounter.fights if "Trash" in f.fight_name]) + 1
         )
-        self.current_encounter.start_fight(
+        trash_fight = self.current_encounter.start_fight(
             f"{self.current_encounter.encounter_name} - Trash ({trash_number})", event.timestamp
         )
+        trash_fight.is_trash = True
 
         logger.debug(
             f"Ended dungeon boss: {event.encounter_name} ({'Success' if event.success else 'Wipe'})"
