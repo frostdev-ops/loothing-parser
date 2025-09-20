@@ -93,6 +93,8 @@ class InteractiveAnalyzer:
                 return self._handle_search()
             elif self.navigation.current_view == ViewMode.EXPORT:
                 return self._handle_export()
+            elif self.navigation.current_view == ViewMode.TIMELINE:
+                return self._handle_timeline()
             else:
                 # Not implemented views
                 self.console.print("[yellow]This feature is not yet implemented.[/yellow]")
@@ -481,7 +483,9 @@ class InteractiveAnalyzer:
             return
 
         # Create DPS rankings table using combat time for more accurate metrics
-        dps_rankings = self.metrics_calculator.get_dps_rankings(characters, fight.duration, use_combat_time=True)
+        dps_rankings = self.metrics_calculator.get_dps_rankings(
+            characters, fight.duration, use_combat_time=True
+        )
 
         # Main DPS table
         from rich.table import Table
@@ -553,7 +557,9 @@ class InteractiveAnalyzer:
             return
 
         # Create HPS rankings table using combat time for more accurate metrics
-        hps_rankings = self.metrics_calculator.get_hps_rankings(characters, fight.duration, use_combat_time=True)
+        hps_rankings = self.metrics_calculator.get_hps_rankings(
+            characters, fight.duration, use_combat_time=True
+        )
 
         if not hps_rankings:
             self.console.print("[yellow]No healing data found for this encounter[/yellow]")
