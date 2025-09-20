@@ -348,13 +348,18 @@ class EventCategorizer:
         if not guid or guid == "0000000000000000":
             return None
 
-        # If it's a pet and we know the owner, return owner
-        if guid.startswith("Pet-") and guid in self.pet_owners:
+        # If it's a pet/creature and we know the owner, return owner
+        if guid in self.pet_owners:
             return self.pet_owners[guid]
 
         # Return original GUID if it's a player
         if guid.startswith("Player-"):
             return guid
+
+        # For any other creature/pet type, check if it might be a tracked pet
+        if guid.startswith(("Pet-", "Creature-", "Vehicle-")):
+            # Could be a pet we haven't mapped yet
+            return None
 
         return None
 
