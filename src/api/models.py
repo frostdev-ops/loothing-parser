@@ -36,9 +36,7 @@ class StreamResponse(BaseModel):
     type: Literal["ack", "error", "status", "metrics"]
     timestamp: float = Field(default_factory=lambda: datetime.now().timestamp())
     message: Optional[str] = None
-    sequence_ack: Optional[int] = Field(
-        None, description="Last processed sequence number"
-    )
+    sequence_ack: Optional[int] = Field(None, description="Last processed sequence number")
     data: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
     class Config:
@@ -68,7 +66,8 @@ class SessionStart(BaseModel):
                 "client_id": "desktop-client-123",
                 "client_version": "1.0.0",
                 "character_name": "Playername",
-                "realm": "Stormrage",
+                "server": "Stormrage",
+                "region": "US",
                 "log_start_time": 1698765400.0,
             }
         }
