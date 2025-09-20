@@ -39,6 +39,31 @@ def debug_healing():
                         print(f"  Event Type: {event.event_type}")
                         print(f"  Raw line: {line.strip()}")
 
+                        if hasattr(event, "amount"):
+                            print(f"  Amount: {event.amount}")
+                        else:
+                            print(f"  Amount: NOT FOUND")
+
+                        if hasattr(event, "overhealing"):
+                            print(f"  Overhealing: {event.overhealing}")
+                        else:
+                            print(f"  Overhealing: NOT FOUND")
+
+                        if hasattr(event, "effective_healing"):
+                            print(f"  Effective Healing: {event.effective_healing}")
+                        else:
+                            print(f"  Effective Healing: NOT FOUND")
+
+                        print(f"  Source: {event.source_name}")
+                        print(f"  Target: {event.dest_name}")
+
+                    # Special focus on SPELL_HEAL_ABSORBED
+                    elif event.event_type == "SPELL_HEAL_ABSORBED" and heal_events_count < 10:
+                        heal_events_count += 1
+                        print(f"\nHEAL_ABSORBED Event #{heal_events_count}:")
+                        print(f"  Event Type: {event.event_type}")
+                        print(f"  Raw line: {line.strip()}")
+
                         if hasattr(event, 'amount'):
                             print(f"  Amount: {event.amount}")
                         else:
@@ -57,8 +82,11 @@ def debug_healing():
                         print(f"  Source: {event.source_name}")
                         print(f"  Target: {event.dest_name}")
 
-                    # Special focus on SPELL_HEAL_ABSORBED
-                    elif event.event_type == "SPELL_HEAL_ABSORBED":
+                        # Check if this is actually a HealEvent object
+                        print(f"  Event class: {type(event)}")
+
+                        # Look at all attributes
+                        print(f"  All attributes: {[attr for attr in dir(event) if not attr.startswith('_')]}")
                         heal_events_count += 1
                         print(f"\nHeal Event #{heal_events_count}:")
                         print(f"  Event Type: {event.event_type}")
