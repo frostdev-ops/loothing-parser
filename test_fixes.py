@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from src.segmentation.enhanced import EnhancedSegmenter
-from src.parser.events import EventParser
+from src.parser.parser import CombatLogParser
 
 
 def test_parser_fixes():
