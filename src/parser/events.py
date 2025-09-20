@@ -730,19 +730,29 @@ class EventFactory:
             # SPELL_ events and others use event.__dict__
             heal_event = HealEvent(**event.__dict__)
 
+        # Detect Advanced Combat Logging by parameter count
+        # Advanced Combat Logging inserts unit info (19 fields) before heal parameters
+        heal_offset = 0
+        if len(params) >= 25:  # Advanced Combat Logging detected
+            # Skip unit info fields: target_guid, info_guid, current_hp, max_hp, attack_power,
+            # spell_power, armor, resources, position, etc. (19 fields total)
+            heal_offset = 19
+
         # Heal parameters: total_heal, base_heal, effective_heal, absorbed, critical
         # overhealing = total_heal - effective_heal
-        if len(params) >= 3:
-            total_heal = cls._safe_int(params[0])
-            effective_heal = cls._safe_int(params[2]) if len(params) > 2 else total_heal
+        min_params_needed = heal_offset + 3
+        if len(params) >= min_params_needed:
+            total_heal = cls._safe_int(params[heal_offset])
+            effective_heal = cls._safe_int(params[heal_offset + 2]) if len(params) > heal_offset + 2 else total_heal
             heal_event.amount = total_heal  # Total healing (including overhealing)
             heal_event.overhealing = max(
                 0, total_heal - effective_heal
             )  # Calculate overhealing correctly
-            heal_event.absorbed = cls._safe_int(params[3]) if len(params) > 3 else 0
+            heal_event.absorbed = cls._safe_int(params[heal_offset + 3]) if len(params) > heal_offset + 3 else 0
 
-        if len(params) >= 5:
-            heal_event.critical = bool(params[4])
+        min_params_critical = heal_offset + 5
+        if len(params) >= min_params_critical:
+            heal_event.critical = bool(params[heal_offset + 4])
 
         return heal_event
 
