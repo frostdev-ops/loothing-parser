@@ -420,6 +420,8 @@ class CharacterEventStream:
                 "damage_taken": self.total_damage_taken,
                 "healing_received": self.total_healing_received,
                 "overhealing": self.total_overhealing,
+                "overkill_done": self.total_overkill_done,
+                "overkill_taken": self.total_overkill_taken,
                 "deaths": self.death_count,
                 "activity_percentage": round(self.activity_percentage, 1),
                 "time_alive_seconds": round(self.time_alive, 1),
