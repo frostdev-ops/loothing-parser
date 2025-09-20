@@ -49,7 +49,7 @@ class UnifiedSegmenter:
         self.death_analyzer = DeathAnalyzer()
 
         # Pet ownership mapping
-        self.pet_owners: Dict[str, str] = {}  # pet_guid -> owner_guid
+        self.pet_owners: Dict[str, tuple] = {}  # pet_guid -> (owner_guid, owner_name)
 
         # Statistics
         self.total_events = 0
@@ -123,9 +123,11 @@ class UnifiedSegmenter:
 
         # Handle source character
         if event.source_guid:
-            source_guid = self._resolve_pet_owner(event.source_guid)
+            source_guid, source_name = self._resolve_pet_owner(event.source_guid)
             if source_guid and source_guid.startswith("Player-"):
-                char = self.current_encounter.add_character(source_guid, event.source_name)
+                # Use resolved owner name if available, otherwise use event name
+                character_name = source_name if source_name else event.source_name
+                char = self.current_encounter.add_character(source_guid, character_name)
                 logger.debug(
                     f"Routing {event.event_type} to source player {char.character_name} ({source_guid})"
                 )
@@ -137,9 +139,11 @@ class UnifiedSegmenter:
 
         # Handle destination character
         if event.dest_guid:
-            dest_guid = self._resolve_pet_owner(event.dest_guid)
+            dest_guid, dest_name = self._resolve_pet_owner(event.dest_guid)
             if dest_guid and dest_guid.startswith("Player-"):
-                char = self.current_encounter.add_character(dest_guid, event.dest_name)
+                # Use resolved owner name if available, otherwise use event name
+                character_name = dest_name if dest_name else event.dest_name
+                char = self.current_encounter.add_character(dest_guid, character_name)
                 logger.debug(
                     f"Routing {event.event_type} to dest player {char.character_name} ({dest_guid})"
                 )
@@ -231,8 +235,9 @@ class UnifiedSegmenter:
         if hasattr(event, "dest_guid") and hasattr(event, "source_guid"):
             # Only map summoned entities that could belong to players
             if event.dest_guid.startswith(("Pet-", "Creature-", "Vehicle-")):
-                self.pet_owners[event.dest_guid] = event.source_guid
-                logger.debug(f"Mapped {event.dest_guid} to owner {event.source_guid}")
+                owner_name = getattr(event, "source_name", "Unknown")
+                self.pet_owners[event.dest_guid] = (event.source_guid, owner_name)
+                logger.debug(f"Mapped {event.dest_guid} to owner {event.source_guid} ({owner_name})")
 
     def _handle_combatant_info(self, event: CombatantInfo):
         """Handle combatant info events for talent/equipment data."""
@@ -245,7 +250,7 @@ class UnifiedSegmenter:
     def _handle_death(self, event: BaseEvent):
         """Handle death events."""
         if event.dest_guid and self.current_encounter:
-            dest_guid = self._resolve_pet_owner(event.dest_guid)
+            dest_guid, _ = self._resolve_pet_owner(event.dest_guid)
 
             # Handle player death
             if dest_guid in self.current_encounter.characters:
@@ -422,12 +427,16 @@ class UnifiedSegmenter:
         self.encounters.append(self.current_encounter)
         self.current_encounter = None
 
-    def _resolve_pet_owner(self, guid: str) -> str:
-        """Resolve pet/guardian/summon GUIDs to their owner's GUID."""
+    def _resolve_pet_owner(self, guid: str) -> tuple:
+        """Resolve pet/guardian/summon GUIDs to their owner's GUID and name."""
         # Check if this is any type of summoned entity that could belong to a player
         if guid and (guid.startswith("Pet-") or guid.startswith("Creature-")):
-            return self.pet_owners.get(guid, guid)
-        return guid
+            owner_info = self.pet_owners.get(guid)
+            if owner_info:
+                return owner_info  # (owner_guid, owner_name)
+            else:
+                return (guid, None)  # Unknown owner
+        return (guid, None)  # Not a pet
 
     def _is_buff(self, event: AuraEvent) -> bool:
         """Determine if an aura is a buff or debuff."""
