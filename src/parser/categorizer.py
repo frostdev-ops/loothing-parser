@@ -171,12 +171,12 @@ class EventCategorizer:
         categories = {}
 
         # Source does healing
-        source_guid = self._resolve_pet_owner(event.source_guid)
+        source_guid, _ = self._resolve_pet_owner(event.source_guid)
         if source_guid and self._is_tracked_character(source_guid):
             categories[source_guid] = "healing_done"
 
         # Destination receives healing
-        dest_guid = self._resolve_pet_owner(event.dest_guid)
+        dest_guid, _ = self._resolve_pet_owner(event.dest_guid)
         if dest_guid and self._is_tracked_character(dest_guid):
             categories[dest_guid] = "healing_received"
 
@@ -186,7 +186,7 @@ class EventCategorizer:
         """Categorize aura application events."""
         categories = {}
 
-        dest_guid = self._resolve_pet_owner(event.dest_guid)
+        dest_guid, _ = self._resolve_pet_owner(event.dest_guid)
         if not dest_guid or not self._is_tracked_character(dest_guid):
             return categories
 
@@ -209,7 +209,7 @@ class EventCategorizer:
         """Categorize aura removal events."""
         categories = {}
 
-        dest_guid = self._resolve_pet_owner(event.dest_guid)
+        dest_guid, _ = self._resolve_pet_owner(event.dest_guid)
         if not dest_guid or not self._is_tracked_character(dest_guid):
             return categories
 
@@ -226,7 +226,7 @@ class EventCategorizer:
         """Categorize spell cast events."""
         categories = {}
 
-        source_guid = self._resolve_pet_owner(event.source_guid)
+        source_guid, _ = self._resolve_pet_owner(event.source_guid)
         if not source_guid or not self._is_tracked_character(source_guid):
             return categories
 
@@ -243,7 +243,7 @@ class EventCategorizer:
         """Categorize death events."""
         categories = {}
 
-        dest_guid = self._resolve_pet_owner(event.dest_guid)
+        dest_guid, _ = self._resolve_pet_owner(event.dest_guid)
         if dest_guid and self._is_tracked_character(dest_guid):
             categories[dest_guid] = "death"
 
@@ -327,7 +327,9 @@ class EventCategorizer:
             ):
                 owner_name = getattr(event, "source_name", "Unknown")
                 self.pet_owners[event.dest_guid] = (event.source_guid, owner_name)
-                logger.debug(f"Tracked {event.dest_name} -> owner {owner_name} ({event.source_guid})")
+                logger.debug(
+                    f"Tracked {event.dest_name} -> owner {owner_name} ({event.source_guid})"
+                )
 
     def _handle_combatant_info(self, event: BaseEvent):
         """Handle combatant info events for character metadata."""
