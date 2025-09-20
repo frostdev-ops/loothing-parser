@@ -1,0 +1,1065 @@
+openapi: 3.0.3
+info:
+  title: WoW Combat Log Analysis API
+  description: |
+    Comprehensive REST API for World of Warcraft combat log analysis and performance tracking.
+
+    This API provides extensive capabilities for:
+    - Combat log parsing and analysis
+    - Character performance tracking
+    - Encounter analysis and replay
+    - Advanced analytics and trends
+    - Guild management and progression tracking
+    - Real-time streaming and WebSocket support
+
+    ## Authentication
+
+    All endpoints require authentication via API key. The API key can be provided in several ways:
+    - Bearer token in Authorization header: `Authorization: Bearer YOUR_API_KEY`
+    - Query parameter: `?api_key=YOUR_API_KEY`
+    - X-API-Key header: `X-API-Key: YOUR_API_KEY`
+
+    ## Rate Limiting
+
+    The API implements rate limiting to ensure fair usage:
+    - **Default**: 60 requests/minute, 1000 requests/hour
+    - **Burst limit**: 10 requests in 60 seconds
+    - Rate limit headers are included in responses
+
+    ## Error Handling
+
+    The API uses standard HTTP status codes and provides detailed error messages:
+    - `200`: Success
+    - `400`: Bad Request - Invalid parameters
+    - `401`: Unauthorized - Invalid or missing API key
+    - `403`: Forbidden - Insufficient permissions
+    - `404`: Not Found - Resource not found
+    - `429`: Too Many Requests - Rate limit exceeded
+    - `500`: Internal Server Error
+
+    ## Data Formats
+
+    - All timestamps are in ISO 8601 format (UTC)
+    - Numeric values use appropriate precision (float for performance metrics, int for counts)
+    - Pagination follows cursor-based patterns for large datasets
+
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://github.com/your-org/loothing-parser
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/api/v1
+    description: Production server
+  - url: https://staging-api.example.com/api/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+paths:
+  # Health and Status Endpoints
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check API health and status
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  # Character Endpoints
+  /characters:
+    get:
+      tags:
+        - Characters
+      summary: List characters
+      description: Get a paginated list of characters with optional filtering
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of characters per page
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Offset for pagination
+        - name: server
+          in: query
+          schema:
+            type: string
+          description: Filter by server name
+        - name: class_name
+          in: query
+          schema:
+            type: string
+          description: Filter by character class
+        - name: guild
+          in: query
+          schema:
+            type: string
+          description: Filter by guild name
+        - name: active_since
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter characters active since date
+        - name: min_encounters
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Minimum number of encounters
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search character names
+      responses:
+        '200':
+          description: List of characters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CharacterProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /characters/{character_name}:
+    get:
+      tags:
+        - Characters
+      summary: Get character details
+      description: Get detailed information about a specific character
+      parameters:
+        - name: character_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Character name
+        - name: server
+          in: query
+          schema:
+            type: string
+          description: Server name (optional if character name is unique)
+      responses:
+        '200':
+          description: Character details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterProfile'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /characters/{character_name}/performance:
+    get:
+      tags:
+        - Characters
+      summary: Get character performance metrics
+      description: Get performance data for a character across encounters
+      parameters:
+        - name: character_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: server
+          in: query
+          schema:
+            type: string
+        - name: encounter_type
+          in: query
+          schema:
+            type: string
+            enum: [raid, mythic_plus, dungeon, pvp]
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+            enum: [lfr, normal, heroic, mythic]
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+        - name: metric
+          in: query
+          schema:
+            type: string
+            enum: [dps, hps, dtps, all]
+            default: all
+      responses:
+        '200':
+          description: Character performance data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterPerformanceResponse'
+
+  # Encounter Endpoints
+  /encounters:
+    get:
+      tags:
+        - Encounters
+      summary: List encounters
+      description: Get a paginated list of encounters with filtering
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: boss_name
+          in: query
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+            enum: [lfr, normal, heroic, mythic]
+        - name: success_only
+          in: query
+          schema:
+            type: boolean
+        - name: guild
+          in: query
+          schema:
+            type: string
+        - name: min_duration
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: max_duration
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+      responses:
+        '200':
+          description: List of encounters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EncounterSummary'
+
+  /encounters/{encounter_id}:
+    get:
+      tags:
+        - Encounters
+      summary: Get encounter details
+      description: Get detailed information about a specific encounter
+      parameters:
+        - name: encounter_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Encounter details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterDetails'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Analytics Endpoints
+  /analytics/trends/{metric}:
+    get:
+      tags:
+        - Analytics
+      summary: Get performance trends
+      description: Get performance trends for a specific metric over time
+      parameters:
+        - name: metric
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [dps, hps, dtps, survivability, activity]
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 7
+            maximum: 365
+            default: 30
+        - name: character_name
+          in: query
+          schema:
+            type: string
+        - name: class_name
+          in: query
+          schema:
+            type: string
+        - name: encounter_type
+          in: query
+          schema:
+            type: string
+        - name: granularity
+          in: query
+          schema:
+            type: string
+            enum: [hourly, daily, weekly]
+            default: daily
+      responses:
+        '200':
+          description: Performance trend data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceTrend'
+
+  # Search Endpoints
+  /search:
+    post:
+      tags:
+        - Search
+      summary: Advanced search
+      description: Perform advanced search across combat log data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  # Aggregation Endpoints
+  /aggregations/custom:
+    post:
+      tags:
+        - Aggregations
+      summary: Custom aggregation
+      description: Perform custom aggregation with flexible grouping and functions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AggregationRequest'
+      responses:
+        '200':
+          description: Aggregation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  metadata:
+                    type: object
+
+  # Log Processing Endpoints
+  /logs/upload:
+    post:
+      tags:
+        - Logs
+      summary: Upload combat log
+      description: Upload and process a combat log file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Combat log file
+                metadata:
+                  type: object
+                  description: Optional metadata
+      responses:
+        '202':
+          description: Log accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogUploadResponse'
+
+  # WebSocket Streaming
+  /stream:
+    get:
+      tags:
+        - Streaming
+      summary: WebSocket streaming endpoint
+      description: Real-time streaming of combat log data and events
+      responses:
+        '101':
+          description: WebSocket connection established
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    # Common Schemas
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        database:
+          type: object
+          properties:
+            status:
+              type: string
+            latency_ms:
+              type: number
+        cache:
+          type: object
+          properties:
+            status:
+              type: string
+            hit_rate:
+              type: number
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer
+            has_next:
+              type: boolean
+            has_previous:
+              type: boolean
+
+    TimeRange:
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+
+    # Character Schemas
+    CharacterProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        server:
+          type: string
+        class_name:
+          type: string
+        spec_name:
+          type: string
+        level:
+          type: integer
+        guild_name:
+          type: string
+        faction:
+          type: string
+          enum: [Alliance, Horde]
+        race:
+          type: string
+        gender:
+          type: string
+          enum: [Male, Female]
+        first_seen:
+          type: string
+          format: date-time
+        last_seen:
+          type: string
+          format: date-time
+        total_encounters:
+          type: integer
+        avg_item_level:
+          type: number
+        is_active:
+          type: boolean
+        performance_summary:
+          $ref: '#/components/schemas/PerformanceSummary'
+
+    PerformanceSummary:
+      type: object
+      properties:
+        avg_dps:
+          type: number
+        avg_hps:
+          type: number
+        avg_dtps:
+          type: number
+        best_dps:
+          type: number
+        best_hps:
+          type: number
+        survival_rate:
+          type: number
+        activity_percentage:
+          type: number
+        parse_percentile:
+          type: number
+
+    CharacterPerformanceResponse:
+      type: object
+      properties:
+        character:
+          $ref: '#/components/schemas/CharacterProfile'
+        performances:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerformanceEntry'
+        summary:
+          $ref: '#/components/schemas/PerformanceSummary'
+        trends:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+
+    PerformanceEntry:
+      type: object
+      properties:
+        encounter_id:
+          type: integer
+        encounter_name:
+          type: string
+        difficulty:
+          type: string
+        date:
+          type: string
+          format: date-time
+        duration:
+          type: number
+        dps:
+          type: number
+        hps:
+          type: number
+        dtps:
+          type: number
+        damage_done:
+          type: integer
+        healing_done:
+          type: integer
+        damage_taken:
+          type: integer
+        deaths:
+          type: integer
+        activity_percentage:
+          type: number
+        parse_percentile:
+          type: number
+
+    # Encounter Schemas
+    EncounterSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        boss_name:
+          type: string
+        encounter_type:
+          type: string
+        difficulty:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        duration:
+          type: number
+        success:
+          type: boolean
+        wipe_percentage:
+          type: number
+        raid_size:
+          type: integer
+        guild_name:
+          type: string
+        zone_name:
+          type: string
+        keystone_level:
+          type: integer
+        affixes:
+          type: array
+          items:
+            type: string
+
+    EncounterDetails:
+      allOf:
+        - $ref: '#/components/schemas/EncounterSummary'
+        - type: object
+          properties:
+            participants:
+              type: array
+              items:
+                $ref: '#/components/schemas/ParticipantSummary'
+            damage_breakdown:
+              type: array
+              items:
+                $ref: '#/components/schemas/DamageEntry'
+            healing_breakdown:
+              type: array
+              items:
+                $ref: '#/components/schemas/HealingEntry'
+            timeline:
+              type: array
+              items:
+                $ref: '#/components/schemas/TimelineEvent'
+
+    ParticipantSummary:
+      type: object
+      properties:
+        character_name:
+          type: string
+        class_name:
+          type: string
+        spec_name:
+          type: string
+        dps:
+          type: number
+        hps:
+          type: number
+        dtps:
+          type: number
+        damage_done:
+          type: integer
+        healing_done:
+          type: integer
+        damage_taken:
+          type: integer
+        deaths:
+          type: integer
+        interrupts:
+          type: integer
+        dispels:
+          type: integer
+
+    # Analytics Schemas
+    PerformanceTrend:
+      type: object
+      properties:
+        metric:
+          type: string
+        character_name:
+          type: string
+        class_name:
+          type: string
+        data_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+        trend_direction:
+          type: string
+          enum: [increasing, decreasing, stable]
+        trend_strength:
+          type: number
+        average_value:
+          type: number
+        min_value:
+          type: number
+        max_value:
+          type: number
+        std_deviation:
+          type: number
+
+    TrendPoint:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        value:
+          type: number
+        additional_data:
+          type: object
+
+    # Search Schemas
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Free text search query
+        scope:
+          type: string
+          enum: [characters, encounters, guilds, all]
+          default: all
+        fuzzy_matching:
+          type: boolean
+          default: false
+        fuzzy_threshold:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.8
+        sort_by:
+          type: string
+          default: relevance
+        sort_order:
+          type: string
+          enum: [asc, desc]
+          default: desc
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+        include_highlights:
+          type: boolean
+          default: true
+
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        total_count:
+          type: integer
+        query_time_ms:
+          type: number
+        suggestions:
+          type: array
+          items:
+            type: string
+        facets:
+          type: object
+        metadata:
+          type: object
+
+    SearchResult:
+      type: object
+      properties:
+        item_type:
+          type: string
+        item_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        relevance_score:
+          type: number
+        highlights:
+          type: object
+        data:
+          type: object
+
+    # Aggregation Schemas
+    AggregationRequest:
+      type: object
+      required:
+        - metrics
+      properties:
+        metrics:
+          type: array
+          items:
+            type: string
+          description: Metrics to aggregate
+        group_by:
+          type: array
+          items:
+            type: string
+          description: Fields to group by
+        filters:
+          type: object
+          description: Filter criteria
+        time_range:
+          $ref: '#/components/schemas/TimeRange'
+        aggregation_functions:
+          type: array
+          items:
+            type: string
+            enum: [avg, min, max, count, sum, stddev]
+          default: [avg, min, max, count]
+        percentiles:
+          type: array
+          items:
+            type: number
+          default: [50, 75, 90, 95, 99]
+        include_samples:
+          type: boolean
+          default: false
+
+    # Log Processing Schemas
+    LogUploadResponse:
+      type: object
+      properties:
+        upload_id:
+          type: string
+        status:
+          type: string
+          enum: [accepted, processing, completed, failed]
+        message:
+          type: string
+        estimated_completion:
+          type: string
+          format: date-time
+        progress_url:
+          type: string
+        webhook_url:
+          type: string
+
+    # Additional Helper Schemas
+    DamageEntry:
+      type: object
+      properties:
+        character_name:
+          type: string
+        total_damage:
+          type: integer
+        spell_breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpellDamage'
+
+    HealingEntry:
+      type: object
+      properties:
+        character_name:
+          type: string
+        total_healing:
+          type: integer
+        overhealing:
+          type: integer
+        spell_breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpellHealing'
+
+    SpellDamage:
+      type: object
+      properties:
+        spell_name:
+          type: string
+        spell_id:
+          type: integer
+        damage:
+          type: integer
+        hits:
+          type: integer
+        crits:
+          type: integer
+        misses:
+          type: integer
+
+    SpellHealing:
+      type: object
+      properties:
+        spell_name:
+          type: string
+        spell_id:
+          type: integer
+        healing:
+          type: integer
+        overhealing:
+          type: integer
+        hits:
+          type: integer
+        crits:
+          type: integer
+
+    TimelineEvent:
+      type: object
+      properties:
+        timestamp:
+          type: number
+        event_type:
+          type: string
+        character:
+          type: string
+        description:
+          type: string
+        data:
+          type: object
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: integer
+        details:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Invalid parameter"
+            message: "The 'days' parameter must be between 1 and 365"
+            code: 400
+            timestamp: "2024-01-01T12:00:00Z"
+
+    Unauthorized:
+      description: Unauthorized - invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Unauthorized"
+            message: "Invalid API key"
+            code: 401
+            timestamp: "2024-01-01T12:00:00Z"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Not found"
+            message: "Character not found"
+            code: 404
+            timestamp: "2024-01-01T12:00:00Z"
+
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit-Minute:
+          schema:
+            type: integer
+          description: Requests per minute limit
+        X-RateLimit-Remaining-Minute:
+          schema:
+            type: integer
+          description: Remaining requests this minute
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retry
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Rate limit exceeded"
+            message: "Minute limit exceeded"
+            code: 429
+            timestamp: "2024-01-01T12:00:00Z"
+
+tags:
+  - name: Health
+    description: Health check and status endpoints
+  - name: Characters
+    description: Character profiles and performance data
+  - name: Encounters
+    description: Encounter analysis and details
+  - name: Analytics
+    description: Performance analytics and trends
+  - name: Search
+    description: Advanced search capabilities
+  - name: Aggregations
+    description: Custom aggregations and analysis
+  - name: Logs
+    description: Log upload and processing
+  - name: Streaming
+    description: Real-time data streaming
