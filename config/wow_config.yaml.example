@@ -1,0 +1,166 @@
+# World of Warcraft Data Configuration
+# This file allows you to customize WoW data mappings for the combat log parser
+# Copy this file to one of these locations and remove the .example extension:
+#   - ./wow_config.yaml
+#   - ./config/wow_config.yaml
+#   - ~/.loothing/wow_config.yaml
+#   - /etc/loothing/wow_config.yaml
+
+# Difficulty mappings
+# Add or override difficulty IDs and their display names
+difficulties:
+  # Dungeons
+  1: "Normal"
+  2: "Heroic"
+  23: "Mythic"
+  24: "Timewalking"
+  8: "Challenge Mode"  # Old M+ system
+
+  # Raids - Classic sizes
+  3: "10 Normal"
+  4: "25 Normal"
+  5: "10 Heroic"
+  6: "25 Heroic"
+
+  # Raids - Modern
+  17: "LFR"
+  14: "Normal"
+  15: "Heroic"
+  16: "Mythic"
+
+  # Special
+  33: "Timewalking"
+  167: "Torghast"
+
+  # Custom mappings for private servers or special events
+  # 200: "Custom Difficulty"
+
+# Specialization mappings
+# Map spec IDs to their names
+specializations:
+  # Death Knight
+  250: "Blood"
+  251: "Frost"
+  252: "Unholy"
+
+  # Demon Hunter
+  577: "Havoc"
+  581: "Vengeance"
+
+  # Druid
+  102: "Balance"
+  103: "Feral"
+  104: "Guardian"
+  105: "Restoration"
+
+  # Evoker
+  1467: "Devastation"
+  1468: "Preservation"
+  1473: "Augmentation"
+
+  # Add more specs as needed...
+
+# Tank specializations (list of spec IDs)
+tank_specs:
+  - 250  # Blood DK
+  - 581  # Vengeance DH
+  - 104  # Guardian Druid
+  - 268  # Brewmaster Monk
+  - 66   # Protection Paladin
+  - 73   # Protection Warrior
+
+# Healer specializations (list of spec IDs)
+healer_specs:
+  - 105   # Restoration Druid
+  - 270   # Mistweaver Monk
+  - 65    # Holy Paladin
+  - 256   # Discipline Priest
+  - 257   # Holy Priest
+  - 264   # Restoration Shaman
+  - 1468  # Preservation Evoker
+  - 1473  # Augmentation Evoker (hybrid)
+
+# Mythic+ Affixes
+# Map affix IDs to their names
+affixes:
+  # Level 2+ (rotating weekly)
+  9: "Tyrannical"
+  10: "Fortified"
+
+  # Level 5+ (rotating weekly)
+  3: "Volcanic"
+  4: "Necrotic"
+  6: "Raging"
+  7: "Bolstering"
+  8: "Sanguine"
+  11: "Bursting"
+  122: "Inspiring"
+  123: "Spiteful"
+  124: "Storming"
+  134: "Entangling"
+  135: "Afflicted"
+  136: "Incorporeal"
+
+  # Level 10+ (seasonal - The War Within Season 1)
+  148: "Xal'atath's Bargain: Ascendant"
+  158: "Xal'atath's Bargain: Devour"
+  159: "Xal'atath's Bargain: Voidbound"
+  160: "Xal'atath's Bargain: Oblivion"
+
+# Major cooldowns to track
+major_cooldowns:
+  # Bloodlust effects
+  2825: "Bloodlust"
+  32182: "Heroism"
+  80353: "Time Warp"
+  264667: "Primal Rage"
+  390386: "Fury of the Aspects"
+
+  # Power Infusion
+  10060: "Power Infusion"
+
+  # Major defensives
+  31850: "Ardent Defender"
+  86659: "Guardian of Ancient Kings"
+  33206: "Pain Suppression"
+  47788: "Guardian Spirit"
+
+  # Battle resurrections
+  20484: "Rebirth"
+  61999: "Raise Ally"
+  20707: "Soulstone"
+  95750: "Intercession"
+  361227: "Return"
+
+# Flask buff IDs (list of spell IDs)
+flask_ids:
+  # The War Within flasks
+  - 431972
+  - 431973
+  - 431974
+  - 431975
+  - 431976
+  - 431977
+
+  # Dragonflight flasks (for older logs)
+  - 370652
+  - 370653
+  - 370654
+  - 370655
+
+# Food buff IDs (list of spell IDs)
+food_buff_ids:
+  # The War Within food
+  - 462854  # Skyfury (Haste)
+  - 462855  # Blessed Recovery (Versatility)
+  - 462856  # Critical Strike
+  - 462857  # Mastery
+
+  # Generic Well Fed
+  - 104273  # Well Fed
+
+# Custom mappings for private servers or special content
+# custom_mappings:
+#   my_custom_data:
+#     1001: "Custom Value"
+#     1002: "Another Custom Value"
