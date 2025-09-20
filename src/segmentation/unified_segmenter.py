@@ -348,9 +348,8 @@ class UnifiedSegmenter:
         return False
 
     def _get_difficulty_name(self, difficulty_id: int) -> str:
-        """Get difficulty name from ID."""
-        difficulties = {14: "Normal", 15: "Heroic", 16: "Mythic", 17: "LFR"}
-        return difficulties.get(difficulty_id, f"Unknown ({difficulty_id})")
+        """Get difficulty name from ID using configurable mapping."""
+        return get_difficulty_name(difficulty_id)
 
     def get_encounters(self) -> List[UnifiedEncounter]:
         """Get all completed encounters."""
