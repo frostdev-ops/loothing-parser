@@ -324,7 +324,28 @@ class MythicPlusRun:
                 overall.total_damage_done += char_stream.total_damage_done
                 overall.total_healing_done += char_stream.total_healing_done
                 overall.total_damage_taken += char_stream.total_damage_taken
+                overall.total_healing_received += char_stream.total_healing_received
+                overall.total_overkill_done += char_stream.total_overkill_done
+                overall.total_overkill_taken += char_stream.total_overkill_taken
+                overall.total_overhealing += char_stream.total_overhealing
                 overall.death_count += char_stream.death_count
+
+                # Merge categorized event lists
+                overall.damage_done.extend(char_stream.damage_done)
+                overall.healing_done.extend(char_stream.healing_done)
+                overall.damage_taken.extend(char_stream.damage_taken)
+                overall.healing_received.extend(char_stream.healing_received)
+                overall.buffs_gained.extend(char_stream.buffs_gained)
+                overall.buffs_lost.extend(char_stream.buffs_lost)
+                overall.debuffs_gained.extend(char_stream.debuffs_gained)
+                overall.debuffs_lost.extend(char_stream.debuffs_lost)
+                overall.casts_started.extend(char_stream.casts_started)
+                overall.casts_succeeded.extend(char_stream.casts_succeeded)
+                overall.casts_failed.extend(char_stream.casts_failed)
+                overall.interrupts_done.extend(char_stream.interrupts_done)
+                overall.interrupts_received.extend(char_stream.interrupts_received)
+                overall.dispels_done.extend(char_stream.dispels_done)
+                overall.deaths.extend(char_stream.deaths)
 
                 # Add all events
                 overall.all_events.extend(char_stream.all_events)
