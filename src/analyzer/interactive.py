@@ -429,10 +429,15 @@ class InteractiveAnalyzer:
         for event in events:
             # Track damage done
             if isinstance(event, DamageEvent) and event.source_guid in characters:
+                # Add base damage
                 characters[event.source_guid].total_damage_done += event.amount
+                # Add absorbed damage if present
+                if hasattr(event, 'absorbed') and event.absorbed:
+                    characters[event.source_guid].total_damage_done += event.absorbed
                 # Add to all_events for chronological tracking
+                total_damage_for_event = event.amount + (event.absorbed if hasattr(event, 'absorbed') and event.absorbed else 0)
                 characters[event.source_guid].all_events.append(
-                    (event.timestamp, "damage", event.amount)
+                    (event.timestamp, "damage", total_damage_for_event)
                 )
 
             # Track healing done
