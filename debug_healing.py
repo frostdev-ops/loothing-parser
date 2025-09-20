@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from src.parser.parser import CombatLogParser
 from src.segmentation.enhanced import EnhancedSegmenter
 
+
 def debug_healing():
     """Debug healing calculation issues."""
     log_file = "examples/WoWCombatLog-091925_190638.txt"
@@ -31,8 +32,8 @@ def debug_healing():
                     parsed_line = parser.tokenizer.parse_line(line)
                     event = parser.event_factory.create_event(parsed_line)
 
-                    # Check for healing events
-                    if "HEAL" in event.event_type:
+                    # Check for healing events, especially SPELL_HEAL_ABSORBED
+                    if "HEAL" in event.event_type and heal_events_count < 5:
                         heal_events_count += 1
                         print(f"\nHeal Event #{heal_events_count}:")
                         print(f"  Event Type: {event.event_type}")
@@ -56,6 +57,31 @@ def debug_healing():
                         print(f"  Source: {event.source_name}")
                         print(f"  Target: {event.dest_name}")
 
+                    # Special focus on SPELL_HEAL_ABSORBED
+                    elif event.event_type == "SPELL_HEAL_ABSORBED":
+                        heal_events_count += 1
+                        print(f"\nHeal Event #{heal_events_count}:")
+                        print(f"  Event Type: {event.event_type}")
+                        print(f"  Raw line: {line.strip()}")
+
+                        if hasattr(event, "amount"):
+                            print(f"  Amount: {event.amount}")
+                        else:
+                            print(f"  Amount: NOT FOUND")
+
+                        if hasattr(event, "overhealing"):
+                            print(f"  Overhealing: {event.overhealing}")
+                        else:
+                            print(f"  Overhealing: NOT FOUND")
+
+                        if hasattr(event, "effective_healing"):
+                            print(f"  Effective Healing: {event.effective_healing}")
+                        else:
+                            print(f"  Effective Healing: NOT FOUND")
+
+                        print(f"  Source: {event.source_name}")
+                        print(f"  Target: {event.dest_name}")
+
                     segmenter.process_event(event)
                     total_events += 1
 
@@ -68,6 +94,7 @@ def debug_healing():
                 break
 
     print(f"\nProcessed {total_events:,} events to find {heal_events_count} heal events")
+
 
 if __name__ == "__main__":
     debug_healing()
