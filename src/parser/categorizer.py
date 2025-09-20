@@ -66,7 +66,7 @@ class EventCategorizer:
     def __init__(self):
         """Initialize the event categorizer."""
         self.character_streams: Dict[str, CharacterEventStream] = {}
-        self.pet_owners: Dict[str, str] = {}  # pet_guid -> owner_guid
+        self.pet_owners: Dict[str, tuple] = {}  # pet_guid -> (owner_guid, owner_name)
         self.processed_count = 0
         self.categorization_errors = 0
 
@@ -155,12 +155,12 @@ class EventCategorizer:
         categories = {}
 
         # Source deals damage
-        source_guid = self._resolve_pet_owner(event.source_guid)
+        source_guid, _ = self._resolve_pet_owner(event.source_guid)
         if source_guid and self._is_tracked_character(source_guid):
             categories[source_guid] = "damage_done"
 
         # Destination takes damage
-        dest_guid = self._resolve_pet_owner(event.dest_guid)
+        dest_guid, _ = self._resolve_pet_owner(event.dest_guid)
         if dest_guid and self._is_tracked_character(dest_guid):
             categories[dest_guid] = "damage_taken"
 
@@ -322,9 +322,12 @@ class EventCategorizer:
         """Handle pet/guardian summon events to track ownership."""
         if event.source_guid and event.dest_guid:
             # Source summons dest - track pet/guardian ownership
-            if event.source_guid.startswith("Player-") and event.dest_guid.startswith(("Pet-", "Creature-", "Vehicle-")):
-                self.pet_owners[event.dest_guid] = event.source_guid
-                logger.debug(f"Tracked {event.dest_name} -> owner {event.source_name}")
+            if event.source_guid.startswith("Player-") and event.dest_guid.startswith(
+                ("Pet-", "Creature-", "Vehicle-")
+            ):
+                owner_name = getattr(event, "source_name", "Unknown")
+                self.pet_owners[event.dest_guid] = (event.source_guid, owner_name)
+                logger.debug(f"Tracked {event.dest_name} -> owner {owner_name} ({event.source_guid})")
 
     def _handle_combatant_info(self, event: BaseEvent):
         """Handle combatant info events for character metadata."""
@@ -335,7 +338,7 @@ class EventCategorizer:
                 # stream.class_name = ...
                 # stream.spec_name = ...
 
-    def _resolve_pet_owner(self, guid: Optional[str]) -> Optional[str]:
+    def _resolve_pet_owner(self, guid: Optional[str]) -> tuple:
         """
         Resolve a GUID to its owner if it's a pet.
 
@@ -343,25 +346,25 @@ class EventCategorizer:
             guid: The GUID to resolve
 
         Returns:
-            Owner GUID if pet, original GUID if player, None otherwise
+            Tuple of (owner_guid, owner_name) if pet, (original_guid, None) if player, (None, None) otherwise
         """
         if not guid or guid == "0000000000000000":
-            return None
+            return (None, None)
 
-        # If it's a pet/creature and we know the owner, return owner
+        # If it's a pet/creature and we know the owner, return owner info
         if guid in self.pet_owners:
-            return self.pet_owners[guid]
+            return self.pet_owners[guid]  # (owner_guid, owner_name)
 
         # Return original GUID if it's a player
         if guid.startswith("Player-"):
-            return guid
+            return (guid, None)
 
         # For any other creature/pet type, check if it might be a tracked pet
         if guid.startswith(("Pet-", "Creature-", "Vehicle-")):
             # Could be a pet we haven't mapped yet
-            return None
+            return (None, None)
 
-        return None
+        return (None, None)
 
     def _is_tracked_character(self, guid: str) -> bool:
         """Check if a GUID is a tracked character."""
