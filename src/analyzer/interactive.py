@@ -476,9 +476,14 @@ class InteractiveAnalyzer:
                 for guid, participant in fight.participants.items():
                     if guid and guid.startswith("Player-"):
                         player_count += 1
-                        characters[guid] = CharacterEventStream(
+                        char = CharacterEventStream(
                             character_guid=guid, character_name=participant["name"] or "Unknown"
                         )
+                        # Transfer combat metrics from participants
+                        char.total_damage_done = participant.get("damage_done", 0)
+                        char.total_healing_done = participant.get("healing_done", 0)
+                        char.total_damage_taken = participant.get("damage_taken", 0)
+                        characters[guid] = char
 
             # Only populate metrics if characters don't already have enhanced segmenter data
             if characters and fight.events:
