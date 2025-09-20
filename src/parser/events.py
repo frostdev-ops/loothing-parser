@@ -67,10 +67,14 @@ class BaseEvent:
     hide_caster: Optional[bool] = None
     source_guid: Optional[str] = None
     source_name: Optional[str] = None
+    source_server: Optional[str] = None
+    source_region: Optional[str] = None
     source_flags: Optional[int] = None
     source_raid_flags: Optional[int] = None
     dest_guid: Optional[str] = None
     dest_name: Optional[str] = None
+    dest_server: Optional[str] = None
+    dest_region: Optional[str] = None
     dest_flags: Optional[int] = None
     dest_raid_flags: Optional[int] = None
 
@@ -743,12 +747,18 @@ class EventFactory:
         min_params_needed = heal_offset + 3
         if len(params) >= min_params_needed:
             total_heal = cls._safe_int(params[heal_offset])
-            effective_heal = cls._safe_int(params[heal_offset + 2]) if len(params) > heal_offset + 2 else total_heal
+            effective_heal = (
+                cls._safe_int(params[heal_offset + 2])
+                if len(params) > heal_offset + 2
+                else total_heal
+            )
             heal_event.amount = total_heal  # Total healing (including overhealing)
             heal_event.overhealing = max(
                 0, total_heal - effective_heal
             )  # Calculate overhealing correctly
-            heal_event.absorbed = cls._safe_int(params[heal_offset + 3]) if len(params) > heal_offset + 3 else 0
+            heal_event.absorbed = (
+                cls._safe_int(params[heal_offset + 3]) if len(params) > heal_offset + 3 else 0
+            )
 
         min_params_critical = heal_offset + 5
         if len(params) >= min_params_critical:
