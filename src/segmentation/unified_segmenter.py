@@ -126,20 +126,28 @@ class UnifiedSegmenter:
             source_guid = self._resolve_pet_owner(event.source_guid)
             if source_guid and source_guid.startswith("Player-"):
                 char = self.current_encounter.add_character(source_guid, event.source_name)
-                logger.debug(f"Routing {event.event_type} to source player {char.character_name} ({source_guid})")
+                logger.debug(
+                    f"Routing {event.event_type} to source player {char.character_name} ({source_guid})"
+                )
                 self._add_event_to_character(char, event, "source")
             else:
-                logger.debug(f"Not routing {event.event_type}: source_guid {event.source_guid} -> {source_guid} (not player)")
+                logger.debug(
+                    f"Not routing {event.event_type}: source_guid {event.source_guid} -> {source_guid} (not player)"
+                )
 
         # Handle destination character
         if event.dest_guid:
             dest_guid = self._resolve_pet_owner(event.dest_guid)
             if dest_guid and dest_guid.startswith("Player-"):
                 char = self.current_encounter.add_character(dest_guid, event.dest_name)
-                logger.debug(f"Routing {event.event_type} to dest player {char.character_name} ({dest_guid})")
+                logger.debug(
+                    f"Routing {event.event_type} to dest player {char.character_name} ({dest_guid})"
+                )
                 self._add_event_to_character(char, event, "dest")
             else:
-                logger.debug(f"Not routing {event.event_type}: dest_guid {event.dest_guid} -> {dest_guid} (not player)")
+                logger.debug(
+                    f"Not routing {event.event_type}: dest_guid {event.dest_guid} -> {dest_guid} (not player)"
+                )
 
     def _add_event_to_character(self, char: EnhancedCharacter, event: BaseEvent, role: str):
         """Add event to character with proper categorization."""
@@ -203,7 +211,7 @@ class UnifiedSegmenter:
                 if event.spell_id:
                     npc.abilities_used[event.spell_id] = event.spell_name
             elif isinstance(event, HealEvent):
-                npc.healing_done += event.amount
+                npc.healing_done += event.effective_healing
 
         # Track damage to NPCs
         if (
