@@ -192,7 +192,9 @@ class CharacterEventStream:
 
         elif category == "damage_taken" and isinstance(event, DamageEvent):
             self.damage_taken.append(event)
-            self.total_damage_taken += event.amount
+            # Include overkill damage in total damage taken
+            total_damage = event.amount + (event.overkill if event.overkill > 0 else 0)
+            self.total_damage_taken += total_damage
 
         elif category == "healing_received" and isinstance(event, HealEvent):
             self.healing_received.append(event)
