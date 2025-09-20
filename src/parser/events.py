@@ -676,24 +676,34 @@ class EventFactory:
             # SPELL_ events and others use event.__dict__
             damage_event = DamageEvent(**event.__dict__)
 
+        # Detect Advanced Combat Logging by parameter count
+        # Advanced Combat Logging inserts unit info (19 fields) before damage parameters
+        damage_offset = 0
+        if len(params) >= 25:  # Advanced Combat Logging detected
+            # Skip unit info fields: target_guid, info_guid, current_hp, max_hp, attack_power,
+            # spell_power, armor, resources, position, etc. (19 fields total)
+            damage_offset = 19
+
         # Damage parameters: total_damage, actual_damage, school, resisted, blocked, absorbed, critical, glancing, crushing
         # overkill = total_damage - actual_damage
-        if len(params) >= 6:
-            total_damage = cls._safe_int(params[0])
-            actual_damage = cls._safe_int(params[1])
+        min_params_needed = damage_offset + 6
+        if len(params) >= min_params_needed:
+            total_damage = cls._safe_int(params[damage_offset])
+            actual_damage = cls._safe_int(params[damage_offset + 1])
             damage_event.amount = total_damage  # Total damage (including overkill)
             damage_event.overkill = max(
                 0, total_damage - actual_damage
             )  # Calculate overkill correctly
-            damage_event.school = cls._safe_int(params[2])
-            damage_event.resisted = cls._safe_int(params[3])
-            damage_event.blocked = cls._safe_int(params[4])
-            damage_event.absorbed = cls._safe_int(params[5])
+            damage_event.school = cls._safe_int(params[damage_offset + 2])
+            damage_event.resisted = cls._safe_int(params[damage_offset + 3])
+            damage_event.blocked = cls._safe_int(params[damage_offset + 4])
+            damage_event.absorbed = cls._safe_int(params[damage_offset + 5])
 
-        if len(params) >= 9:
-            damage_event.critical = bool(params[6])
-            damage_event.glancing = bool(params[7])
-            damage_event.crushing = bool(params[8])
+        min_params_extended = damage_offset + 9
+        if len(params) >= min_params_extended:
+            damage_event.critical = bool(params[damage_offset + 6])
+            damage_event.glancing = bool(params[damage_offset + 7])
+            damage_event.crushing = bool(params[damage_offset + 8])
 
         return damage_event
 
@@ -726,7 +736,9 @@ class EventFactory:
             total_heal = cls._safe_int(params[0])
             effective_heal = cls._safe_int(params[2]) if len(params) > 2 else total_heal
             heal_event.amount = total_heal  # Total healing (including overhealing)
-            heal_event.overhealing = max(0, total_heal - effective_heal)  # Calculate overhealing correctly
+            heal_event.overhealing = max(
+                0, total_heal - effective_heal
+            )  # Calculate overhealing correctly
             heal_event.absorbed = cls._safe_int(params[3]) if len(params) > 3 else 0
 
         if len(params) >= 5:
