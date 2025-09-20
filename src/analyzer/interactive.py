@@ -503,8 +503,10 @@ class InteractiveAnalyzer:
             "SPELL_DAMAGE",
             "SPELL_PERIODIC_DAMAGE",
             "SWING_DAMAGE",
+            "SWING_DAMAGE_LANDED",
             "RANGE_DAMAGE",
             "ENVIRONMENTAL_DAMAGE",
+            "DAMAGE_SPLIT",
         }
         return event.event_type in damage_types
 
