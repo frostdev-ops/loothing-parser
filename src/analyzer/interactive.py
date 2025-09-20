@@ -444,7 +444,12 @@ class InteractiveAnalyzer:
                 characters[event.source_guid].total_damage_done += damage_amount
                 # Add to all_events for chronological tracking
                 characters[event.source_guid].all_events.append(
-                    (event.timestamp, "damage", damage_amount)
+                    TimestampedEvent(
+                        timestamp=event.timestamp.timestamp(),
+                        datetime=event.timestamp,
+                        event=event,
+                        category="damage_done"
+                    )
                 )
 
             # Track healing done (all healing event types)
