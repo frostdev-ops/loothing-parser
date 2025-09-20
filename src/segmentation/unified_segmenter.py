@@ -303,7 +303,8 @@ class UnifiedSegmenter:
         )
 
         # Start initial trash segment
-        self.current_encounter.start_fight(f"{event.zone_name} - Trash (Entrance)", event.timestamp)
+        trash_fight = self.current_encounter.start_fight(f"{event.zone_name} - Trash (Entrance)", event.timestamp)
+        trash_fight.is_trash = True
 
         logger.info(f"Started M+ run: {event.zone_name} +{event.keystone_level}")
 
@@ -354,7 +355,9 @@ class UnifiedSegmenter:
 
         # Start a new trash segment if the run is not over
         # (the M+ will end with CHALLENGE_MODE_END)
-        trash_number = len([f for f in self.current_encounter.fights if "Trash" in f.fight_name]) + 1
+        trash_number = (
+            len([f for f in self.current_encounter.fights if "Trash" in f.fight_name]) + 1
+        )
         self.current_encounter.start_fight(
             f"{self.current_encounter.encounter_name} - Trash ({trash_number})", event.timestamp
         )
