@@ -606,12 +606,11 @@ class InteractiveAnalyzer:
         return event.event_type in heal_types
 
     def _get_total_damage(self, event) -> int:
-        """Get total damage including absorbed amounts."""
+        """Get actual damage dealt (not including absorbed damage)."""
         damage = 0
         if hasattr(event, "amount") and event.amount:
             damage += event.amount
-        if hasattr(event, "absorbed") and event.absorbed:
-            damage += event.absorbed
+        # Absorbed damage is damage that was prevented, not dealt - don't include it
         return damage
 
     def _get_effective_healing(self, event) -> int:
