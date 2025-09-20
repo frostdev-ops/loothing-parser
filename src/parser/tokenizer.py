@@ -413,8 +413,14 @@ class LineTokenizer:
         """
         # Events that have damage/heal amounts that could be affected by ACL
         acl_affected_events = [
-            "DAMAGE", "HEAL", "ABSORBED", "MISSED", "HEALED",
-            "ENERGIZE", "DRAIN", "LEECH"
+            "DAMAGE",
+            "HEAL",
+            "ABSORBED",
+            "MISSED",
+            "HEALED",
+            "ENERGIZE",
+            "DRAIN",
+            "LEECH",
         ]
 
         # Check if this event type could have ACL parameters
@@ -432,8 +438,8 @@ class LineTokenizer:
         expected_min_acl_params = 22  # Conservative threshold
 
         if len(params) >= expected_min_acl_params:
-            # Likely has ACL parameters - skip first 18 params
-            return params[18:]
+            # Likely has ACL parameters - skip first 19 params
+            return params[19:]
         else:
             # No ACL or insufficient params, return as-is
             return params
