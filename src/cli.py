@@ -91,9 +91,7 @@ def parse(log_file, output, format, threads, no_parallel):
             console=console,
         ) as progress:
             file_size = log_path.stat().st_size
-            task = progress.add_task(
-                f"[cyan]Processing...", total=file_size
-            )
+            task = progress.add_task(f"[cyan]Processing...", total=file_size)
 
             with open(log_path, "rb") as f:
                 bytes_read = 0
@@ -159,6 +157,203 @@ def parse(log_file, output, format, threads, no_parallel):
         export_unified_json(encounters, output or "output.json")
     elif format == "csv":
         export_unified_csv(encounters, output or "output.csv")
+
+
+def display_unified_summary(encounters, total_events, parse_errors, processing_time):
+    """Display summary for unified encounters."""
+    console.print("\n[bold cyan]═══ Parsing Complete ═══[/bold cyan]")
+
+    # Overall stats
+    stats_table = Table(title="Parsing Statistics", show_header=False)
+    stats_table.add_column("Metric", style="cyan")
+    stats_table.add_column("Value", style="white")
+
+    stats_table.add_row("Total Events", f"{total_events:,}")
+    stats_table.add_row("Processing Time", f"{processing_time:.2f}s")
+    stats_table.add_row("Events/Second", f"{total_events / max(processing_time, 0.01):,.0f}")
+    stats_table.add_row("Parse Errors", str(len(parse_errors)))
+    stats_table.add_row("Total Encounters", str(len(encounters)))
+
+    # Separate by type
+    raid_encounters = [e for e in encounters if e.encounter_type == EncounterType.RAID]
+    mplus_encounters = [e for e in encounters if e.encounter_type == EncounterType.MYTHIC_PLUS]
+
+    stats_table.add_row("Raid Encounters", str(len(raid_encounters)))
+    stats_table.add_row("Mythic+ Runs", str(len(mplus_encounters)))
+
+    console.print(stats_table)
+
+    # Encounter summary
+    if encounters:
+        enc_table = Table(title=f"\n[bold]Encounters ({len(encounters)})[/bold]")
+        enc_table.add_column("#", style="dim", width=3)
+        enc_table.add_column("Type", width=10)
+        enc_table.add_column("Name", width=30)
+        enc_table.add_column("Duration", width=8)
+        enc_table.add_column("Players", width=7)
+        enc_table.add_column("Deaths", width=6)
+        enc_table.add_column("DPS", width=10)
+        enc_table.add_column("Result", width=10)
+
+        for i, enc in enumerate(encounters[:20], 1):  # Show first 20
+            enc_type = "M+" if enc.encounter_type == EncounterType.MYTHIC_PLUS else "Raid"
+            type_color = "magenta" if enc_type == "M+" else "red"
+
+            name = enc.encounter_name
+            if enc.keystone_level:
+                name = f"{name} +{enc.keystone_level}"
+
+            duration_str = f"{enc.duration:.0f}s" if enc.duration else "-"
+            player_count = len(enc.characters)
+            death_count = enc.metrics.total_deaths
+            raid_dps = f"{enc.metrics.raid_dps:,.0f}" if enc.metrics.raid_dps else "-"
+
+            result = "Success" if enc.success else "Wipe" if enc.success is False else "-"
+            result_color = "green" if enc.success else "red" if enc.success is False else "dim"
+
+            enc_table.add_row(
+                str(i),
+                f"[{type_color}]{enc_type}[/{type_color}]",
+                name[:30],  # Truncate long names
+                duration_str,
+                str(player_count),
+                str(death_count) if death_count > 0 else "-",
+                raid_dps,
+                f"[{result_color}]{result}[/{result_color}]",
+            )
+
+            # Show M+ fight breakdown
+            if enc.encounter_type == EncounterType.MYTHIC_PLUS and enc.fights:
+                boss_fights = [f for f in enc.fights if f.is_boss]
+                trash_fights = [f for f in enc.fights if f.is_trash]
+                if boss_fights or trash_fights:
+                    enc_table.add_row(
+                        "",
+                        f"[dim]→ Fights[/dim]",
+                        f"[dim]Bosses: {len(boss_fights)}, Trash: {len(trash_fights)}[/dim]",
+                        "", "", "", "", ""
+                    )
+
+        console.print(enc_table)
+
+        # Top performers across all encounters
+        all_characters = {}
+        for enc in encounters:
+            for guid, char in enc.characters.items():
+                if guid not in all_characters:
+                    all_characters[guid] = {
+                        "name": char.character_name,
+                        "total_damage": 0,
+                        "total_healing": 0,
+                        "encounters": 0,
+                        "deaths": 0,
+                    }
+                all_characters[guid]["total_damage"] += char.total_damage_done
+                all_characters[guid]["total_healing"] += char.total_healing_done
+                all_characters[guid]["encounters"] += 1
+                all_characters[guid]["deaths"] += char.death_count
+
+        if all_characters:
+            # Sort by total damage
+            top_dps = sorted(all_characters.items(), key=lambda x: x[1]["total_damage"], reverse=True)[:5]
+
+            perf_table = Table(title="\n[bold]Top Performers (by total damage)[/bold]")
+            perf_table.add_column("Player", style="green")
+            perf_table.add_column("Total Damage", style="red")
+            perf_table.add_column("Total Healing", style="blue")
+            perf_table.add_column("Encounters", style="cyan")
+            perf_table.add_column("Deaths", style="yellow")
+
+            for guid, data in top_dps:
+                perf_table.add_row(
+                    data["name"],
+                    f"{data['total_damage']:,}",
+                    f"{data['total_healing']:,}" if data['total_healing'] > 1000 else "-",
+                    str(data["encounters"]),
+                    str(data["deaths"]) if data["deaths"] > 0 else "-",
+                )
+
+            console.print(perf_table)
+
+
+def export_unified_json(encounters, output_file):
+    """Export unified encounters to JSON format."""
+    import json
+
+    data = []
+    for enc in encounters:
+        enc_data = {
+            "encounter_type": enc.encounter_type.value,
+            "encounter_id": enc.encounter_id,
+            "encounter_name": enc.encounter_name,
+            "instance_name": enc.instance_name,
+            "difficulty": enc.difficulty,
+            "keystone_level": enc.keystone_level,
+            "affixes": enc.affixes,
+            "start_time": enc.start_time.isoformat() if enc.start_time else None,
+            "end_time": enc.end_time.isoformat() if enc.end_time else None,
+            "duration": enc.duration,
+            "success": enc.success,
+            "metrics": {
+                "total_damage": enc.metrics.total_damage,
+                "total_healing": enc.metrics.total_healing,
+                "total_deaths": enc.metrics.total_deaths,
+                "raid_dps": enc.metrics.raid_dps,
+                "raid_hps": enc.metrics.raid_hps,
+                "player_count": enc.metrics.player_count,
+            },
+            "fight_count": len(enc.fights),
+            "character_count": len(enc.characters),
+        }
+
+        # Add fight breakdown for M+
+        if enc.encounter_type == EncounterType.MYTHIC_PLUS and enc.fights:
+            enc_data["fights"] = [
+                {
+                    "name": f.fight_name,
+                    "type": "boss" if f.is_boss else ("trash" if f.is_trash else "normal"),
+                    "duration": f.duration,
+                    "success": f.success,
+                }
+                for f in enc.fights
+            ]
+
+        data.append(enc_data)
+
+    with open(output_file, "w") as f:
+        json.dump(data, f, indent=2, default=str)
+
+    console.print(f"[green]Exported {len(encounters)} encounters to {output_file}[/green]")
+
+
+def export_unified_csv(encounters, output_file):
+    """Export unified encounters to CSV format."""
+    import csv
+
+    with open(output_file, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "Type", "Name", "Difficulty", "Keystone", "Start", "End",
+            "Duration", "Success", "Players", "Deaths", "DPS", "HPS"
+        ])
+
+        for enc in encounters:
+            writer.writerow([
+                enc.encounter_type.value,
+                enc.encounter_name,
+                enc.difficulty or "",
+                enc.keystone_level or "",
+                enc.start_time.isoformat() if enc.start_time else "",
+                enc.end_time.isoformat() if enc.end_time else "",
+                f"{enc.duration:.1f}" if enc.duration else "",
+                enc.success if enc.success is not None else "",
+                enc.metrics.player_count,
+                enc.metrics.total_deaths,
+                f"{enc.metrics.raid_dps:.0f}" if enc.metrics.raid_dps else "",
+                f"{enc.metrics.raid_hps:.0f}" if enc.metrics.raid_hps else "",
+            ])
+
+    console.print(f"[green]Exported {len(encounters)} encounters to {output_file}[/green]")
 
 
 def display_summary(parser, segmenter, fights, event_types, total_events, processing_time):
