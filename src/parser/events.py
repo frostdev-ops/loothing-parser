@@ -622,12 +622,19 @@ class EventFactory:
         # shield_spell_id,shield_spell_name,shield_spell_school,
         # amount_absorbed,total_absorbed
 
-        # Base parameters (standard for all events)
+        # Base parameters for SPELL_ABSORBED have extended format:
+        # attacker_guid, attacker_name, attacker_flags, attacker_raid_flags,
+        # target_guid, target_name, target_flags, target_raid_flags,
+        # absorber_guid, absorber_name, absorber_flags, absorber_raid_flags
         if len(parsed_line.base_params) >= 8:
             event.attacker_guid = parsed_line.base_params[0]
             event.attacker_name = parsed_line.base_params[1]
             event.target_guid = parsed_line.base_params[4]
             event.target_name = parsed_line.base_params[5]
+
+        if len(parsed_line.base_params) >= 12:
+            event.absorber_guid = parsed_line.base_params[8]
+            event.absorber_name = parsed_line.base_params[9]
 
         # Suffix parameters (SPELL_ABSORBED specific)
         params = parsed_line.suffix_params
