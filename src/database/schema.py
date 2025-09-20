@@ -372,6 +372,14 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_segment_run ON combat_segments(run_id, segment_index)"
     )
 
+    # Combat periods indices
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_combat_periods_encounter ON combat_periods(encounter_id, period_index)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_combat_periods_time ON combat_periods(start_time, end_time)"
+    )
+
     # Set schema version
     db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (1)")
 
