@@ -185,9 +185,11 @@ class CharacterEventStream:
         """Route event to appropriate category list."""
         if category == "damage_done" and isinstance(event, DamageEvent):
             self.damage_done.append(event)
-            # Include overkill damage in total - attacker still did this damage even if target died
-            total_damage = event.amount + (event.overkill if event.overkill > 0 else 0)
-            self.total_damage_done += total_damage
+            # Only count actual damage, not overkill (matches Details addon behavior)
+            self.total_damage_done += event.amount
+            # Track overkill separately
+            if event.overkill > 0:
+                self.total_overkill_done += event.overkill
 
         elif category == "healing_done" and isinstance(event, HealEvent):
             self.healing_done.append(event)
