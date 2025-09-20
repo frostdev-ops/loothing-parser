@@ -616,32 +616,34 @@ class EventFactory:
             raw_line=parsed_line.raw_line,
         )
 
-        # SPELL_ABSORBED format:
-        # timestamp,source_guid,source_name,source_flags,source_raid_flags,
-        # dest_guid,dest_name,dest_flags,dest_raid_flags,
+        # SPELL_ABSORBED structure from our analysis:
+        # Standard base params first (8 params), then suffix params:
         # absorber_guid,absorber_name,absorber_flags,absorber_raid_flags,
         # shield_spell_id,shield_spell_name,shield_spell_school,
         # amount_absorbed,total_absorbed
 
-        params = parsed_line.suffix_params
-        if len(params) >= 17:
-            # Original damage event info
-            event.attacker_guid = params[0]
-            event.attacker_name = params[1]
-            event.target_guid = params[4]
-            event.target_name = params[5]
+        # Base parameters (standard for all events)
+        if len(parsed_line.base_params) >= 8:
+            event.attacker_guid = parsed_line.base_params[0]
+            event.attacker_name = parsed_line.base_params[1]
+            event.target_guid = parsed_line.base_params[4]
+            event.target_name = parsed_line.base_params[5]
 
+        # Suffix parameters (SPELL_ABSORBED specific)
+        params = parsed_line.suffix_params
+        if len(params) >= 7:
             # Absorber info (who provided the shield)
-            event.absorber_guid = params[8]
-            event.absorber_name = params[9]
+            event.absorber_guid = params[0]
+            event.absorber_name = params[1]
 
             # Shield spell info
-            event.shield_spell_id = cls._safe_int(params[12])
-            event.shield_spell_name = params[13]
-            event.shield_spell_school = cls._safe_int(params[14])
+            event.shield_spell_id = cls._safe_int(params[4])
+            event.shield_spell_name = params[5]
+            event.shield_spell_school = cls._safe_int(params[6])
 
             # Amount absorbed
-            event.amount_absorbed = cls._safe_int(params[15])
+            if len(params) >= 8:
+                event.amount_absorbed = cls._safe_int(params[7])
 
         return event
 
