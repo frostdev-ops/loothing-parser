@@ -87,6 +87,15 @@ class LineTokenizer:
 
         event_type = params[0]
 
+        # Check for Advanced Logging flag in COMBAT_LOG_VERSION
+        if event_type == "COMBAT_LOG_VERSION" and "ADVANCED_LOG_ENABLED" in params:
+            try:
+                acl_index = params.index("ADVANCED_LOG_ENABLED")
+                if acl_index + 1 < len(params):
+                    self.advanced_logging_enabled = params[acl_index + 1] == 1
+            except (ValueError, IndexError):
+                pass
+
         # Extract base parameters (if they exist)
         base_params = []
         remaining_params = params[1:]
