@@ -10,7 +10,13 @@ from enum import Enum
 
 from src.parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent, CombatantInfo
 from src.models.character_events import CharacterEventStream, DeathEvent
-from src.config.wow_data import get_spec_name, is_tank_spec, is_healer_spec, is_flask_buff, is_food_buff
+from src.config.wow_data import (
+    get_spec_name,
+    is_tank_spec,
+    is_healer_spec,
+    is_flask_buff,
+    is_food_buff,
+)
 
 
 @dataclass
@@ -332,19 +338,5 @@ class EnhancedCharacter(CharacterEventStream):
         return base_dict
 
     def _get_spec_name(self, spec_id: int) -> str:
-        """Get spec name from spec ID."""
-        # This would normally query a spec database
-        # For now, return a placeholder
-        spec_names = {
-            250: "Blood",
-            251: "Frost",
-            252: "Unholy",  # Death Knight
-            577: "Havoc",
-            581: "Vengeance",  # Demon Hunter
-            102: "Balance",
-            103: "Feral",
-            104: "Guardian",
-            105: "Restoration",  # Druid
-            # Add more specs as needed
-        }
-        return spec_names.get(spec_id, f"Spec {spec_id}")
+        """Get spec name from spec ID using configurable mapping."""
+        return get_spec_name(spec_id)
