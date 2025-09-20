@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
-from src.parser.events import BaseEvent, EncounterEvent, ChallengeModeEvent
+from src.parser.events import BaseEvent
+from src.models.combat_periods import CombatPeriod, CombatPeriodDetector, EncounterEvent, ChallengeModeEvent
 
 
 class FightType(Enum):
@@ -37,6 +38,8 @@ class Fight:
     keystone_level: Optional[int] = None
     success: Optional[bool] = None
     duration: Optional[float] = None  # In seconds
+    combat_duration: Optional[float] = None  # Time spent in combat only
+    combat_periods: List[CombatPeriod] = field(default_factory=list)
     events: List[BaseEvent] = field(default_factory=list)
     participants: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -77,6 +80,11 @@ class Fight:
             self.start_time = self.events[0].timestamp
             self.end_time = self.events[-1].timestamp
             self.duration = (self.end_time - self.start_time).total_seconds()
+
+            # Calculate combat periods and combat duration
+            detector = CombatPeriodDetector(gap_threshold=5.0)
+            self.combat_periods = detector.detect_periods(self.events)
+            self.combat_duration = detector.calculate_total_combat_time(self.combat_periods)
 
     def is_complete(self) -> bool:
         """Check if the fight has ended properly."""
