@@ -10,6 +10,7 @@ from enum import Enum
 
 from src.parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent, CombatantInfo
 from src.models.character_events import CharacterEventStream, DeathEvent
+from src.config.wow_data import get_spec_name, is_tank_spec, is_healer_spec, is_flask_buff, is_food_buff
 
 
 @dataclass
@@ -148,8 +149,7 @@ class EnhancedCharacter(CharacterEventStream):
         if category == "damage_done":
             if spell_id not in self.ability_damage:
                 self.ability_damage[spell_id] = AbilityMetrics(
-                    spell_id=spell_id,
-                    spell_name=spell_name
+                    spell_id=spell_id, spell_name=spell_name
                 )
 
             ability = self.ability_damage[spell_id]
@@ -161,8 +161,7 @@ class EnhancedCharacter(CharacterEventStream):
         elif category == "damage_taken":
             if spell_id not in self.ability_damage_taken:
                 self.ability_damage_taken[spell_id] = AbilityMetrics(
-                    spell_id=spell_id,
-                    spell_name=spell_name
+                    spell_id=spell_id, spell_name=spell_name
                 )
 
             ability = self.ability_damage_taken[spell_id]
@@ -177,8 +176,7 @@ class EnhancedCharacter(CharacterEventStream):
         if category == "healing_done" and spell_id:
             if spell_id not in self.ability_healing:
                 self.ability_healing[spell_id] = AbilityMetrics(
-                    spell_id=spell_id,
-                    spell_name=spell_name
+                    spell_id=spell_id, spell_name=spell_name
                 )
 
             ability = self.ability_healing[spell_id]
@@ -197,7 +195,7 @@ class EnhancedCharacter(CharacterEventStream):
             overkill=death_event.overkill,
             resurrect_time=death_event.resurrect_time,
             recent_damage_taken=list(self.recent_damage_taken),
-            recent_healing_received=list(self.recent_healing_received)
+            recent_healing_received=list(self.recent_healing_received),
         )
 
         # Analyze death contributors
@@ -248,30 +246,29 @@ class EnhancedCharacter(CharacterEventStream):
         # Simple role detection based on healing/damage ratio
         if self.total_healing_done > self.total_damage_done * 2:
             self.role = "healer"
-        elif self.spec_name and any(tank in self.spec_name.lower() for tank in ["protection", "blood", "vengeance", "brewmaster", "guardian"]):
+        elif self.spec_name and any(
+            tank in self.spec_name.lower()
+            for tank in ["protection", "blood", "vengeance", "brewmaster", "guardian"]
+        ):
             self.role = "tank"
         else:
             self.role = "dps"
 
-    def get_top_abilities(self, ability_type: str = "damage", limit: int = 10) -> List[AbilityMetrics]:
+    def get_top_abilities(
+        self, ability_type: str = "damage", limit: int = 10
+    ) -> List[AbilityMetrics]:
         """Get top abilities by damage or healing."""
         if ability_type == "damage":
             abilities = sorted(
-                self.ability_damage.values(),
-                key=lambda a: a.total_damage,
-                reverse=True
+                self.ability_damage.values(), key=lambda a: a.total_damage, reverse=True
             )
         elif ability_type == "healing":
             abilities = sorted(
-                self.ability_healing.values(),
-                key=lambda a: a.total_healing,
-                reverse=True
+                self.ability_healing.values(), key=lambda a: a.total_healing, reverse=True
             )
         elif ability_type == "damage_taken":
             abilities = sorted(
-                self.ability_damage_taken.values(),
-                key=lambda a: a.total_damage,
-                reverse=True
+                self.ability_damage_taken.values(), key=lambda a: a.total_damage, reverse=True
             )
         else:
             abilities = []
@@ -283,50 +280,54 @@ class EnhancedCharacter(CharacterEventStream):
         base_dict = super().to_dict()
 
         # Add enhanced data
-        base_dict.update({
-            "item_level": round(self.item_level, 1) if self.item_level else None,
-            "role": self.role,
-            "talent_build": self.talent_data.get_talent_build_string() if self.talent_data else None,
-            "has_flask": bool(self.talent_data.get_flask()) if self.talent_data else False,
-            "has_food": bool(self.talent_data.get_food_buff()) if self.talent_data else False,
-            "ability_breakdown": {
-                "damage": [
+        base_dict.update(
+            {
+                "item_level": round(self.item_level, 1) if self.item_level else None,
+                "role": self.role,
+                "talent_build": (
+                    self.talent_data.get_talent_build_string() if self.talent_data else None
+                ),
+                "has_flask": bool(self.talent_data.get_flask()) if self.talent_data else False,
+                "has_food": bool(self.talent_data.get_food_buff()) if self.talent_data else False,
+                "ability_breakdown": {
+                    "damage": [
+                        {
+                            "spell_name": a.spell_name,
+                            "total": a.total_damage,
+                            "percentage": round(a.percentage_of_total, 1),
+                            "hits": a.hit_count,
+                            "avg_hit": round(a.average_hit),
+                            "crit_rate": round(a.crit_rate, 1),
+                        }
+                        for a in self.get_top_abilities("damage", 5)
+                    ],
+                    "healing": [
+                        {
+                            "spell_name": a.spell_name,
+                            "total": a.total_healing,
+                            "percentage": round(a.percentage_of_total, 1),
+                            "hits": a.hit_count,
+                            "avg_hit": round(a.average_hit),
+                            "crit_rate": round(a.crit_rate, 1),
+                        }
+                        for a in self.get_top_abilities("healing", 5)
+                    ],
+                },
+                "deaths": [
                     {
-                        "spell_name": a.spell_name,
-                        "total": a.total_damage,
-                        "percentage": round(a.percentage_of_total, 1),
-                        "hits": a.hit_count,
-                        "avg_hit": round(a.average_hit),
-                        "crit_rate": round(a.crit_rate, 1)
+                        "timestamp": death.timestamp,
+                        "damage_sources": sorted(
+                            death.damage_sources.items(), key=lambda x: x[1], reverse=True
+                        )[
+                            :5
+                        ],  # Top 5 damage sources
+                        "total_recent_damage": sum(death.damage_sources.values()),
+                        "healing_attempted": sum(death.healing_sources.values()),
                     }
-                    for a in self.get_top_abilities("damage", 5)
+                    for death in self.enhanced_deaths
                 ],
-                "healing": [
-                    {
-                        "spell_name": a.spell_name,
-                        "total": a.total_healing,
-                        "percentage": round(a.percentage_of_total, 1),
-                        "hits": a.hit_count,
-                        "avg_hit": round(a.average_hit),
-                        "crit_rate": round(a.crit_rate, 1)
-                    }
-                    for a in self.get_top_abilities("healing", 5)
-                ]
-            },
-            "deaths": [
-                {
-                    "timestamp": death.timestamp,
-                    "damage_sources": sorted(
-                        death.damage_sources.items(),
-                        key=lambda x: x[1],
-                        reverse=True
-                    )[:5],  # Top 5 damage sources
-                    "total_recent_damage": sum(death.damage_sources.values()),
-                    "healing_attempted": sum(death.healing_sources.values())
-                }
-                for death in self.enhanced_deaths
-            ]
-        })
+            }
+        )
 
         return base_dict
 
@@ -335,9 +336,15 @@ class EnhancedCharacter(CharacterEventStream):
         # This would normally query a spec database
         # For now, return a placeholder
         spec_names = {
-            250: "Blood", 251: "Frost", 252: "Unholy",  # Death Knight
-            577: "Havoc", 581: "Vengeance",  # Demon Hunter
-            102: "Balance", 103: "Feral", 104: "Guardian", 105: "Restoration",  # Druid
+            250: "Blood",
+            251: "Frost",
+            252: "Unholy",  # Death Knight
+            577: "Havoc",
+            581: "Vengeance",  # Demon Hunter
+            102: "Balance",
+            103: "Feral",
+            104: "Guardian",
+            105: "Restoration",  # Druid
             # Add more specs as needed
         }
         return spec_names.get(spec_id, f"Spec {spec_id}")
