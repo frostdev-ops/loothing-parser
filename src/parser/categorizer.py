@@ -31,7 +31,7 @@ class EventCategorizer:
     }
 
     # Event types that represent healing
-    HEALING_EVENTS = {"SPELL_HEAL", "SPELL_PERIODIC_HEAL", "SPELL_HEAL_ABSORBED"}
+    HEALING_EVENTS = {"SPELL_HEAL", "SPELL_PERIODIC_HEAL"}
 
     # Event types for aura application
     AURA_APPLY_EVENTS = {
@@ -296,9 +296,7 @@ class EventCategorizer:
             # Source summons dest - track pet ownership
             if event.source_guid.startswith("Player-"):
                 self.pet_owners[event.dest_guid] = event.source_guid
-                logger.debug(
-                    f"Tracked pet {event.dest_name} -> owner {event.source_name}"
-                )
+                logger.debug(f"Tracked pet {event.dest_name} -> owner {event.source_name}")
 
     def _handle_combatant_info(self, event: BaseEvent):
         """Handle combatant info events for character metadata."""
