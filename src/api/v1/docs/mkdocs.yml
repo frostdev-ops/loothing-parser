@@ -1,0 +1,140 @@
+site_name: WoW Combat Log Analysis API
+site_description: Comprehensive documentation for the WoW Combat Log Analysis API v1
+site_url: https://api.example.com/docs/v1
+repo_url: https://github.com/your-org/loothing-parser
+repo_name: loothing-parser
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quick-start.md
+    - Authentication: getting-started/authentication.md
+    - Rate Limiting: getting-started/rate-limiting.md
+    - Error Handling: getting-started/error-handling.md
+  - API Reference:
+    - Overview: api-reference/overview.md
+    - Characters: api-reference/characters.md
+    - Encounters: api-reference/encounters.md
+    - Analytics: api-reference/analytics.md
+    - Search: api-reference/search.md
+    - Aggregations: api-reference/aggregations.md
+    - Logs: api-reference/logs.md
+    - Streaming: api-reference/streaming.md
+  - Examples:
+    - Basic Usage: examples/basic-usage.md
+    - Advanced Queries: examples/advanced-queries.md
+    - Real-time Streaming: examples/streaming.md
+    - Analytics Dashboard: examples/dashboard.md
+  - Client Libraries:
+    - Python SDK: client-libraries/python.md
+    - JavaScript SDK: client-libraries/javascript.md
+    - Go SDK: client-libraries/go.md
+    - Postman Collection: client-libraries/postman.md
+  - Guides:
+    - Data Model: guides/data-model.md
+    - Performance Optimization: guides/performance.md
+    - Best Practices: guides/best-practices.md
+    - Troubleshooting: guides/troubleshooting.md
+  - Changelog: changelog.md
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.instant
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
+    - toc.integrate
+    - content.code.annotate
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_root_toc_entry: false
+            merge_init_into_class: true
+            heading_level: 2
+  - swagger-ui-tag
+  - redoc-tag
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:materialx.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: your-org
+      repo: loothing-parser
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/your-org/loothing-parser
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/your-server
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
