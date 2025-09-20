@@ -116,13 +116,14 @@ class RaidEncounter:
         if character_guid not in self.characters:
             # Parse character name to get components
             from .character import parse_character_name
+
             parsed = parse_character_name(character_name)
 
             self.characters[character_guid] = CharacterEventStream(
                 character_guid=character_guid,
-                character_name=parsed['name'],
-                server=parsed['server'],
-                region=parsed['region']
+                character_name=parsed["name"],
+                server=parsed["server"],
+                region=parsed["region"],
             )
         return self.characters[character_guid]
 
@@ -221,8 +222,15 @@ class CombatSegment:
     def add_character(self, character_guid: str, character_name: str) -> CharacterEventStream:
         """Add or get a character stream for this segment."""
         if character_guid not in self.characters:
+            # Parse character name to get components
+            from .character import parse_character_name
+            parsed = parse_character_name(character_name)
+
             self.characters[character_guid] = CharacterEventStream(
-                character_guid=character_guid, character_name=character_name
+                character_guid=character_guid,
+                character_name=parsed['name'],
+                server=parsed['server'],
+                region=parsed['region']
             )
         return self.characters[character_guid]
 
