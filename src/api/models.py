@@ -58,7 +58,8 @@ class SessionStart(BaseModel):
     client_id: str = Field(..., description="Unique client identifier")
     client_version: Optional[str] = Field(None, description="Client software version")
     character_name: Optional[str] = Field(None, description="Main character name")
-    realm: Optional[str] = Field(None, description="WoW realm name")
+    server: Optional[str] = Field(None, description="WoW server name")
+    region: Optional[str] = Field(None, description="WoW region code")
     log_start_time: Optional[float] = Field(None, description="When logging started")
 
     class Config:
