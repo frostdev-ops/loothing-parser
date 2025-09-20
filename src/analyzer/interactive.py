@@ -27,23 +27,25 @@ class InteractiveAnalyzer:
     and detailed combat statistics.
     """
 
-    def __init__(self, encounters: List[UnifiedEncounter], enhanced_data: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self, encounters: List[UnifiedEncounter], enhanced_data: Optional[Dict[str, Any]] = None
+    ):
         """
         Initialize the interactive analyzer.
 
         Args:
-            fights: List of parsed fight encounters
+            encounters: List of UnifiedEncounter objects
             enhanced_data: Optional enhanced data from EnhancedSegmenter
         """
         self.console = Console()
-        self.fights = fights
+        self.encounters = encounters
         self.enhanced_data = enhanced_data or {}
         self.navigation = NavigationState()
         self.display_builder = DisplayBuilder()
         self.metrics_calculator = MetricsCalculator()
 
         # Filter state
-        self.filtered_fights = fights.copy()
+        self.filtered_encounters = encounters.copy()
         self.current_filters = {}
 
         # Data caches
@@ -1458,20 +1460,20 @@ class InteractiveAnalyzer:
             )
 
         # Search encounters
-        for fight in self.fights:
-            if fight.encounter_name and query_lower in fight.encounter_name.lower():
+        for encounter in self.encounters:
+            if encounter.encounter_name and query_lower in encounter.encounter_name.lower():
                 results["encounters"].append(
                     {
-                        "name": fight.encounter_name,
-                        "type": fight.fight_type.value.title(),
-                        "description": f"{fight.fight_type.value.title()}: {fight.encounter_name}",
-                        "fight": fight,
+                        "name": encounter.encounter_name,
+                        "type": encounter.encounter_type.value.title(),
+                        "description": f"{encounter.encounter_type.value.title()}: {encounter.encounter_name}",
+                        "encounter": encounter,
                     }
                 )
 
         # Search spells/abilities
         spell_matches = set()
-        for fight in self.fights:
+        for encounter in self.encounters:
             characters = self._get_encounter_characters(fight)
             if not characters:
                 continue
