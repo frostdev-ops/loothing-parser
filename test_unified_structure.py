@@ -11,9 +11,9 @@ from datetime import datetime
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from parser.parser import CombatLogParser
-from segmentation.unified_segmenter import UnifiedSegmenter
-from analyzer.death_analyzer import DeathAnalyzer
+from src.parser.parser import CombatLogParser
+from src.segmentation.unified_segmenter import UnifiedSegmenter
+from src.analyzer.death_analyzer import DeathAnalyzer
 from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
@@ -37,7 +37,9 @@ def test_unified_structure():
     log_file = log_files[2] if len(log_files) > 2 else log_files[0]
 
     console.print("[bold cyan]═══ Unified Data Structure Test ═══[/bold cyan]\n")
-    console.print(f"📁 Testing with: {log_file.name} ({log_file.stat().st_size / 1024 / 1024:.1f} MB)\n")
+    console.print(
+        f"📁 Testing with: {log_file.name} ({log_file.stat().st_size / 1024 / 1024:.1f} MB)\n"
+    )
 
     # Create parser and unified segmenter
     parser = CombatLogParser()
@@ -125,7 +127,11 @@ def display_encounter(encounter):
     console.print(f"  Raid HPS: {encounter.metrics.raid_hps:,.0f}")
     console.print(f"  Deaths: {encounter.metrics.total_deaths}")
     console.print(f"  Avg Activity: {encounter.metrics.avg_activity:.1f}%")
-    console.print(f"  Avg iLvl: {encounter.metrics.avg_item_level:.1f}" if encounter.metrics.avg_item_level else "  Avg iLvl: Unknown")
+    console.print(
+        f"  Avg iLvl: {encounter.metrics.avg_item_level:.1f}"
+        if encounter.metrics.avg_item_level
+        else "  Avg iLvl: Unknown"
+    )
 
     # Character details
     display_character_breakdown(encounter)
@@ -151,9 +157,7 @@ def display_character_breakdown(encounter):
 
     # Sort by DPS
     sorted_chars = sorted(
-        encounter.characters.values(),
-        key=lambda c: c.total_damage_done,
-        reverse=True
+        encounter.characters.values(), key=lambda c: c.total_damage_done, reverse=True
     )
 
     for char in sorted_chars[:10]:  # Top 10
@@ -167,7 +171,7 @@ def display_character_breakdown(encounter):
             f"{dps:,.0f}",
             f"{hps:,.0f}" if hps > 100 else "-",
             str(char.death_count) if char.death_count > 0 else "-",
-            f"{char.activity_percentage:.0f}%"
+            f"{char.activity_percentage:.0f}%",
         )
 
     console.print(perf_table)
@@ -202,7 +206,7 @@ def display_ability_breakdown(character):
             f"{ability.percentage_of_total:.1f}%",
             str(ability.hit_count),
             f"{ability.average_hit:,.0f}",
-            f"{ability.crit_rate:.0f}%"
+            f"{ability.crit_rate:.0f}%",
         )
 
     console.print(ability_table)
@@ -241,11 +245,7 @@ def display_fight_breakdown(fight):
     console.print(f"  [red]Enemy Forces:[/red] {len(fight.enemy_forces)}")
 
     # Top enemies by damage done
-    top_enemies = sorted(
-        fight.enemy_forces.values(),
-        key=lambda e: e.damage_done,
-        reverse=True
-    )[:5]
+    top_enemies = sorted(fight.enemy_forces.values(), key=lambda e: e.damage_done, reverse=True)[:5]
 
     if top_enemies:
         console.print("    Top threats:")
