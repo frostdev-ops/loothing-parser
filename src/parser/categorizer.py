@@ -24,10 +24,12 @@ class EventCategorizer:
     # Event types that represent damage
     DAMAGE_EVENTS = {
         "SWING_DAMAGE",
+        "SWING_DAMAGE_LANDED",
         "SPELL_DAMAGE",
         "SPELL_PERIODIC_DAMAGE",
         "RANGE_DAMAGE",
         "ENVIRONMENTAL_DAMAGE",
+        "DAMAGE_SPLIT",
     }
 
     # Event types that represent healing
