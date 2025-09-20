@@ -142,6 +142,10 @@ class CharacterEventStream:
     total_overhealing: int = 0
     death_count: int = 0
 
+    # Overkill tracking (separate from damage totals)
+    total_overkill_done: int = 0
+    total_overkill_taken: int = 0
+
     # Absorption tracking
     total_damage_absorbed_by_shields: int = 0  # Shields I provided for others
     total_damage_absorbed_for_me: int = 0  # Damage prevented on me
@@ -231,7 +235,6 @@ class CharacterEventStream:
             self.absorption_received.append(event)
             if hasattr(event, "amount_absorbed"):
                 self.total_damage_absorbed_for_me += event.amount_absorbed
-
 
     def add_death(self, death_event: DeathEvent):
         """Record a character death."""
