@@ -229,8 +229,23 @@ def export_csv(fights, output_file):
 
 @cli.command()
 @click.argument("log_file", type=click.Path(exists=True))
-@click.option("--interactive/--summary", default=True, help="Launch interactive analyzer (default) or show summary")
-def analyze(log_file, interactive):
+@click.option(
+    "--interactive/--summary",
+    default=True,
+    help="Launch interactive analyzer (default) or show summary",
+)
+@click.option(
+    "--threads",
+    default=None,
+    type=int,
+    help="Number of threads for parallel processing (default: CPU count)",
+)
+@click.option(
+    "--no-parallel",
+    is_flag=True,
+    help="Disable parallel processing (force sequential)",
+)
+def analyze(log_file, interactive, threads, no_parallel):
     """Analyze a combat log file with interactive exploration."""
     from .analyzer import InteractiveAnalyzer
     from .segmentation.enhanced import EnhancedSegmenter
@@ -271,7 +286,9 @@ def analyze(log_file, interactive):
 
                             # Update progress every 10k events
                             if total_events % 10000 == 0:
-                                progress.update(task, description=f"[cyan]Processed {total_events:,} events...")
+                                progress.update(
+                                    task, description=f"[cyan]Processed {total_events:,} events..."
+                                )
 
                         except Exception as e:
                             parser.parse_errors.append(f"Line {line_num}: {str(e)}")
@@ -295,7 +312,7 @@ def analyze(log_file, interactive):
         enhanced_data = {
             "raid_encounters": raid_encounters,
             "mythic_plus_runs": mythic_plus_runs,
-            "stats": enhanced_segmenter.get_stats()
+            "stats": enhanced_segmenter.get_stats(),
         }
 
         # Launch interactive analyzer
