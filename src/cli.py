@@ -15,7 +15,12 @@ from rich.logging import RichHandler
 from collections import Counter
 
 from .parser.parser import CombatLogParser
+from .parser.tokenizer import LineTokenizer
+from .parser.events import EventFactory
 from .segmentation.encounters import EncounterSegmenter, FightType
+from .segmentation.unified_segmenter import UnifiedSegmenter
+from .models.unified_encounter import UnifiedEncounter, EncounterType
+from .processing.unified_parallel_processor import UnifiedParallelProcessor
 from .config.loader import load_and_apply_config
 
 
