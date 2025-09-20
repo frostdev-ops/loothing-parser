@@ -265,7 +265,7 @@ class InteractiveAnalyzer:
         choice = Prompt.ask(
             "Enter choice",
             choices=["n", "p", "f", "b", "h", "q"]
-            + [str(i) for i in range(1, min(21, end - start + 1))],
+            + [str(i) for i in range(start + 1, end + 1)],
             default="b",
         )
 
