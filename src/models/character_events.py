@@ -198,9 +198,11 @@ class CharacterEventStream:
 
         elif category == "damage_taken" and isinstance(event, DamageEvent):
             self.damage_taken.append(event)
-            # Include overkill damage in total damage taken
-            total_damage = event.amount + (event.overkill if event.overkill > 0 else 0)
-            self.total_damage_taken += total_damage
+            # Only count actual damage, not overkill (matches Details addon behavior)
+            self.total_damage_taken += event.amount
+            # Track overkill separately
+            if event.overkill > 0:
+                self.total_overkill_taken += event.overkill
 
         elif category == "healing_received" and isinstance(event, HealEvent):
             self.healing_received.append(event)
