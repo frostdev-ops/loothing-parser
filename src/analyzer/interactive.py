@@ -402,7 +402,9 @@ class InteractiveAnalyzer:
             if characters and fight.events:
                 # Check if characters already have populated data from enhanced segmenter
                 has_enhanced_data = any(
-                    char.total_damage_done > 0 or char.total_healing_done > 0 or len(char.all_events) > 0
+                    char.total_damage_done > 0
+                    or char.total_healing_done > 0
+                    or len(char.all_events) > 0
                     for char in characters.values()
                 )
 
@@ -426,6 +428,7 @@ class InteractiveAnalyzer:
         """
         from src.parser.events import DamageEvent, HealEvent
         from src.models.combat_periods import CombatPeriodDetector
+        from src.models.character_events import TimestampedEvent
 
         events = fight.events
         duration = fight.duration or 0
