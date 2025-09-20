@@ -802,9 +802,9 @@ class EventFactory:
                 cls._safe_int(params[heal_offset + 2]) if len(params) > heal_offset + 2 else 0
             )
 
-        min_params_critical = heal_offset + 5
+        min_params_critical = heal_offset + 4
         if len(params) >= min_params_critical:
-            heal_event.critical = bool(params[heal_offset + 4])
+            heal_event.critical = bool(params[heal_offset + 3])
 
         return heal_event
 
