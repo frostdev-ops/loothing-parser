@@ -177,15 +177,11 @@ class TestWebSocketProtocol:
 
         # Test missing required fields
         with pytest.raises(Exception):  # Should raise validation error
-            StreamMessage.model_validate_json(
-                '{"type": "log_line"}'
-            )  # Missing timestamp
+            StreamMessage.model_validate_json('{"type": "log_line"}')  # Missing timestamp
 
         # Test invalid message type
         with pytest.raises(Exception):  # Should raise validation error
-            StreamMessage.model_validate_json(
-                '{"type": "invalid_type", "timestamp": 1234567890}'
-            )
+            StreamMessage.model_validate_json('{"type": "invalid_type", "timestamp": 1234567890}')
 
 
 class TestCombatLogStreamer:
@@ -361,16 +357,13 @@ class TestWebSocketMessageFlow:
                     client_id="test_client",
                     client_version="1.0.0",
                     character_name="TestChar",
-                    realm="TestRealm",
+                    server="TestRealm",
+                    region="US",
                 ).model_dump(),
             ),
             # Client sends log lines
-            StreamMessage(
-                type="log_line", timestamp=time.time(), line="test line 1", sequence=0
-            ),
-            StreamMessage(
-                type="log_line", timestamp=time.time(), line="test line 2", sequence=1
-            ),
+            StreamMessage(type="log_line", timestamp=time.time(), line="test line 1", sequence=0),
+            StreamMessage(type="log_line", timestamp=time.time(), line="test line 2", sequence=1),
             # Client sends heartbeat
             StreamMessage(type="heartbeat", timestamp=time.time()),
             # Client sends session end
@@ -456,9 +449,7 @@ class TestWebSocketMessageFlow:
             + "Test,0x512,0x0,Target,0x10a28,0x0,1234,Spell,0x1,5000,0,0,0,0,0,0,0"
         )
 
-        message = StreamMessage(
-            type="log_line", timestamp=time.time(), line=large_line, sequence=0
-        )
+        message = StreamMessage(type="log_line", timestamp=time.time(), line=large_line, sequence=0)
 
         # Should handle large messages without error
         json_data = message.model_dump_json()
