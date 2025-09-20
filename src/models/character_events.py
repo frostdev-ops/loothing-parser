@@ -186,6 +186,7 @@ class CharacterEventStream:
     def _route_event(self, event: BaseEvent, category: str):
         """Route event to appropriate category list."""
         import logging
+
         logger = logging.getLogger(__name__)
 
         if category == "damage_done" and (
@@ -208,13 +209,14 @@ class CharacterEventStream:
             isinstance(event, HealEvent) or "_HEAL" in event.event_type
         ):
             self.healing_done.append(event)
-            # Use total amount (including overhealing) to match Details addon behavior
+            # Use effective healing (excluding overhealing) to match WoW's "Healing Done" metric
             amount = getattr(event, "amount", 0)
             overhealing = getattr(event, "overhealing", 0)
-            self.total_healing_done += amount
+            effective_healing = amount - overhealing
+            self.total_healing_done += effective_healing
             self.total_overhealing += overhealing
             logger.debug(
-                f"Added healing_done: {amount}, total now: {self.total_healing_done}, isinstance: {isinstance(event, HealEvent)}"
+                f"Added healing_done: {effective_healing} (effective), total now: {self.total_healing_done}, isinstance: {isinstance(event, HealEvent)}"
             )
 
         elif category == "damage_taken" and isinstance(event, DamageEvent):
