@@ -11,9 +11,14 @@ try:
     from src.config.wow_data import is_flask_buff, is_food_buff, get_spec_name
 except ImportError:
     # Fallback if config module not available
-    def is_flask_buff(spell_id): return False
-    def is_food_buff(spell_id): return False
-    def get_spec_name(spec_id): return f"Spec {spec_id}"
+    def is_flask_buff(spell_id):
+        return False
+
+    def is_food_buff(spell_id):
+        return False
+
+    def get_spec_name(spec_id):
+        return f"Spec {spec_id}"
 
 
 class EventType(Enum):
@@ -331,23 +336,15 @@ class CombatantInfo(BaseEvent):
 
     def get_flask(self) -> Optional[ActiveAura]:
         """Get active flask if any."""
-        # Common flask spell IDs (updated for current expansion)
-        flask_ids = {431972, 431973, 431974, 431975, 431976, 431977}  # Algari flasks
         for aura in self.active_auras:
-            if aura.spell_id in flask_ids:
+            if is_flask_buff(aura.spell_id):
                 return aura
         return None
 
     def get_food_buff(self) -> Optional[ActiveAura]:
         """Get active food buff if any."""
-        # Common food buff spell IDs
-        food_ids = {
-            462854,  # Skyfury (Haste food)
-            462855,  # Blessed Recovery (Versatility food)
-            # Add more food IDs as needed
-        }
         for aura in self.active_auras:
-            if aura.spell_id in food_ids:
+            if is_food_buff(aura.spell_id):
                 return aura
         return None
 
