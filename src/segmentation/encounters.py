@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
-from src.parser.events import BaseEvent
+from src.parser.events import BaseEvent, EncounterEvent, ChallengeModeEvent
 from src.models.combat_periods import CombatPeriod, CombatPeriodDetector
 
 
