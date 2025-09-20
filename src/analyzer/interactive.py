@@ -398,9 +398,17 @@ class InteractiveAnalyzer:
                             character_guid=guid, character_name=participant["name"] or "Unknown"
                         )
 
-            # Process fight events to populate metrics
+            # Only populate metrics if characters don't already have enhanced segmenter data
             if characters and fight.events:
-                self._populate_character_metrics_from_events(characters, fight)
+                # Check if characters already have populated data from enhanced segmenter
+                has_enhanced_data = any(
+                    char.total_damage_done > 0 or char.total_healing_done > 0 or len(char.all_events) > 0
+                    for char in characters.values()
+                )
+
+                if not has_enhanced_data:
+                    # Fallback: populate metrics from fight events for basic segmenter
+                    self._populate_character_metrics_from_events(characters, fight)
 
             return characters if characters else None
 
@@ -473,8 +481,11 @@ class InteractiveAnalyzer:
             return True
         # Also check by event type for events that might not be typed as DamageEvent
         damage_types = {
-            "SPELL_DAMAGE", "SPELL_PERIODIC_DAMAGE", "SWING_DAMAGE",
-            "RANGE_DAMAGE", "ENVIRONMENTAL_DAMAGE"
+            "SPELL_DAMAGE",
+            "SPELL_PERIODIC_DAMAGE",
+            "SWING_DAMAGE",
+            "RANGE_DAMAGE",
+            "ENVIRONMENTAL_DAMAGE",
         }
         return event.event_type in damage_types
 
@@ -489,20 +500,20 @@ class InteractiveAnalyzer:
     def _get_total_damage(self, event) -> int:
         """Get total damage including absorbed amounts."""
         damage = 0
-        if hasattr(event, 'amount') and event.amount:
+        if hasattr(event, "amount") and event.amount:
             damage += event.amount
-        if hasattr(event, 'absorbed') and event.absorbed:
+        if hasattr(event, "absorbed") and event.absorbed:
             damage += event.absorbed
         return damage
 
     def _get_effective_healing(self, event) -> int:
         """Get effective healing amount."""
-        if hasattr(event, 'effective_healing'):
+        if hasattr(event, "effective_healing"):
             return event.effective_healing
-        elif hasattr(event, 'amount') and hasattr(event, 'overhealing'):
+        elif hasattr(event, "amount") and hasattr(event, "overhealing"):
             # Calculate effective healing if we have both values
             return event.amount - (event.overhealing or 0)
-        elif hasattr(event, 'amount'):
+        elif hasattr(event, "amount"):
             # Fallback to raw amount if no overhealing data
             return event.amount
         return 0
