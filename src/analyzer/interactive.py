@@ -608,6 +608,46 @@ class InteractiveAnalyzer:
 
                 self.console.print(abilities_table)
 
+        # HPS breakdown table
+        self.console.print("\n")  # Add some spacing
+        hps_rankings = self.metrics_calculator.get_hps_rankings(
+            characters, fight.duration, use_combat_time=True
+        )
+
+        if hps_rankings:
+            hps_table = Table(title=f"HPS Breakdown - {fight.encounter_name or 'Unknown'}")
+            hps_table.add_column("Rank", width=4)
+            hps_table.add_column("Player", width=20)
+            hps_table.add_column("HPS", width=12, justify="right")
+            hps_table.add_column("Total Healing", width=15, justify="right")
+            hps_table.add_column("Overhealing", width=12, justify="right")
+            hps_table.add_column("Efficiency %", width=12, justify="right")
+            hps_table.add_column("Deaths", width=7, justify="center")
+
+            for i, (name, hps, char) in enumerate(hps_rankings[:10], 1):
+                rank_color = "gold1" if i <= 3 else "white"
+                efficiency = (
+                    (char.total_healing_done / (char.total_healing_done + char.total_overhealing) * 100)
+                    if (char.total_healing_done + char.total_overhealing) > 0
+                    else 0
+                )
+                efficiency_color = (
+                    "green" if efficiency >= 80 else "yellow" if efficiency >= 60 else "red"
+                )
+                death_color = "red" if char.death_count > 0 else "green"
+
+                hps_table.add_row(
+                    f"[{rank_color}]{i}[/{rank_color}]",
+                    f"[{rank_color}]{name}[/{rank_color}]",
+                    f"[{rank_color}]{hps:,.0f}[/{rank_color}]",
+                    f"[{rank_color}]{char.total_healing_done:,}[/{rank_color}]",
+                    f"[{rank_color}]{char.total_overhealing:,}[/{rank_color}]",
+                    f"[{efficiency_color}]{efficiency:.1f}%[/{efficiency_color}]",
+                    f"[{death_color}]{char.death_count}[/{death_color}]",
+                )
+
+            self.console.print(hps_table)
+
         # Overall stats
         encounter_metrics = self.metrics_calculator.calculate_encounter_metrics(fight, characters)
         if encounter_metrics:
