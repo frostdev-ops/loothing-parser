@@ -51,7 +51,18 @@ def cli(verbose):
 @click.argument("log_file", type=click.Path(exists=True))
 @click.option("--output", "-o", help="Output file for results")
 @click.option("--format", type=click.Choice(["json", "csv", "summary"]), default="summary")
-def parse(log_file, output, format):
+@click.option(
+    "--threads",
+    default=None,
+    type=int,
+    help="Number of threads for parallel processing (default: CPU count)",
+)
+@click.option(
+    "--no-parallel",
+    is_flag=True,
+    help="Disable parallel processing (force sequential)",
+)
+def parse(log_file, output, format, threads, no_parallel):
     """Parse a combat log file and extract encounters."""
     log_path = Path(log_file)
     console.print(f"[bold green]Parsing combat log:[/bold green] {log_path.name}")
