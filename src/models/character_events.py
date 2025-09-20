@@ -95,6 +95,8 @@ class CharacterEventStream:
     # Character identification
     character_guid: str
     character_name: str
+    server: Optional[str] = None
+    region: Optional[str] = None
     class_name: Optional[str] = None
     spec_name: Optional[str] = None
     item_level: Optional[int] = None
