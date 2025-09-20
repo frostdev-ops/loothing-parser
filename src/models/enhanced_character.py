@@ -248,15 +248,19 @@ class EnhancedCharacter(CharacterEventStream):
             ability.calculate_metrics(total_damage=total_damage_taken)
 
     def detect_role(self):
-        """Detect player role based on activity."""
-        # Simple role detection based on healing/damage ratio
-        if self.total_healing_done > self.total_damage_done * 2:
+        """Detect player role based on spec ID or activity."""
+        # First try to detect by spec ID if available
+        if self.talent_data and self.talent_data.spec_id:
+            spec_id = self.talent_data.spec_id
+            if is_tank_spec(spec_id):
+                self.role = "tank"
+            elif is_healer_spec(spec_id):
+                self.role = "healer"
+            else:
+                self.role = "dps"
+        # Fallback to activity-based detection
+        elif self.total_healing_done > self.total_damage_done * 2:
             self.role = "healer"
-        elif self.spec_name and any(
-            tank in self.spec_name.lower()
-            for tank in ["protection", "blood", "vengeance", "brewmaster", "guardian"]
-        ):
-            self.role = "tank"
         else:
             self.role = "dps"
 
