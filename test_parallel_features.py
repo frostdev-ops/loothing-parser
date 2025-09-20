@@ -113,8 +113,8 @@ def compare_encounters(sequential_encounters, parallel_encounters):
                     success = False
 
         # Compare deaths
-        seq_deaths = len(seq_enc.deaths) if seq_enc.deaths else 0
-        par_deaths = len(par_enc.deaths) if par_enc.deaths else 0
+        seq_deaths = seq_enc.metrics.total_deaths if hasattr(seq_enc, 'metrics') and seq_enc.metrics else 0
+        par_deaths = par_enc.metrics.total_deaths if hasattr(par_enc, 'metrics') and par_enc.metrics else 0
 
         if seq_deaths != par_deaths:
             print(f"  ⚠ Death count mismatch: {seq_deaths} vs {par_deaths}")
@@ -224,7 +224,7 @@ def test_feature_preservation():
         for enc in parallel_encounters:
             if enc.characters:
                 for char in enc.characters.values():
-                    if hasattr(char, 'dps_by_ability') and char.dps_by_ability:
+                    if hasattr(char, "dps_by_ability") and char.dps_by_ability:
                         enc_with_abilities = enc
                         break
                 if enc_with_abilities:
