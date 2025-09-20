@@ -35,6 +35,9 @@ class EventCategorizer:
     # Event types that represent healing
     HEALING_EVENTS = {"SPELL_HEAL", "SPELL_PERIODIC_HEAL"}
 
+    # Event types for damage absorption
+    ABSORPTION_EVENTS = {"SPELL_ABSORBED"}
+
     # Event types for aura application
     AURA_APPLY_EVENTS = {
         "SPELL_AURA_APPLIED",
