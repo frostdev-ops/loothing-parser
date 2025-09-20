@@ -448,7 +448,7 @@ class InteractiveAnalyzer:
                         timestamp=event.timestamp.timestamp(),
                         datetime=event.timestamp,
                         event=event,
-                        category="damage_done"
+                        category="damage_done",
                     )
                 )
 
@@ -457,7 +457,12 @@ class InteractiveAnalyzer:
                 heal_amount = self._get_effective_healing(event)
                 characters[event.source_guid].total_healing_done += heal_amount
                 characters[event.source_guid].all_events.append(
-                    (event.timestamp, "heal", heal_amount)
+                    TimestampedEvent(
+                        timestamp=event.timestamp.timestamp(),
+                        datetime=event.timestamp,
+                        event=event,
+                        category="healing_done"
+                    )
                 )
 
             # Track damage taken
