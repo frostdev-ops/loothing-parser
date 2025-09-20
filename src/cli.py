@@ -490,6 +490,70 @@ def server_status(host, port):
         console.print(f"[red]✗ Failed to connect: {e}[/red]")
 
 
+def _process_sequential(log_path, console):
+    """
+    Sequential processing fallback for the CLI.
+
+    Args:
+        log_path: Path to the combat log file
+        console: Rich console for output
+
+    Returns:
+        Tuple of (fights, enhanced_data, parse_errors)
+    """
+    from .parser.parser import CombatLogParser
+    from .segmentation.encounters import EncounterSegmenter
+    from .segmentation.enhanced import EnhancedSegmenter
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+
+    parser = CombatLogParser()
+    segmenter = EncounterSegmenter()
+    enhanced_segmenter = EnhancedSegmenter()
+
+    total_events = 0
+
+    # Parse with progress indication
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("[cyan]Processing events...", total=None)
+
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            for line_num, line in enumerate(f, 1):
+                if line.strip():
+                    try:
+                        parsed_line = parser.tokenizer.parse_line(line)
+                        event = parser.event_factory.create_event(parsed_line)
+                        segmenter.process_event(event)
+                        enhanced_segmenter.process_event(event)
+                        total_events += 1
+
+                        # Update progress every 10k events
+                        if total_events % 10000 == 0:
+                            progress.update(
+                                task, description=f"[cyan]Processed {total_events:,} events..."
+                            )
+
+                    except Exception as e:
+                        parser.parse_errors.append(f"Line {line_num}: {str(e)}")
+
+        progress.update(task, description="[green]Finalizing encounters...")
+
+    # Finalize data
+    fights = segmenter.finalize()
+    raid_encounters, mythic_plus_runs = enhanced_segmenter.finalize()
+
+    enhanced_data = {
+        "raid_encounters": raid_encounters,
+        "mythic_plus_runs": mythic_plus_runs,
+        "stats": enhanced_segmenter.get_stats(),
+    }
+
+    return fights, enhanced_data, parser.parse_errors
+
+
 def main():
     """Entry point for the loothing-parser command."""
     cli()
