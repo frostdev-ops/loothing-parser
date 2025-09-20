@@ -17,6 +17,7 @@ from src.config.loader import load_and_apply_config
 # Load custom configuration
 load_and_apply_config()
 
+
 def debug_arakara_characters():
     """Debug character tracking for Ara-Kara encounter."""
 
@@ -78,7 +79,7 @@ def debug_arakara_characters():
         print(f"GUID: {guid}")
         print(f"Name: {char.character_name}")
         print(f"Damage: {char.total_damage_done:,}")
-        print(f"Events: {len(char.events)}")
+        print(f"Healing: {char.total_healing_done:,}")
         print()
 
     # Also check pet owner mappings
@@ -91,6 +92,7 @@ def debug_arakara_characters():
         else:
             print(f"Pet: {pet_guid} -> Owner: {owner_info} (old format)")
     print()
+
 
 if __name__ == "__main__":
     debug_arakara_characters()
