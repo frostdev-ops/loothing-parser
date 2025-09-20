@@ -362,16 +362,31 @@ class EnhancedSegmenter:
         if not self.current_mythic_plus:
             return
 
-        # Ensure end_time is set (fallback to last segment end if missing)
+        # Ensure end_time is set (fallback logic for incomplete runs)
         if not self.current_mythic_plus.end_time:
-            # Use the latest segment end time as fallback
+            # For runs missing end_time (no CHALLENGE_MODE_END), use segment-based fallback
             latest_end = None
             for segment in self.current_mythic_plus.segments:
                 if segment.end_time and (not latest_end or segment.end_time > latest_end):
                     latest_end = segment.end_time
+
             if latest_end:
-                self.current_mythic_plus.end_time = latest_end
-                logger.debug(f"Set M+ run end_time to latest segment: {latest_end}")
+                # Reasonable limit: M+ runs shouldn't exceed 3 hours
+                max_duration = timedelta(hours=3)
+                if latest_end - self.current_mythic_plus.start_time <= max_duration:
+                    self.current_mythic_plus.end_time = latest_end
+                    self.current_mythic_plus.abandoned = True
+                    logger.debug(f"Set M+ run end_time to latest segment: {latest_end} (marked as incomplete)")
+                else:
+                    # Duration too long, probably data corruption
+                    self.current_mythic_plus.end_time = self.current_mythic_plus.start_time + timedelta(minutes=45)
+                    self.current_mythic_plus.abandoned = True
+                    logger.warning(f"M+ run duration too long, capped at 45 minutes (likely data issue)")
+            else:
+                # No segments, set a minimal duration
+                self.current_mythic_plus.end_time = self.current_mythic_plus.start_time + timedelta(minutes=1)
+                self.current_mythic_plus.abandoned = True
+                logger.warning(f"M+ run has no segments, setting minimal duration")
 
         # Aggregate character data across segments
         self.current_mythic_plus.aggregate_character_data()
