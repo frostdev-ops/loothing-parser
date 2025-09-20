@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 from enum import Enum
 
 from src.parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent
+from src.models.combat_periods import CombatPeriod
 
 
 class ResourceType(Enum):
@@ -146,6 +147,7 @@ class CharacterEventStream:
     # Performance metrics
     activity_percentage: float = 0.0  # Percentage of time active
     time_alive: float = 0.0  # Seconds alive during encounter
+    combat_time: float = 0.0  # Seconds in combat during encounter
 
     def add_event(self, event: BaseEvent, category: str):
         """
@@ -236,6 +238,21 @@ class CharacterEventStream:
 
     def get_dtps(self, duration: float) -> float:
         """Calculate damage taken per second."""
+        return self.total_damage_taken / duration if duration > 0 else 0
+
+    def get_combat_dps(self, combat_time: Optional[float] = None) -> float:
+        """Calculate DPS during combat periods only."""
+        duration = combat_time if combat_time is not None else self.combat_time
+        return self.total_damage_done / duration if duration > 0 else 0
+
+    def get_combat_hps(self, combat_time: Optional[float] = None) -> float:
+        """Calculate HPS during combat periods only."""
+        duration = combat_time if combat_time is not None else self.combat_time
+        return self.total_healing_done / duration if duration > 0 else 0
+
+    def get_combat_dtps(self, combat_time: Optional[float] = None) -> float:
+        """Calculate damage taken per second during combat periods only."""
+        duration = combat_time if combat_time is not None else self.combat_time
         return self.total_damage_taken / duration if duration > 0 else 0
 
     def calculate_activity(self, encounter_duration: float):
