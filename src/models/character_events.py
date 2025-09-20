@@ -204,14 +204,18 @@ class CharacterEventStream:
             if overkill > 0:
                 self.total_overkill_done += overkill
 
-        elif category == "healing_done" and (isinstance(event, HealEvent) or "_HEAL" in event.event_type):
+        elif category == "healing_done" and (
+            isinstance(event, HealEvent) or "_HEAL" in event.event_type
+        ):
             self.healing_done.append(event)
             # Use total amount (including overhealing) to match Details addon behavior
-            amount = getattr(event, 'amount', 0)
-            overhealing = getattr(event, 'overhealing', 0)
+            amount = getattr(event, "amount", 0)
+            overhealing = getattr(event, "overhealing", 0)
             self.total_healing_done += amount
             self.total_overhealing += overhealing
-            logger.debug(f"Added healing_done: {amount}, total now: {self.total_healing_done}, isinstance: {isinstance(event, HealEvent)}")
+            logger.debug(
+                f"Added healing_done: {amount}, total now: {self.total_healing_done}, isinstance: {isinstance(event, HealEvent)}"
+            )
 
         elif category == "damage_taken" and isinstance(event, DamageEvent):
             self.damage_taken.append(event)
@@ -256,6 +260,8 @@ class CharacterEventStream:
             self.absorption_received.append(event)
             if hasattr(event, "amount_absorbed"):
                 self.total_damage_absorbed_for_me += event.amount_absorbed
+        else:
+            logger.debug(f"Event not routed: category={category}, event_type={event.event_type}, isinstance_damage={isinstance(event, DamageEvent)}, isinstance_heal={isinstance(event, HealEvent)}")
 
     def add_death(self, death_event: DeathEvent):
         """Record a character death."""
