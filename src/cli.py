@@ -529,21 +529,62 @@ def analyze(log_file, interactive, threads, no_parallel):
 
     if interactive:
         # Full interactive analysis
-        console.print(f"[bold green]Parsing combat log:[/bold green] {log_path.name}")
-        console.print("[cyan]This may take a moment for large files...[/cyan]\n")
+        console.print(f"[bold green]Analyzing combat log:[/bold green] {log_path.name}")
+        console.print(f"[cyan]File size:[/cyan] {log_path.stat().st_size / 1024 / 1024:.1f} MB\n")
 
         # Choose processing method based on options
         start_time = datetime.now()
+        encounters = []
+        parse_errors = []
 
         if no_parallel:
             # Force sequential processing
             console.print("[yellow]Using sequential processing (--no-parallel)[/yellow]")
-            fights, enhanced_data, parse_errors = _process_sequential(log_path, console)
+
+            tokenizer = LineTokenizer()
+            event_factory = EventFactory()
+            segmenter = UnifiedSegmenter()
+
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("[cyan]Processing events...", total=None)
+
+                event_count = 0
+                with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                    for line_num, line in enumerate(f, 1):
+                        if line.strip() and not line.strip().startswith("#"):
+                            try:
+                                parsed_line = tokenizer.parse_line(line)
+                                if parsed_line:
+                                    event = event_factory.create_event(parsed_line)
+                                    if event:
+                                        segmenter.process_event(event)
+                                        event_count += 1
+
+                                        if event_count % 10000 == 0:
+                                            progress.update(
+                                                task, description=f"[cyan]Processed {event_count:,} events..."
+                                            )
+
+                            except Exception as e:
+                                if len(parse_errors) < 100:
+                                    parse_errors.append(f"Line {line_num}: {str(e)}")
+
+                progress.update(task, description="[green]Finalizing encounters...")
+
+            # Get encounters
+            encounters = segmenter.get_encounters()
+
+            # Calculate metrics
+            for encounter in encounters:
+                encounter.calculate_metrics()
+
         else:
             # Try parallel processing first
-            from .processing import ParallelLogProcessor
-
-            processor = ParallelLogProcessor(max_workers=threads)
+            processor = UnifiedParallelProcessor(max_workers=threads)
 
             console.print(
                 f"[cyan]Using parallel processing ({processor.max_workers} threads)[/cyan]"
@@ -554,40 +595,51 @@ def analyze(log_file, interactive, threads, no_parallel):
                 TextColumn("[progress.description]{task.description}"),
                 console=console,
             ) as progress:
-                task1 = progress.add_task("[cyan]Phase 1: Detecting encounters...", total=None)
+                task = progress.add_task("[cyan]Detecting encounter boundaries...", total=None)
 
                 try:
-                    fights, enhanced_data = processor.process_file(log_path)
-                    parse_errors = processor.parse_errors
+                    encounters = processor.process_file(log_path)
+                    parse_errors = processor.parse_errors[:100]  # Limit errors
 
-                    progress.update(task1, description="[green]Parallel processing complete!")
+                    progress.update(task, description="[green]Parallel processing complete!")
 
                 except Exception as e:
-                    console.print(f"[yellow]Parallel processing failed: {e}[/yellow]")
-                    console.print("[yellow]Falling back to sequential processing...[/yellow]")
-                    fights, enhanced_data, parse_errors = _process_sequential(log_path, console)
-
-        # Enhanced data already prepared by processors
-        raid_encounters = enhanced_data.get("raid_encounters", [])
-        mythic_plus_runs = enhanced_data.get("mythic_plus_runs", [])
+                    console.print(f"[red]Parallel processing failed: {e}[/red]")
+                    console.print("[yellow]Please try with --no-parallel flag[/yellow]")
+                    return
 
         # Parsing summary
         processing_time = (datetime.now() - start_time).total_seconds()
         console.print(f"\n[bold green]✓ Parsing Complete[/bold green]")
-        total_events = sum(len(fight.events) for fight in fights) if fights else 0
+
+        # Calculate total events from all encounters
+        total_events = sum(len(enc.events) for enc in encounters)
         console.print(f"  Events: {total_events:,}")
         console.print(f"  Time: {processing_time:.1f}s")
-        console.print(f"  Encounters: {len(fights)}")
+        console.print(f"  Encounters: {len(encounters)}")
         if parse_errors:
             console.print(f"  [yellow]Warnings: {len(parse_errors)}[/yellow]")
 
-        # Enhanced data already prepared by processors (just add stats if needed)
-        if "stats" not in enhanced_data:
-            enhanced_data["stats"] = {}
+        # Prepare enhanced data for analyzer
+        raid_encounters = [e for e in encounters if e.encounter_type == EncounterType.RAID]
+        mythic_plus_runs = [e for e in encounters if e.encounter_type == EncounterType.MYTHIC_PLUS]
 
-        # Launch interactive analyzer
+        enhanced_data = {
+            "encounters": encounters,
+            "raid_encounters": raid_encounters,
+            "mythic_plus_runs": mythic_plus_runs,
+            "stats": {
+                "total_encounters": len(encounters),
+                "raid_count": len(raid_encounters),
+                "mplus_count": len(mythic_plus_runs),
+                "total_events": total_events,
+                "processing_time": processing_time,
+            }
+        }
+
+        # Launch interactive analyzer with unified encounters
         console.print("\n[bold cyan]Launching Interactive Analyzer...[/bold cyan]")
-        analyzer = InteractiveAnalyzer(fights, enhanced_data)
+        analyzer = InteractiveAnalyzer(encounters, enhanced_data)
         analyzer.run()
 
     else:
