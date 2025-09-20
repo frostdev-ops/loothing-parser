@@ -96,12 +96,12 @@ def compare_encounters(sequential_encounters, parallel_encounters):
                 seq_with_abilities = sum(
                     1
                     for c in seq_enc.characters.values()
-                    if hasattr(c, 'dps_by_ability') and c.dps_by_ability
+                    if hasattr(c, "dps_by_ability") and c.dps_by_ability
                 )
                 par_with_abilities = sum(
                     1
                     for c in par_enc.characters.values()
-                    if hasattr(c, 'dps_by_ability') and c.dps_by_ability
+                    if hasattr(c, "dps_by_ability") and c.dps_by_ability
                 )
 
                 if seq_with_abilities == par_with_abilities:
@@ -233,18 +233,14 @@ def test_feature_preservation():
         if enc_with_abilities:
             print(f"\n✓ Ability Breakdowns Preserved:")
             sample_char = list(enc_with_abilities.characters.values())[0]
-            if sample_char.damage_by_ability:
+            if hasattr(sample_char, 'dps_by_ability') and sample_char.dps_by_ability:
                 top_abilities = sorted(
-                    sample_char.damage_by_ability.items(), key=lambda x: x[1], reverse=True
+                    sample_char.dps_by_ability.items(), key=lambda x: x[1], reverse=True
                 )[:3]
-                print(f"  Sample: {sample_char.name}")
-                for ability, damage in top_abilities:
-                    percent = (
-                        (damage / sample_char.damage_done * 100)
-                        if sample_char.damage_done > 0
-                        else 0
-                    )
-                    print(f"    - {ability}: {percent:.1f}%")
+                char_name = sample_char.name if hasattr(sample_char, 'name') else sample_char.character_name
+                print(f"  Sample: {char_name}")
+                for ability, dps in top_abilities:
+                    print(f"    - {ability}: {dps:.1f} DPS")
 
         # Check death tracking
         enc_with_deaths = next((e for e in parallel_encounters if e.deaths), None)
