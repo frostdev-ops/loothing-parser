@@ -5,6 +5,7 @@ from src.parser.parser import CombatLogParser
 from src.segmentation.encounters import EncounterSegmenter, FightType
 from src.models.character_events import CharacterEventStream
 
+
 def test_mplus_performance():
     """Test M+ DPS/HPS calculations."""
 
@@ -36,8 +37,7 @@ def test_mplus_performance():
         for guid, participant in run.participants.items():
             if participant.get("is_player", False):
                 characters[guid] = CharacterEventStream(
-                    player_guid=guid,
-                    player_name=participant["name"]
+                    character_guid=guid, character_name=participant["name"]
                 )
 
         # Add events to character streams
@@ -45,13 +45,13 @@ def test_mplus_performance():
         heal_events = 0
 
         for event in run.events:
-            if hasattr(event, 'source_guid') and event.source_guid in characters:
+            if hasattr(event, "source_guid") and event.source_guid in characters:
                 characters[event.source_guid].add_event(event)
 
             # Count event types
-            if hasattr(event, 'amount') and 'DAMAGE' in event.event_type:
+            if hasattr(event, "amount") and "DAMAGE" in event.event_type:
                 damage_events += 1
-            elif hasattr(event, 'amount') and 'HEAL' in event.event_type:
+            elif hasattr(event, "amount") and "HEAL" in event.event_type:
                 heal_events += 1
 
         print(f"\nEvent Breakdown:")
@@ -83,6 +83,7 @@ def test_mplus_performance():
         print(f"Total Healing Done: {total_run_healing:,}")
         print(f"Average Group DPS: {total_run_damage/max(run.duration or 1, 1):,.0f}")
         print(f"Average Group HPS: {total_run_healing/max(run.duration or 1, 1):,.0f}")
+
 
 if __name__ == "__main__":
     test_mplus_performance()
