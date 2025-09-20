@@ -129,9 +129,27 @@ class RaidEncounter:
             [c for c in self.characters.values() if not c.character_guid.startswith("Pet-")]
         )
 
-        # Calculate per-character metrics
+        # Calculate per-character metrics using combat periods
+        from ..models.combat_periods import CombatPeriodDetector
+
+        # Collect all events from all characters to detect combat periods
+        all_events = []
         for character in self.characters.values():
-            character.calculate_activity(self.combat_length)
+            all_events.extend([ts_event.event for ts_event in character.all_events])
+
+        # Sort events by timestamp
+        all_events.sort(key=lambda e: e.timestamp)
+
+        # Detect combat periods for the encounter
+        if all_events:
+            detector = CombatPeriodDetector(gap_threshold=5.0)
+            combat_periods = detector.detect_periods(all_events)
+        else:
+            combat_periods = []
+
+        # Use combat-aware activity calculation
+        for character in self.characters.values():
+            character.calculate_combat_metrics(combat_periods, self.combat_length)
 
     def get_phase_at_time(self, timestamp: float) -> Optional[Phase]:
         """Get the phase active at a given timestamp."""
