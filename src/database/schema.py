@@ -49,9 +49,7 @@ class DatabaseManager:
                 )
                 raise RuntimeError(f"Cannot write to database directory: {e}")
 
-            self.connection = sqlite3.connect(
-                self.db_path, timeout=30.0, check_same_thread=False
-            )
+            self.connection = sqlite3.connect(self.db_path, timeout=30.0, check_same_thread=False)
         except Exception as e:
             logger.error(f"Failed to setup database at {self.db_path}: {e}")
             raise
@@ -299,35 +297,39 @@ def create_tables(db: DatabaseManager) -> None:
     """
     )
 
+    # Combat periods (active combat vs downtime tracking)
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS combat_periods (
+            period_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
+            period_index INTEGER NOT NULL,
+            start_time REAL NOT NULL,
+            end_time REAL NOT NULL,
+            duration REAL NOT NULL,
+            event_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """
+    )
+
     logger.info("Creating database indices for fast queries...")
 
     # Log files indices
     db.execute("CREATE INDEX IF NOT EXISTS idx_log_hash ON log_files(file_hash)")
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_log_processed ON log_files(processed_at)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_log_processed ON log_files(processed_at)")
 
     # Encounters indices
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)"
-    )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name, difficulty)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name, difficulty)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type, success)"
     )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)")
 
     # Characters indices
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, realm)"
-    )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, realm)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name, spec_name)"
     )
@@ -336,15 +338,9 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_block_lookup ON event_blocks(encounter_id, character_id, block_index)"
     )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_block_time ON event_blocks(start_time, end_time)"
-    )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_block_character ON event_blocks(character_id)"
-    )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_block_encounter ON event_blocks(encounter_id)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_block_time ON event_blocks(start_time, end_time)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_block_character ON event_blocks(character_id)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_block_encounter ON event_blocks(encounter_id)")
 
     # Metrics indices
     db.execute(
@@ -361,20 +357,14 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_spell_usage ON spell_summary(character_id, spell_id)"
     )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_spell_encounter ON spell_summary(encounter_id)"
-    )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_spell_damage ON spell_summary(total_damage DESC)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_spell_encounter ON spell_summary(encounter_id)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_spell_damage ON spell_summary(total_damage DESC)")
 
     # M+ indices
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_mplus_level ON mythic_plus_runs(keystone_level, completed)"
     )
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_mplus_dungeon ON mythic_plus_runs(dungeon_id)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_mplus_dungeon ON mythic_plus_runs(dungeon_id)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_segment_run ON combat_segments(run_id, segment_index)"
     )
