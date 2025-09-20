@@ -58,6 +58,103 @@ class InteractiveAnalyzer:
         # Display configuration
         self.console.clear()
 
+    def _convert_encounters_to_fights(self, encounters: List[UnifiedEncounter]) -> List[Fight]:
+        """
+        Convert UnifiedEncounter objects to Fight objects for backward compatibility.
+
+        This allows the existing analyzer code to work with the new unified model.
+        """
+        fights = []
+        fight_id = 1
+
+        for enc in encounters:
+            # Map EncounterType to FightType
+            if enc.encounter_type == EncounterType.RAID:
+                fight_type = FightType.RAID_BOSS
+            elif enc.encounter_type == EncounterType.MYTHIC_PLUS:
+                fight_type = FightType.MYTHIC_PLUS
+            elif enc.encounter_type == EncounterType.DUNGEON:
+                fight_type = FightType.DUNGEON_BOSS
+            else:
+                fight_type = FightType.UNKNOWN
+
+            # Create Fight object with unified encounter data
+            fight = Fight(
+                fight_id=fight_id,
+                fight_type=fight_type,
+                start_time=enc.start_time,
+                end_time=enc.end_time,
+                encounter_id=enc.encounter_id,
+                encounter_name=enc.encounter_name,
+                difficulty=enc.difficulty,
+                keystone_level=enc.keystone_level,
+                success=enc.success,
+                duration=enc.duration,
+                combat_duration=enc.combat_duration if hasattr(enc, 'combat_duration') else enc.duration,
+                combat_periods=enc.combat_periods if hasattr(enc, 'combat_periods') else [],
+                events=enc.events,
+                participants={},  # Will be populated from characters
+                metadata={
+                    "instance_name": enc.instance_name,
+                    "affixes": enc.affixes if hasattr(enc, 'affixes') else [],
+                    "metrics": enc.metrics.to_dict() if hasattr(enc, 'metrics') and enc.metrics else {},
+                }
+            )
+
+            # Convert characters to participants format
+            if enc.characters:
+                for guid, char in enc.characters.items():
+                    fight.participants[guid] = {
+                        "name": char.name if hasattr(char, 'name') else char.character_name,
+                        "class": char.character_class if hasattr(char, 'character_class') else None,
+                        "spec": char.spec if hasattr(char, 'spec') else None,
+                        "damage_done": char.damage_done if hasattr(char, 'damage_done') else 0,
+                        "healing_done": char.healing_done if hasattr(char, 'healing_done') else 0,
+                        "damage_taken": char.damage_taken if hasattr(char, 'damage_taken') else 0,
+                    }
+
+            fights.append(fight)
+            fight_id += 1
+
+            # For M+ runs, also create fights for each internal fight
+            if enc.encounter_type == EncounterType.MYTHIC_PLUS and enc.fights:
+                for internal_fight in enc.fights:
+                    sub_fight_type = FightType.DUNGEON_BOSS if internal_fight.is_boss else FightType.TRASH
+
+                    sub_fight = Fight(
+                        fight_id=fight_id,
+                        fight_type=sub_fight_type,
+                        start_time=internal_fight.start_time,
+                        end_time=internal_fight.end_time,
+                        encounter_name=internal_fight.fight_name,
+                        difficulty=enc.difficulty,
+                        keystone_level=enc.keystone_level,
+                        success=internal_fight.success if hasattr(internal_fight, 'success') else None,
+                        duration=internal_fight.duration,
+                        combat_duration=internal_fight.combat_time if hasattr(internal_fight, 'combat_time') else internal_fight.duration,
+                        combat_periods=internal_fight.combat_periods if hasattr(internal_fight, 'combat_periods') else [],
+                        events=[],  # Events are at encounter level
+                        participants={},
+                        metadata={"parent_encounter": enc.encounter_name}
+                    )
+
+                    # Add players from internal fight
+                    if internal_fight.players:
+                        for guid, char in internal_fight.players.items():
+                            sub_fight.participants[guid] = {
+                                "name": char.name if hasattr(char, 'name') else char.character_name,
+                                "class": char.character_class if hasattr(char, 'character_class') else None,
+                                "spec": char.spec if hasattr(char, 'spec') else None,
+                                "damage_done": char.damage_done if hasattr(char, 'damage_done') else 0,
+                                "healing_done": char.healing_done if hasattr(char, 'healing_done') else 0,
+                                "damage_taken": char.damage_taken if hasattr(char, 'damage_taken') else 0,
+                            }
+
+                    fights.append(sub_fight)
+                    fight_id += 1
+
+        return fights
+
     def run(self):
         """Start the interactive session."""
         try:
