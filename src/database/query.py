@@ -39,6 +39,15 @@ class CharacterMetrics:
     activity_percentage: float
     time_alive: float
     total_events: int
+    # Combat-aware metrics
+    combat_time: float = 0.0
+    combat_dps: float = 0.0
+    combat_hps: float = 0.0
+    combat_dtps: float = 0.0
+    combat_activity_percentage: float = 0.0
+    # Absorption tracking
+    damage_absorbed_by_shields: int = 0
+    damage_absorbed_for_me: int = 0
 
 
 @dataclass
@@ -777,7 +786,11 @@ class QueryAPI:
                 "total_compressed_bytes": total_compressed,
                 "total_uncompressed_bytes": total_uncompressed,
                 "compression_ratio": compression_ratio,
-                "space_saved_mb": (total_uncompressed - total_compressed) / (1024 * 1024) if total_uncompressed > 0 else 0,
+                "space_saved_mb": (
+                    (total_uncompressed - total_compressed) / (1024 * 1024)
+                    if total_uncompressed > 0
+                    else 0
+                ),
             },
             "query_api": self.stats,
             "cache": self.cache.stats(),
