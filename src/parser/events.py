@@ -682,7 +682,9 @@ class EventFactory:
             total_damage = cls._safe_int(params[0])
             actual_damage = cls._safe_int(params[1])
             damage_event.amount = total_damage  # Total damage (including overkill)
-            damage_event.overkill = max(0, total_damage - actual_damage)  # Calculate overkill correctly
+            damage_event.overkill = max(
+                0, total_damage - actual_damage
+            )  # Calculate overkill correctly
             damage_event.school = cls._safe_int(params[2])
             damage_event.resisted = cls._safe_int(params[3])
             damage_event.blocked = cls._safe_int(params[4])
@@ -718,14 +720,17 @@ class EventFactory:
             # SPELL_ events and others use event.__dict__
             heal_event = HealEvent(**event.__dict__)
 
-        # Regular heal parameters: amount, overhealing, absorbed, critical
+        # Heal parameters: total_heal, base_heal, effective_heal, absorbed, critical
+        # overhealing = total_heal - effective_heal
         if len(params) >= 3:
-            heal_event.amount = cls._safe_int(params[0])
-            heal_event.overhealing = cls._safe_int(params[1])
-            heal_event.absorbed = cls._safe_int(params[2])
+            total_heal = cls._safe_int(params[0])
+            effective_heal = cls._safe_int(params[2]) if len(params) > 2 else total_heal
+            heal_event.amount = total_heal  # Total healing (including overhealing)
+            heal_event.overhealing = max(0, total_heal - effective_heal)  # Calculate overhealing correctly
+            heal_event.absorbed = cls._safe_int(params[3]) if len(params) > 3 else 0
 
-        if len(params) >= 4:
-            heal_event.critical = bool(params[3])
+        if len(params) >= 5:
+            heal_event.critical = bool(params[4])
 
         return heal_event
 
