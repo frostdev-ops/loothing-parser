@@ -738,14 +738,15 @@ class EventFactory:
             # spell_power, armor, resources, position, etc. (19 fields total)
             damage_offset = 19
 
-        # Damage parameters: damage_amount, overkill_amount, school, resisted, blocked, absorbed, critical, glancing, crushing
-        # Parameters are direct values, no calculation needed
+        # Damage parameters: total_damage, overkill_amount, school, resisted, blocked, absorbed, critical, glancing, crushing
+        # actual_damage = total_damage - overkill_amount
         min_params_needed = damage_offset + 6
         if len(params) >= min_params_needed:
-            damage_amount = cls._safe_int(params[damage_offset])
+            total_damage = cls._safe_int(params[damage_offset])
             overkill_amount = cls._safe_int(params[damage_offset + 1])
-            damage_event.amount = damage_amount  # Actual damage dealt
-            damage_event.overkill = overkill_amount  # Direct overkill amount
+            actual_damage = total_damage - overkill_amount  # Actual damage = total - overkill
+            damage_event.amount = actual_damage  # Only actual damage dealt (no overkill)
+            damage_event.overkill = overkill_amount  # Overkill tracked separately
             damage_event.school = cls._safe_int(params[damage_offset + 2])
             damage_event.resisted = cls._safe_int(params[damage_offset + 3])
             damage_event.blocked = cls._safe_int(params[damage_offset + 4])
