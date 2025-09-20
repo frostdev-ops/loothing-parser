@@ -371,20 +371,35 @@ class EnhancedSegmenter:
                     latest_end = segment.end_time
 
             if latest_end:
-                # Reasonable limit: M+ runs shouldn't exceed 3 hours
-                max_duration = timedelta(hours=3)
-                if latest_end - self.current_mythic_plus.start_time <= max_duration:
-                    self.current_mythic_plus.end_time = latest_end
-                    self.current_mythic_plus.abandoned = True
-                    logger.debug(f"Set M+ run end_time to latest segment: {latest_end} (marked as incomplete)")
+                # For abandoned runs, find the last meaningful combat activity
+                # Look for the last combat event from player characters
+                last_combat_time = None
+                for segment in self.current_mythic_plus.segments:
+                    for char_stream in segment.characters.values():
+                        if char_stream.all_events:
+                            # Find the last damage/healing event
+                            for ts_event in reversed(char_stream.all_events):
+                                if ts_event.category in ["damage_done", "healing_done", "damage_taken"]:
+                                    event_time = datetime.fromtimestamp(ts_event.timestamp)
+                                    if not last_combat_time or event_time > last_combat_time:
+                                        last_combat_time = event_time
+                                    break  # Found last combat event for this character
+
+                # Use last combat time if reasonable, otherwise use segment end
+                if last_combat_time and (last_combat_time - self.current_mythic_plus.start_time).total_seconds() < 7200:  # < 2 hours
+                    self.current_mythic_plus.end_time = last_combat_time
+                    logger.debug(f"Set M+ run end_time to last combat: {last_combat_time}")
                 else:
-                    # Duration too long, probably data corruption
-                    self.current_mythic_plus.end_time = self.current_mythic_plus.start_time + timedelta(minutes=45)
-                    self.current_mythic_plus.abandoned = True
-                    logger.warning(f"M+ run duration too long, capped at 45 minutes (likely data issue)")
+                    # Fall back to segment end time if combat time detection failed
+                    self.current_mythic_plus.end_time = latest_end
+                    logger.debug(f"Set M+ run end_time to latest segment: {latest_end}")
+
+                self.current_mythic_plus.abandoned = True
             else:
                 # No segments, set a minimal duration
-                self.current_mythic_plus.end_time = self.current_mythic_plus.start_time + timedelta(minutes=1)
+                self.current_mythic_plus.end_time = self.current_mythic_plus.start_time + timedelta(
+                    minutes=1
+                )
                 self.current_mythic_plus.abandoned = True
                 logger.warning(f"M+ run has no segments, setting minimal duration")
 
