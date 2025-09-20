@@ -399,7 +399,7 @@ class InteractiveAnalyzer:
             # Process fight events to populate metrics
             if characters and fight.events:
                 self._populate_character_metrics_from_events(
-                    characters, fight.events, fight.duration or 0
+                    characters, fight
                 )
 
             return characters if characters else None
@@ -407,17 +407,24 @@ class InteractiveAnalyzer:
         return None
 
     def _populate_character_metrics_from_events(
-        self, characters: Dict[str, CharacterEventStream], events: List[BaseEvent], duration: float
+        self, characters: Dict[str, CharacterEventStream], fight: Fight
     ):
         """
         Populate character metrics by parsing fight events.
 
         Args:
             characters: Dictionary of character streams to populate
-            events: List of events from the fight
-            duration: Fight duration in seconds
+            fight: Fight object containing events and duration info
         """
         from src.parser.events import DamageEvent, HealEvent
+        from src.models.combat_periods import CombatPeriodDetector
+
+        events = fight.events
+        duration = fight.duration or 0
+
+        # Detect combat periods first
+        detector = CombatPeriodDetector(gap_threshold=5.0)
+        combat_periods = detector.detect_periods(events)
 
         for event in events:
             # Track damage done
@@ -444,15 +451,18 @@ class InteractiveAnalyzer:
                 characters[event.dest_guid].death_count += 1
                 characters[event.dest_guid].all_events.append((event.timestamp, "death", 0))
 
-        # Calculate activity percentages and metrics
+        # Calculate combat-aware activity percentages and metrics
         for character in characters.values():
             if duration > 0:
                 # Sort events chronologically
                 character.all_events.sort()
-                # Calculate basic activity (simplified - assume 90% active if they have events)
-                character.activity_percentage = 90.0 if character.all_events else 0.0
-                # Calculate activity time for metrics
-                character.activity_time = duration * (character.activity_percentage / 100.0)
+                # Use combat-aware activity calculation
+                character.calculate_combat_metrics(combat_periods, duration)
+            else:
+                # No duration means no valid activity calculation
+                character.activity_percentage = 0.0
+                character.combat_time = 0.0
+                character.time_alive = 0.0
 
     def _show_help(self):
         """Show help panel."""
