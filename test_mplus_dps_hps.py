@@ -45,14 +45,17 @@ def test_mplus_performance():
         heal_events = 0
 
         for event in run.events:
-            if hasattr(event, "source_guid") and event.source_guid in characters:
-                characters[event.source_guid].add_event(event)
-
-            # Count event types
+            # Track damage done
             if hasattr(event, "amount") and "DAMAGE" in event.event_type:
                 damage_events += 1
+                if hasattr(event, "source_guid") and event.source_guid in characters:
+                    characters[event.source_guid].total_damage_done += event.amount
+
+            # Track healing done
             elif hasattr(event, "amount") and "HEAL" in event.event_type:
                 heal_events += 1
+                if hasattr(event, "source_guid") and event.source_guid in characters:
+                    characters[event.source_guid].total_healing_done += event.amount
 
         print(f"\nEvent Breakdown:")
         print(f"  Damage Events: {damage_events}")
