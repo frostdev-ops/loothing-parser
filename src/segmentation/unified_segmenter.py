@@ -135,19 +135,24 @@ class UnifiedSegmenter:
 
     def _add_event_to_character(self, char: EnhancedCharacter, event: BaseEvent, role: str):
         """Add event to character with proper categorization."""
+        import logging
+        logger = logging.getLogger(__name__)
+
         # Determine category based on event type and role
         category = None
 
-        if isinstance(event, DamageEvent):
+        if isinstance(event, DamageEvent) or "_DAMAGE" in event.event_type:
             if role == "source":
                 category = "damage_done"
             elif role == "dest":
                 category = "damage_taken"
-        elif isinstance(event, HealEvent):
+            logger.debug(f"Damage event: {event.event_type}, role: {role}, category: {category}, isinstance: {isinstance(event, DamageEvent)}")
+        elif isinstance(event, HealEvent) or "_HEAL" in event.event_type:
             if role == "source":
                 category = "healing_done"
             elif role == "dest":
                 category = "healing_received"
+            logger.debug(f"Heal event: {event.event_type}, role: {role}, category: {category}, isinstance: {isinstance(event, HealEvent)}")
         elif isinstance(event, AuraEvent):
             if role == "dest":
                 if event.event_type == "SPELL_AURA_APPLIED":
@@ -156,7 +161,10 @@ class UnifiedSegmenter:
                     category = "buff_lost" if self._is_buff(event) else "debuff_lost"
 
         if category:
+            logger.debug(f"Adding event to {char.character_name}: {category}, amount: {getattr(event, 'amount', 'N/A')}")
             char.add_event(event, category)
+        else:
+            logger.debug(f"No category for event: {event.event_type}, role: {role}, type: {type(event).__name__}")
 
     def _track_npc_abilities(self, event: BaseEvent):
         """Track NPC abilities for fight analysis."""
