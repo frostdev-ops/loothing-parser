@@ -461,7 +461,7 @@ class InteractiveAnalyzer:
                         timestamp=event.timestamp.timestamp(),
                         datetime=event.timestamp,
                         event=event,
-                        category="healing_done"
+                        category="healing_done",
                     )
                 )
 
@@ -473,7 +473,14 @@ class InteractiveAnalyzer:
             # Track deaths
             elif event.event_type == "UNIT_DIED" and event.dest_guid in characters:
                 characters[event.dest_guid].death_count += 1
-                characters[event.dest_guid].all_events.append((event.timestamp, "death", 0))
+                characters[event.dest_guid].all_events.append(
+                    TimestampedEvent(
+                        timestamp=event.timestamp.timestamp(),
+                        datetime=event.timestamp,
+                        event=event,
+                        category="death"
+                    )
+                )
 
         # Calculate combat-aware activity percentages and metrics
         for character in characters.values():
