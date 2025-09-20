@@ -185,25 +185,33 @@ class CharacterEventStream:
 
     def _route_event(self, event: BaseEvent, category: str):
         """Route event to appropriate category list."""
-        if category == "damage_done" and (isinstance(event, DamageEvent) or "_DAMAGE" in event.event_type):
+        if category == "damage_done" and (
+            isinstance(event, DamageEvent) or "_DAMAGE" in event.event_type
+        ):
             import logging
+
             logger = logging.getLogger(__name__)
 
             self.damage_done.append(event)
             # Only count actual damage, not overkill (matches Details addon behavior)
-            amount = getattr(event, 'amount', 0)
+            amount = getattr(event, "amount", 0)
             self.total_damage_done += amount
-            logger.debug(f"Added damage_done: {amount}, total now: {self.total_damage_done}, isinstance: {isinstance(event, DamageEvent)}")
+            logger.debug(
+                f"Added damage_done: {amount}, total now: {self.total_damage_done}, isinstance: {isinstance(event, DamageEvent)}"
+            )
             # Track overkill separately
-            overkill = getattr(event, 'overkill', 0)
+            overkill = getattr(event, "overkill", 0)
             if overkill > 0:
                 self.total_overkill_done += overkill
 
-        elif category == "healing_done" and isinstance(event, HealEvent):
+        elif category == "healing_done" and (isinstance(event, HealEvent) or "_HEAL" in event.event_type):
             self.healing_done.append(event)
             # Use total amount (including overhealing) to match Details addon behavior
-            self.total_healing_done += event.amount
-            self.total_overhealing += event.overhealing
+            amount = getattr(event, 'amount', 0)
+            overhealing = getattr(event, 'overhealing', 0)
+            self.total_healing_done += amount
+            self.total_overhealing += overhealing
+            logger.debug(f"Added healing_done: {amount}, total now: {self.total_healing_done}, isinstance: {isinstance(event, HealEvent)}")
 
         elif category == "damage_taken" and isinstance(event, DamageEvent):
             self.damage_taken.append(event)
