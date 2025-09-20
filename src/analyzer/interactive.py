@@ -570,6 +570,7 @@ class InteractiveAnalyzer:
         table.add_column("Player", width=20)
         table.add_column("DPS", width=12, justify="right")
         table.add_column("Total Damage", width=15, justify="right")
+        table.add_column("Overkill", width=12, justify="right")
         table.add_column("Activity %", width=10, justify="right")
         table.add_column("Deaths", width=7, justify="center")
 
@@ -627,7 +628,11 @@ class InteractiveAnalyzer:
             for i, (name, hps, char) in enumerate(hps_rankings[:10], 1):
                 rank_color = "gold1" if i <= 3 else "white"
                 efficiency = (
-                    (char.total_healing_done / (char.total_healing_done + char.total_overhealing) * 100)
+                    (
+                        char.total_healing_done
+                        / (char.total_healing_done + char.total_overhealing)
+                        * 100
+                    )
                     if (char.total_healing_done + char.total_overhealing) > 0
                     else 0
                 )
