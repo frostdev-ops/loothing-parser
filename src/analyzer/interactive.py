@@ -437,7 +437,7 @@ class InteractiveAnalyzer:
 
             # Track healing done
             elif isinstance(event, HealEvent) and event.source_guid in characters:
-                characters[event.source_guid].total_healing_done += event.amount
+                characters[event.source_guid].total_healing_done += event.effective_healing
                 characters[event.source_guid].all_events.append(
                     (event.timestamp, "heal", event.amount)
                 )
@@ -1821,14 +1821,14 @@ ENCOUNTER BREAKDOWN:
         fight = self.navigation.selected_fight
 
         # Initialize timeline state if needed
-        if not hasattr(self, 'timeline_state'):
+        if not hasattr(self, "timeline_state"):
             self.timeline_state = {
-                'window_start': 0,
-                'window_size': 30,  # 30 second window
-                'show_combat_only': True,
-                'category_filter': None,
-                'importance_threshold': 3,
-                'current_page': 0
+                "window_start": 0,
+                "window_size": 30,  # 30 second window
+                "show_combat_only": True,
+                "category_filter": None,
+                "importance_threshold": 3,
+                "current_page": 0,
             }
 
         # Build timeline
@@ -1841,27 +1841,33 @@ ENCOUNTER BREAKDOWN:
         # Apply filters
         filtered_events = timeline_events
 
-        if self.timeline_state['show_combat_only']:
+        if self.timeline_state["show_combat_only"]:
             filtered_events = TimelineFilter.filter_by_combat(filtered_events, combat_only=True)
 
-        if self.timeline_state['category_filter']:
+        if self.timeline_state["category_filter"]:
             filtered_events = TimelineFilter.filter_by_category(
-                filtered_events, self.timeline_state['category_filter']
+                filtered_events, self.timeline_state["category_filter"]
             )
 
         filtered_events = TimelineFilter.filter_by_importance(
-            filtered_events, self.timeline_state['importance_threshold']
+            filtered_events, self.timeline_state["importance_threshold"]
         )
 
         # Display timeline header
-        self.console.print(f"[bold cyan]Timeline: {fight.encounter_name or 'Unknown Encounter'}[/bold cyan]")
+        self.console.print(
+            f"[bold cyan]Timeline: {fight.encounter_name or 'Unknown Encounter'}[/bold cyan]"
+        )
 
         # Combat period summary
         total_combat_time = sum(p.duration for p in combat_periods)
         combat_percentage = (total_combat_time / fight.duration * 100) if fight.duration else 0
 
-        self.console.print(f"Duration: {fight.duration:.1f}s | Combat: {total_combat_time:.1f}s ({combat_percentage:.1f}%)")
-        self.console.print(f"Combat Periods: {len(combat_periods)} | Events: {len(filtered_events)}\n")
+        self.console.print(
+            f"Duration: {fight.duration:.1f}s | Combat: {total_combat_time:.1f}s ({combat_percentage:.1f}%)"
+        )
+        self.console.print(
+            f"Combat Periods: {len(combat_periods)} | Events: {len(filtered_events)}\n"
+        )
 
         # Combat periods visualization
         if combat_periods:
@@ -1880,12 +1886,14 @@ ENCOUNTER BREAKDOWN:
         total_pages = (len(filtered_events) + events_per_page - 1) // events_per_page
 
         if total_pages > 0:
-            start_idx = self.timeline_state['current_page'] * events_per_page
+            start_idx = self.timeline_state["current_page"] * events_per_page
             end_idx = min(start_idx + events_per_page, len(filtered_events))
             page_events = filtered_events[start_idx:end_idx]
 
             # Events table
-            events_table = Table(title=f"Timeline Events (Page {self.timeline_state['current_page'] + 1} of {total_pages})")
+            events_table = Table(
+                title=f"Timeline Events (Page {self.timeline_state['current_page'] + 1} of {total_pages})"
+            )
             events_table.add_column("Time", width=8)
             events_table.add_column("Combat", width=8)
             events_table.add_column("Importance", width=10)
@@ -1904,11 +1912,7 @@ ENCOUNTER BREAKDOWN:
                     description = description[:42] + "..."
 
                 events_table.add_row(
-                    time_str,
-                    combat_str,
-                    importance_str,
-                    category_str,
-                    description
+                    time_str, combat_str, importance_str, category_str, description
                 )
 
             self.console.print(events_table)
@@ -1918,25 +1922,29 @@ ENCOUNTER BREAKDOWN:
         # Display current filters
         self.console.print(f"\n[bold]Current Filters:[/bold]")
         self.console.print(f"Combat Only: {self.timeline_state['show_combat_only']}")
-        self.console.print(f"Category: {self.timeline_state['category_filter'].value if self.timeline_state['category_filter'] else 'All'}")
+        self.console.print(
+            f"Category: {self.timeline_state['category_filter'].value if self.timeline_state['category_filter'] else 'All'}"
+        )
         self.console.print(f"Min Importance: {self.timeline_state['importance_threshold']}")
 
         # Navigation options
         self.console.print("\n[bold]Navigation:[/bold]")
 
         options = []
-        if self.timeline_state['current_page'] > 0:
+        if self.timeline_state["current_page"] > 0:
             options.append("[P]revious page")
-        if self.timeline_state['current_page'] < total_pages - 1:
+        if self.timeline_state["current_page"] < total_pages - 1:
             options.append("[N]ext page")
 
-        options.extend([
-            "[C]ombat filter toggle",
-            "[I]mportance threshold",
-            "[A]nalyze gaps",
-            "[K]ey moments",
-            "[B]ack"
-        ])
+        options.extend(
+            [
+                "[C]ombat filter toggle",
+                "[I]mportance threshold",
+                "[A]nalyze gaps",
+                "[K]ey moments",
+                "[B]ack",
+            ]
+        )
 
         for option in options:
             self.console.print(f"  {option}")
@@ -1945,23 +1953,25 @@ ENCOUNTER BREAKDOWN:
         while True:
             choice = self.console.input("\nChoice: ").strip().upper()
 
-            if choice == "P" and self.timeline_state['current_page'] > 0:
-                self.timeline_state['current_page'] -= 1
+            if choice == "P" and self.timeline_state["current_page"] > 0:
+                self.timeline_state["current_page"] -= 1
                 return True
-            elif choice == "N" and self.timeline_state['current_page'] < total_pages - 1:
-                self.timeline_state['current_page'] += 1
+            elif choice == "N" and self.timeline_state["current_page"] < total_pages - 1:
+                self.timeline_state["current_page"] += 1
                 return True
             elif choice == "C":
-                self.timeline_state['show_combat_only'] = not self.timeline_state['show_combat_only']
-                self.timeline_state['current_page'] = 0  # Reset to first page
+                self.timeline_state["show_combat_only"] = not self.timeline_state[
+                    "show_combat_only"
+                ]
+                self.timeline_state["current_page"] = 0  # Reset to first page
                 return True
             elif choice == "I":
                 self.console.print("Set minimum importance (1-5):")
                 try:
                     threshold = int(self.console.input("Threshold: "))
                     if 1 <= threshold <= 5:
-                        self.timeline_state['importance_threshold'] = threshold
-                        self.timeline_state['current_page'] = 0
+                        self.timeline_state["importance_threshold"] = threshold
+                        self.timeline_state["current_page"] = 0
                         return True
                     else:
                         self.console.print("[red]Invalid threshold. Must be 1-5.[/red]")
@@ -1975,10 +1985,12 @@ ENCOUNTER BREAKDOWN:
                 self.console.clear()
                 self.console.print("[bold cyan]Combat Gap Analysis[/bold cyan]\n")
 
-                if gap_analysis['gap_count'] > 0:
+                if gap_analysis["gap_count"] > 0:
                     self.console.print(f"Total Gaps: {gap_analysis['gap_count']}")
                     self.console.print(f"Total Gap Time: {gap_analysis['total_gap_time']:.1f}s")
-                    self.console.print(f"Average Gap Duration: {gap_analysis['avg_gap_duration']:.1f}s\n")
+                    self.console.print(
+                        f"Average Gap Duration: {gap_analysis['avg_gap_duration']:.1f}s\n"
+                    )
 
                     gaps_table = Table(title="Combat Gaps")
                     gaps_table.add_column("Gap #", width=6)
@@ -1987,16 +1999,16 @@ ENCOUNTER BREAKDOWN:
                     gaps_table.add_column("Duration", width=10)
                     gaps_table.add_column("Events", width=8)
 
-                    for i, gap in enumerate(gap_analysis['gaps'][:10]):  # Show first 10
-                        start_time = (gap['start_time'] - fight.start_time).total_seconds()
-                        end_time = (gap['end_time'] - fight.start_time).total_seconds()
+                    for i, gap in enumerate(gap_analysis["gaps"][:10]):  # Show first 10
+                        start_time = (gap["start_time"] - fight.start_time).total_seconds()
+                        end_time = (gap["end_time"] - fight.start_time).total_seconds()
 
                         gaps_table.add_row(
                             str(i + 1),
                             f"{start_time:.1f}s",
                             f"{end_time:.1f}s",
                             f"{gap['duration']:.1f}s",
-                            str(gap['events_during_gap'])
+                            str(gap["events_during_gap"]),
                         )
 
                     self.console.print(gaps_table)
@@ -2023,11 +2035,7 @@ ENCOUNTER BREAKDOWN:
                         time_str = f"{moment.relative_time:.1f}s"
                         importance_str = "★" * moment.importance
 
-                        moments_table.add_row(
-                            time_str,
-                            importance_str,
-                            moment.description
-                        )
+                        moments_table.add_row(time_str, importance_str, moment.description)
 
                     self.console.print(moments_table)
                 else:
