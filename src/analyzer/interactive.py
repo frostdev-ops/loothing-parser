@@ -556,8 +556,8 @@ class InteractiveAnalyzer:
                 damage_amount = self._get_total_damage(event)
                 characters[event.dest_guid].total_damage_taken += damage_amount
 
-            # Track deaths
-            elif event.event_type == "UNIT_DIED" and event.dest_guid in characters:
+            # Track deaths - independent check
+            if event.event_type == "UNIT_DIED" and event.dest_guid in characters:
                 characters[event.dest_guid].death_count += 1
                 characters[event.dest_guid].all_events.append(
                     TimestampedEvent(
