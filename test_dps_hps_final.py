@@ -10,7 +10,7 @@ def test_dps_hps():
     """Test DPS/HPS calculations."""
 
     # Parse a small portion of the log
-    parser = CombatLogParser("examples/WoWCombatLog-091525_213021.txt")
+    parser = CombatLogParser()
     segmenter = EncounterSegmenter()
 
     # Process first 1000 events
@@ -20,7 +20,7 @@ def test_dps_hps():
     total_damage = 0
     total_healing = 0
 
-    for event in parser.parse():
+    for event in parser.parse_file("examples/WoWCombatLog-091525_213021.txt"):
         event_count += 1
         if event_count > 1000:
             break
