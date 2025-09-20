@@ -64,22 +64,21 @@ def test_mplus_performance():
         # Calculate and display performance metrics
         print(f"\n=== Player Performance ===")
         for guid, char in characters.items():
-            dps = char.get_dps()
-            hps = char.get_hps()
-            total_damage = char.total_damage
-            total_healing = char.total_healing
+            # Calculate DPS/HPS manually
+            duration = run.duration or 1
+            dps = char.total_damage_done / duration
+            hps = char.total_healing_done / duration
 
-            print(f"{char.player_name}:")
+            print(f"{char.character_name}:")
             print(f"  DPS: {dps:,.0f}")
             print(f"  HPS: {hps:,.0f}")
-            print(f"  Total Damage: {total_damage:,}")
-            print(f"  Total Healing: {total_healing:,}")
-            print(f"  Events: {len(char.events)}")
+            print(f"  Total Damage: {char.total_damage_done:,}")
+            print(f"  Total Healing: {char.total_healing_done:,}")
             print()
 
         # Overall run metrics
-        total_run_damage = sum(char.total_damage for char in characters.values())
-        total_run_healing = sum(char.total_healing for char in characters.values())
+        total_run_damage = sum(char.total_damage_done for char in characters.values())
+        total_run_healing = sum(char.total_healing_done for char in characters.values())
 
         print(f"=== Run Totals ===")
         print(f"Total Damage Done: {total_run_damage:,}")
