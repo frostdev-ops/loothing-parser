@@ -64,7 +64,7 @@ def test_dps_hps():
         for guid, participant in fight.participants.items():
             if participant.get("is_player", False):
                 characters[guid] = CharacterEventStream(
-                    player_name=participant["name"], player_guid=guid
+                    character_name=participant["name"], character_guid=guid
                 )
 
         # Add events to character streams
@@ -83,7 +83,9 @@ def test_dps_hps():
             combat_dps = char.get_combat_dps()
             combat_hps = char.get_combat_hps()
             print(f"{char.player_name}: Encounter DPS={encounter_dps:.0f}, HPS={encounter_hps:.0f}")
-            print(f"  Combat DPS={combat_dps:.0f}, HPS={combat_hps:.0f} (combat time: {char.combat_time:.1f}s)")
+            print(
+                f"  Combat DPS={combat_dps:.0f}, HPS={combat_hps:.0f} (combat time: {char.combat_time:.1f}s)"
+            )
 
 
 if __name__ == "__main__":
