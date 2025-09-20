@@ -298,6 +298,24 @@ class EventCategorizer:
 
         return categories
 
+    def _categorize_absorption(self, event: BaseEvent) -> Dict[str, str]:
+        """Categorize damage absorption events."""
+        categories = {}
+
+        # For SPELL_ABSORBED events, we need to check if this is an AbsorbEvent
+        # with proper absorber info, or extract it from a generic event
+        if hasattr(event, 'absorber_guid') and event.absorber_guid:
+            # This is a properly parsed AbsorbEvent
+            absorber_guid = self._resolve_pet_owner(event.absorber_guid)
+            if absorber_guid and self._is_tracked_character(absorber_guid):
+                categories[absorber_guid] = "damage_absorbed_by_shield"
+
+            target_guid = self._resolve_pet_owner(event.target_guid)
+            if target_guid and self._is_tracked_character(target_guid):
+                categories[target_guid] = "damage_absorbed_for_me"
+
+        return categories
+
     def _handle_summon(self, event: BaseEvent):
         """Handle pet summon events to track ownership."""
         if event.source_guid and event.dest_guid:
