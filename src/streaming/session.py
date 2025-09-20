@@ -301,7 +301,8 @@ class SessionManager:
         if metadata:
             session.client_version = metadata.client_version
             session.character_name = metadata.character_name
-            session.realm = metadata.realm
+            session.server = metadata.server
+            session.region = metadata.region
 
         self._sessions[session_id] = session
         logger.info(f"Created session {session_id} for client {client_id}")
