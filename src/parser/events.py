@@ -644,25 +644,14 @@ class EventFactory:
             # SPELL_ events and others use event.__dict__
             heal_event = HealEvent(**event.__dict__)
 
-        # SPELL_HEAL_ABSORBED has a different parameter structure
-        if event.event_type == "SPELL_HEAL_ABSORBED":
-            # Format: extraSourceGUID, extraSourceName, extraSourceFlags, extraSourceRaidFlags,
-            #         extraSpellId, extraSpellName, extraSpellSchool, absorbedAmount, totalAbsorbedAmount
-            if len(params) >= 9:
-                # Skip the extra source/spell info (7 params) and get the absorption amounts
-                heal_event.amount = cls._safe_int(params[7])  # absorbedAmount
-                heal_event.overhealing = 0  # SPELL_HEAL_ABSORBED doesn't have overhealing
-                heal_event.absorbed = cls._safe_int(params[7])  # Use absorbedAmount for absorbed field too
-                heal_event.critical = False  # SPELL_HEAL_ABSORBED doesn't have critical info
-        else:
-            # Regular heal parameters: amount, overhealing, absorbed, critical
-            if len(params) >= 3:
-                heal_event.amount = cls._safe_int(params[0])
-                heal_event.overhealing = cls._safe_int(params[1])
-                heal_event.absorbed = cls._safe_int(params[2])
+        # Regular heal parameters: amount, overhealing, absorbed, critical
+        if len(params) >= 3:
+            heal_event.amount = cls._safe_int(params[0])
+            heal_event.overhealing = cls._safe_int(params[1])
+            heal_event.absorbed = cls._safe_int(params[2])
 
-            if len(params) >= 4:
-                heal_event.critical = bool(params[3])
+        if len(params) >= 4:
+            heal_event.critical = bool(params[3])
 
         return heal_event
 
