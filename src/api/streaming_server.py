@@ -265,7 +265,8 @@ class StreamingServer:
                 session_start = SessionStart(**message.metadata)
                 session.client_version = session_start.client_version
                 session.character_name = session_start.character_name
-                session.realm = session_start.realm
+                session.server = session_start.server
+                session.region = session_start.region
             except Exception as e:
                 logger.warning(f"Invalid session start metadata: {e}")
 
