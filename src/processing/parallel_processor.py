@@ -121,13 +121,17 @@ class ParallelLogProcessor:
                             zone_name = parts[1].strip('"') if len(parts) > 1 else "Mythic+"
 
                             current_challenge_mode = {
-                                'start_byte': current_pos,
-                                'end_byte': file_size,
-                                'name': zone_name
+                                "start_byte": current_pos,
+                                "end_byte": file_size,
+                                "name": zone_name,
                             }
 
-                        elif "CHALLENGE_MODE_END" in line and not line.strip().startswith("#") and current_challenge_mode:
-                            current_challenge_mode['end_byte'] = line_end
+                        elif (
+                            "CHALLENGE_MODE_END" in line
+                            and not line.strip().startswith("#")
+                            and current_challenge_mode
+                        ):
+                            current_challenge_mode["end_byte"] = line_end
                             challenge_mode_ranges.append(current_challenge_mode)
                             current_challenge_mode = None
 
@@ -159,17 +163,23 @@ class ParallelLogProcessor:
 
                             parts = line.split(",")
                             encounter_name = parts[4] if len(parts) > 4 else "Unknown"
-                            encounter_id = int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else None
+                            encounter_id = (
+                                int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else None
+                            )
 
                             current_encounter = {
-                                'start_byte': current_pos,
-                                'end_byte': file_size,
-                                'name': encounter_name,
-                                'id': encounter_id
+                                "start_byte": current_pos,
+                                "end_byte": file_size,
+                                "name": encounter_name,
+                                "id": encounter_id,
                             }
 
-                        elif "ENCOUNTER_END" in line and not line.strip().startswith("#") and current_encounter:
-                            current_encounter['end_byte'] = line_end
+                        elif (
+                            "ENCOUNTER_END" in line
+                            and not line.strip().startswith("#")
+                            and current_encounter
+                        ):
+                            current_encounter["end_byte"] = line_end
                             encounter_ranges.append(current_encounter)
                             current_encounter = None
 
@@ -187,37 +197,43 @@ class ParallelLogProcessor:
 
         # Add all M+ runs as boundaries (these contain their boss encounters)
         for cm in challenge_mode_ranges:
-            boundaries.append(EncounterBoundary(
-                start_byte=cm['start_byte'],
-                end_byte=cm['end_byte'],
-                encounter_type="CHALLENGE_MODE",
-                encounter_name=cm['name']
-            ))
+            boundaries.append(
+                EncounterBoundary(
+                    start_byte=cm["start_byte"],
+                    end_byte=cm["end_byte"],
+                    encounter_type="CHALLENGE_MODE",
+                    encounter_name=cm["name"],
+                )
+            )
 
         # Add only standalone encounters (not within any M+ run)
         for enc in encounter_ranges:
             is_within_challenge_mode = False
 
             for cm in challenge_mode_ranges:
-                if enc['start_byte'] >= cm['start_byte'] and enc['end_byte'] <= cm['end_byte']:
+                if enc["start_byte"] >= cm["start_byte"] and enc["end_byte"] <= cm["end_byte"]:
                     is_within_challenge_mode = True
                     break
 
             if not is_within_challenge_mode:
-                boundaries.append(EncounterBoundary(
-                    start_byte=enc['start_byte'],
-                    end_byte=enc['end_byte'],
-                    encounter_type="ENCOUNTER",
-                    encounter_name=enc['name'],
-                    encounter_id=enc['id']
-                ))
+                boundaries.append(
+                    EncounterBoundary(
+                        start_byte=enc["start_byte"],
+                        end_byte=enc["end_byte"],
+                        encounter_type="ENCOUNTER",
+                        encounter_name=enc["name"],
+                        encounter_id=enc["id"],
+                    )
+                )
 
         # Sort boundaries by start position
         boundaries.sort(key=lambda b: b.start_byte)
 
-        logger.info(f"Detected {len(boundaries)} top-level boundaries: "
-                   f"{len(challenge_mode_ranges)} M+ runs, "
-                   f"{len([b for b in boundaries if b.encounter_type == 'ENCOUNTER'])} standalone raids")
+        logger.info(
+            f"Detected {len(boundaries)} top-level boundaries: "
+            f"{len(challenge_mode_ranges)} M+ runs, "
+            f"{len([b for b in boundaries if b.encounter_type == 'ENCOUNTER'])} standalone raids"
+        )
 
         return boundaries
 
@@ -262,6 +278,33 @@ class ParallelLogProcessor:
 
         # Sort fights by start time
         all_fights.sort(key=lambda f: f.start_time if f.start_time else datetime.min)
+
+        # Post-process enhanced data to ensure character metrics are calculated
+        logger.info("Calculating character metrics for parallel-processed encounters...")
+
+        # Process M+ runs: aggregate character data and calculate metrics
+        for m_plus_run in all_mythic_plus_runs:
+            try:
+                # Aggregate character data across all segments
+                m_plus_run.aggregate_character_data()
+                # Calculate all metrics including character DPS/HPS
+                m_plus_run.calculate_metrics()
+                logger.debug(f"Calculated metrics for M+ run: {m_plus_run.dungeon_name}")
+            except Exception as e:
+                logger.error(f"Error calculating M+ metrics for {m_plus_run.dungeon_name}: {e}")
+                self.parse_errors.append(f"M+ metrics calculation failed: {str(e)}")
+
+        # Process raid encounters: calculate metrics
+        for raid_encounter in all_raid_encounters:
+            try:
+                # Calculate all metrics including character DPS/HPS
+                raid_encounter.calculate_metrics()
+                logger.debug(f"Calculated metrics for raid encounter: {raid_encounter.boss_name}")
+            except Exception as e:
+                logger.error(f"Error calculating raid metrics for {raid_encounter.boss_name}: {e}")
+                self.parse_errors.append(f"Raid metrics calculation failed: {str(e)}")
+
+        logger.info(f"Character metrics calculated for {len(all_mythic_plus_runs)} M+ runs and {len(all_raid_encounters)} raid encounters")
 
         # Prepare enhanced data
         enhanced_data = {
