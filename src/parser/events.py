@@ -375,6 +375,8 @@ class EventFactory:
             return cls._create_challenge_mode_event(parsed_line)
         elif event_type == "COMBATANT_INFO":
             return cls._create_combatant_info(parsed_line)
+        elif event_type == "SPELL_ABSORBED":
+            return cls._create_absorb_event(parsed_line)
 
         # Handle combat events - create correct base type first
         if event_type.startswith("SPELL_"):
