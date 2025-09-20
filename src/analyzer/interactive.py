@@ -1796,6 +1796,251 @@ ENCOUNTER BREAKDOWN:
 
         return summary
 
+    def _handle_timeline(self) -> bool:
+        """Interactive timeline viewer with combat period awareness."""
+        from src.analyzer.timeline import TimelineBuilder, TimelineFilter, TimelineAnalyzer
+        from src.models.combat_periods import CombatPeriodDetector, EventCategory
+        from rich.table import Table
+
+        self.console.clear()
+
+        # Check if we have selected a fight
+        if not self.navigation.selected_fight:
+            self.console.print("[yellow]No fight selected. Please select a fight first.[/yellow]")
+            self.console.print("\nAvailable options:")
+            self.console.print("1. [B]ack to main menu")
+
+            while True:
+                key = self.console.input("Choice: ").strip().upper()
+                if key == "B":
+                    self.navigation.go_back()
+                    return True
+                else:
+                    self.console.print("[red]Invalid choice. Try again.[/red]")
+
+        fight = self.navigation.selected_fight
+
+        # Initialize timeline state if needed
+        if not hasattr(self, 'timeline_state'):
+            self.timeline_state = {
+                'window_start': 0,
+                'window_size': 30,  # 30 second window
+                'show_combat_only': True,
+                'category_filter': None,
+                'importance_threshold': 3,
+                'current_page': 0
+            }
+
+        # Build timeline
+        detector = CombatPeriodDetector(gap_threshold=5.0)
+        combat_periods = detector.detect_periods(fight.events)
+
+        builder = TimelineBuilder()
+        timeline_events = builder.build(fight, combat_periods)
+
+        # Apply filters
+        filtered_events = timeline_events
+
+        if self.timeline_state['show_combat_only']:
+            filtered_events = TimelineFilter.filter_by_combat(filtered_events, combat_only=True)
+
+        if self.timeline_state['category_filter']:
+            filtered_events = TimelineFilter.filter_by_category(
+                filtered_events, self.timeline_state['category_filter']
+            )
+
+        filtered_events = TimelineFilter.filter_by_importance(
+            filtered_events, self.timeline_state['importance_threshold']
+        )
+
+        # Display timeline header
+        self.console.print(f"[bold cyan]Timeline: {fight.encounter_name or 'Unknown Encounter'}[/bold cyan]")
+
+        # Combat period summary
+        total_combat_time = sum(p.duration for p in combat_periods)
+        combat_percentage = (total_combat_time / fight.duration * 100) if fight.duration else 0
+
+        self.console.print(f"Duration: {fight.duration:.1f}s | Combat: {total_combat_time:.1f}s ({combat_percentage:.1f}%)")
+        self.console.print(f"Combat Periods: {len(combat_periods)} | Events: {len(filtered_events)}\n")
+
+        # Combat periods visualization
+        if combat_periods:
+            self.console.print("[bold green]Combat Periods:[/bold green]")
+            for i, period in enumerate(combat_periods):
+                start_relative = (period.start_time - fight.start_time).total_seconds()
+                end_relative = (period.end_time - fight.start_time).total_seconds()
+                self.console.print(
+                    f"  {i+1}. {start_relative:.1f}s - {end_relative:.1f}s "
+                    f"({period.duration:.1f}s, {period.event_count} events)"
+                )
+            self.console.print()
+
+        # Timeline events (paginated)
+        events_per_page = 15
+        total_pages = (len(filtered_events) + events_per_page - 1) // events_per_page
+
+        if total_pages > 0:
+            start_idx = self.timeline_state['current_page'] * events_per_page
+            end_idx = min(start_idx + events_per_page, len(filtered_events))
+            page_events = filtered_events[start_idx:end_idx]
+
+            # Events table
+            events_table = Table(title=f"Timeline Events (Page {self.timeline_state['current_page'] + 1} of {total_pages})")
+            events_table.add_column("Time", width=8)
+            events_table.add_column("Combat", width=8)
+            events_table.add_column("Importance", width=10)
+            events_table.add_column("Category", width=12)
+            events_table.add_column("Description", width=50)
+
+            for event in page_events:
+                time_str = f"{event.relative_time:.1f}s"
+                combat_str = "Yes" if event.is_combat else "No"
+                importance_str = "★" * event.importance
+                category_str = event.category.value.replace("_", " ").title()
+
+                # Truncate long descriptions
+                description = event.description
+                if len(description) > 45:
+                    description = description[:42] + "..."
+
+                events_table.add_row(
+                    time_str,
+                    combat_str,
+                    importance_str,
+                    category_str,
+                    description
+                )
+
+            self.console.print(events_table)
+        else:
+            self.console.print("[yellow]No events match current filters.[/yellow]")
+
+        # Display current filters
+        self.console.print(f"\n[bold]Current Filters:[/bold]")
+        self.console.print(f"Combat Only: {self.timeline_state['show_combat_only']}")
+        self.console.print(f"Category: {self.timeline_state['category_filter'].value if self.timeline_state['category_filter'] else 'All'}")
+        self.console.print(f"Min Importance: {self.timeline_state['importance_threshold']}")
+
+        # Navigation options
+        self.console.print("\n[bold]Navigation:[/bold]")
+
+        options = []
+        if self.timeline_state['current_page'] > 0:
+            options.append("[P]revious page")
+        if self.timeline_state['current_page'] < total_pages - 1:
+            options.append("[N]ext page")
+
+        options.extend([
+            "[C]ombat filter toggle",
+            "[I]mportance threshold",
+            "[A]nalyze gaps",
+            "[K]ey moments",
+            "[B]ack"
+        ])
+
+        for option in options:
+            self.console.print(f"  {option}")
+
+        # Handle input
+        while True:
+            choice = self.console.input("\nChoice: ").strip().upper()
+
+            if choice == "P" and self.timeline_state['current_page'] > 0:
+                self.timeline_state['current_page'] -= 1
+                return True
+            elif choice == "N" and self.timeline_state['current_page'] < total_pages - 1:
+                self.timeline_state['current_page'] += 1
+                return True
+            elif choice == "C":
+                self.timeline_state['show_combat_only'] = not self.timeline_state['show_combat_only']
+                self.timeline_state['current_page'] = 0  # Reset to first page
+                return True
+            elif choice == "I":
+                self.console.print("Set minimum importance (1-5):")
+                try:
+                    threshold = int(self.console.input("Threshold: "))
+                    if 1 <= threshold <= 5:
+                        self.timeline_state['importance_threshold'] = threshold
+                        self.timeline_state['current_page'] = 0
+                        return True
+                    else:
+                        self.console.print("[red]Invalid threshold. Must be 1-5.[/red]")
+                except ValueError:
+                    self.console.print("[red]Invalid input. Must be a number.[/red]")
+            elif choice == "A":
+                # Analyze combat gaps
+                analyzer = TimelineAnalyzer()
+                gap_analysis = analyzer.analyze_combat_gaps(timeline_events, combat_periods)
+
+                self.console.clear()
+                self.console.print("[bold cyan]Combat Gap Analysis[/bold cyan]\n")
+
+                if gap_analysis['gap_count'] > 0:
+                    self.console.print(f"Total Gaps: {gap_analysis['gap_count']}")
+                    self.console.print(f"Total Gap Time: {gap_analysis['total_gap_time']:.1f}s")
+                    self.console.print(f"Average Gap Duration: {gap_analysis['avg_gap_duration']:.1f}s\n")
+
+                    gaps_table = Table(title="Combat Gaps")
+                    gaps_table.add_column("Gap #", width=6)
+                    gaps_table.add_column("Start", width=10)
+                    gaps_table.add_column("End", width=10)
+                    gaps_table.add_column("Duration", width=10)
+                    gaps_table.add_column("Events", width=8)
+
+                    for i, gap in enumerate(gap_analysis['gaps'][:10]):  # Show first 10
+                        start_time = (gap['start_time'] - fight.start_time).total_seconds()
+                        end_time = (gap['end_time'] - fight.start_time).total_seconds()
+
+                        gaps_table.add_row(
+                            str(i + 1),
+                            f"{start_time:.1f}s",
+                            f"{end_time:.1f}s",
+                            f"{gap['duration']:.1f}s",
+                            str(gap['events_during_gap'])
+                        )
+
+                    self.console.print(gaps_table)
+                else:
+                    self.console.print("[yellow]No combat gaps found.[/yellow]")
+
+                self._wait_for_key()
+                return True
+            elif choice == "K":
+                # Show key moments
+                analyzer = TimelineAnalyzer()
+                key_moments = analyzer.find_key_moments(timeline_events)
+
+                self.console.clear()
+                self.console.print("[bold cyan]Key Moments[/bold cyan]\n")
+
+                if key_moments:
+                    moments_table = Table(title="Most Important Events")
+                    moments_table.add_column("Time", width=8)
+                    moments_table.add_column("Importance", width=10)
+                    moments_table.add_column("Description", width=60)
+
+                    for moment in key_moments[:15]:  # Show top 15
+                        time_str = f"{moment.relative_time:.1f}s"
+                        importance_str = "★" * moment.importance
+
+                        moments_table.add_row(
+                            time_str,
+                            importance_str,
+                            moment.description
+                        )
+
+                    self.console.print(moments_table)
+                else:
+                    self.console.print("[yellow]No key moments found.[/yellow]")
+
+                self._wait_for_key()
+                return True
+            elif choice == "B":
+                self.navigation.go_back()
+                return True
+            else:
+                self.console.print("[red]Invalid choice.[/red]")
+
     def _wait_for_key(self):
         """Wait for user to press any key."""
         try:
