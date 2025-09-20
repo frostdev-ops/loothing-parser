@@ -194,7 +194,8 @@ class StreamSession:
             "last_heartbeat": self.last_heartbeat,
             "client_version": self.client_version,
             "character_name": self.character_name,
-            "realm": self.realm,
+            "server": self.server,
+            "region": self.region,
             "remote_address": self.remote_address,
             "websocket_connected": self.websocket_connected,
             "rate_limit": {
@@ -295,9 +296,7 @@ class SessionManager:
             logger.warning(f"Session {session_id} already exists, replacing")
             del self._sessions[session_id]
 
-        session = StreamSession(
-            client_id=client_id, session_id=session_id, api_key=api_key
-        )
+        session = StreamSession(client_id=client_id, session_id=session_id, api_key=api_key)
 
         if metadata:
             session.client_version = metadata.client_version
@@ -384,8 +383,7 @@ class SessionManager:
         total_events = sum(s.metrics.total_events for s in sessions)
         active_sessions = [s for s in sessions if s.status == SessionStatus.ACTIVE]
         avg_events_per_second = (
-            sum(s.metrics.events_per_second for s in active_sessions)
-            / len(active_sessions)
+            sum(s.metrics.events_per_second for s in active_sessions) / len(active_sessions)
             if active_sessions
             else 0.0
         )
