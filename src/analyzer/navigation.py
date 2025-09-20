@@ -39,6 +39,7 @@ class NavigationState:
     # Selection state
     selected_encounter_index: int = 0
     selected_player_guid: Optional[str] = None
+    selected_fight: Optional["Fight"] = None
 
     # Filtering
     filter_type: Optional[str] = None  # 'raid', 'mythic_plus', 'trash'
