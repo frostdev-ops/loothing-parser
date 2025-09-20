@@ -90,7 +90,7 @@ class ParallelLogProcessor:
         current_encounter = None
         current_challenge_mode = None
 
-        with open(log_path, 'rb') as f:
+        with open(log_path, "rb") as f:
             with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                 file_size = len(mm)
                 current_pos = 0
@@ -98,56 +98,58 @@ class ParallelLogProcessor:
                 while current_pos < file_size:
                     # Find next line
                     line_start = current_pos
-                    line_end = mm.find(b'\n', current_pos)
+                    line_end = mm.find(b"\n", current_pos)
                     if line_end == -1:
                         line_end = file_size
 
                     try:
-                        line = mm[line_start:line_end].decode('utf-8', errors='ignore')
+                        line = mm[line_start:line_end].decode("utf-8", errors="ignore")
 
                         # Check for encounter events
-                        if ',ENCOUNTER_START,' in line:
+                        if "ENCOUNTER_START" in line and not line.strip().startswith('#'):
                             # End previous encounter if exists
                             if current_encounter:
                                 current_encounter.end_byte = line_start
                                 boundaries.append(current_encounter)
 
                             # Start new encounter
-                            parts = line.split(',')
+                            parts = line.split(",")
                             encounter_name = parts[4] if len(parts) > 4 else "Unknown"
-                            encounter_id = int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else None
+                            encounter_id = (
+                                int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else None
+                            )
 
                             current_encounter = EncounterBoundary(
                                 start_byte=line_start,
                                 end_byte=file_size,  # Will be updated when encounter ends
                                 encounter_type="ENCOUNTER",
                                 encounter_name=encounter_name,
-                                encounter_id=encounter_id
+                                encounter_id=encounter_id,
                             )
 
-                        elif ',ENCOUNTER_END,' in line and current_encounter:
+                        elif "ENCOUNTER_END" in line and not line.strip().startswith('#') and current_encounter:
                             current_encounter.end_byte = line_end
                             boundaries.append(current_encounter)
                             current_encounter = None
 
-                        elif ',CHALLENGE_MODE_START,' in line:
+                        elif "CHALLENGE_MODE_START" in line and not line.strip().startswith('#'):
                             # End previous challenge mode if exists
                             if current_challenge_mode:
                                 current_challenge_mode.end_byte = line_start
                                 boundaries.append(current_challenge_mode)
 
                             # Start new challenge mode
-                            parts = line.split(',')
-                            zone_name = parts[4] if len(parts) > 4 else "Mythic+"
+                            parts = line.split(",")
+                            zone_name = parts[1].strip('"') if len(parts) > 1 else "Mythic+"
 
                             current_challenge_mode = EncounterBoundary(
                                 start_byte=line_start,
                                 end_byte=file_size,  # Will be updated when challenge ends
                                 encounter_type="CHALLENGE_MODE",
-                                encounter_name=zone_name
+                                encounter_name=zone_name,
                             )
 
-                        elif ',CHALLENGE_MODE_END,' in line and current_challenge_mode:
+                        elif "CHALLENGE_MODE_END" in line and not line.strip().startswith('#') and current_challenge_mode:
                             current_challenge_mode.end_byte = line_end
                             boundaries.append(current_challenge_mode)
                             current_challenge_mode = None
@@ -212,7 +214,7 @@ class ParallelLogProcessor:
         # Prepare enhanced data
         enhanced_data = {
             "raid_encounters": all_raid_encounters,
-            "mythic_plus_runs": all_mythic_plus_runs
+            "mythic_plus_runs": all_mythic_plus_runs,
         }
 
         return all_fights, enhanced_data
@@ -239,19 +241,19 @@ class ParallelLogProcessor:
         event_count = 0
 
         try:
-            with open(log_path, 'rb') as f:
+            with open(log_path, "rb") as f:
                 with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                     # Process lines in the boundary range
                     current_pos = boundary.start_byte
 
                     while current_pos < boundary.end_byte and current_pos < len(mm):
                         # Find next line
-                        line_end = mm.find(b'\n', current_pos)
+                        line_end = mm.find(b"\n", current_pos)
                         if line_end == -1 or line_end > boundary.end_byte:
                             line_end = min(boundary.end_byte, len(mm))
 
                         try:
-                            line = mm[current_pos:line_end].decode('utf-8', errors='ignore')
+                            line = mm[current_pos:line_end].decode("utf-8", errors="ignore")
                             if line.strip():
                                 parsed_line = parser.tokenizer.parse_line(line)
                                 event = parser.event_factory.create_event(parsed_line)
@@ -310,10 +312,7 @@ class ParallelLogProcessor:
         fights = segmenter.finalize()
         raid_encounters, mythic_plus_runs = enhanced_segmenter.finalize()
 
-        enhanced_data = {
-            "raid_encounters": raid_encounters,
-            "mythic_plus_runs": mythic_plus_runs
-        }
+        enhanced_data = {"raid_encounters": raid_encounters, "mythic_plus_runs": mythic_plus_runs}
 
         return fights, enhanced_data
 
@@ -327,5 +326,5 @@ class ParallelLogProcessor:
         return {
             "max_workers": self.max_workers,
             "parse_errors": len(self.parse_errors),
-            "errors": self.parse_errors
+            "errors": self.parse_errors,
         }
