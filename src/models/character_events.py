@@ -219,14 +219,20 @@ class CharacterEventStream:
         elif category == "damage_absorbed_by_shield":
             # This character provided a shield that absorbed damage
             self.absorption_provided.append(event)
-            if hasattr(event, 'amount_absorbed'):
+            if hasattr(event, "amount_absorbed"):
                 self.total_damage_absorbed_by_shields += event.amount_absorbed
 
         elif category == "damage_absorbed_for_me":
             # This character received protection from a shield
             self.absorption_received.append(event)
-            if hasattr(event, 'amount_absorbed'):
+            if hasattr(event, "amount_absorbed"):
                 self.total_damage_absorbed_for_me += event.amount_absorbed
+
+        elif category == "damage_done_absorbed":
+            # This character's damage was absorbed by a shield - still counts as damage done!
+            self.damage_done.append(event)
+            if hasattr(event, "amount_absorbed"):
+                self.total_damage_done += event.amount_absorbed
 
     def add_death(self, death_event: DeathEvent):
         """Record a character death."""
