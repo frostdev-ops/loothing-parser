@@ -84,7 +84,8 @@ class TestStreamingPipeline:
             client_id="test_client",
             client_version="1.0.0",
             character_name="Testplayer",
-            realm="TestRealm",
+            server="TestRealm",
+            region="US",
             log_start_time=time.time(),
         )
 
