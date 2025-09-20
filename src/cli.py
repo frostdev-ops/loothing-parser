@@ -267,9 +267,12 @@ def analyze(log_file, interactive, threads, no_parallel):
         else:
             # Try parallel processing first
             from .processing import ParallelLogProcessor
+
             processor = ParallelLogProcessor(max_workers=threads)
 
-            console.print(f"[cyan]Using parallel processing ({processor.max_workers} threads)[/cyan]")
+            console.print(
+                f"[cyan]Using parallel processing ({processor.max_workers} threads)[/cyan]"
+            )
 
             with Progress(
                 SpinnerColumn(),
@@ -289,9 +292,9 @@ def analyze(log_file, interactive, threads, no_parallel):
                     console.print("[yellow]Falling back to sequential processing...[/yellow]")
                     fights, enhanced_data, parse_errors = _process_sequential(log_path, console)
 
-        # Finalize data
-        fights = segmenter.finalize()
-        raid_encounters, mythic_plus_runs = enhanced_segmenter.finalize()
+        # Enhanced data already prepared by processors
+        raid_encounters = enhanced_data.get("raid_encounters", [])
+        mythic_plus_runs = enhanced_data.get("mythic_plus_runs", [])
 
         # Parsing summary
         processing_time = (datetime.now() - start_time).total_seconds()
