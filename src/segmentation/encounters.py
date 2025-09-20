@@ -155,6 +155,15 @@ class EncounterSegmenter:
         self.fight_counter += 1
         fight_type = FightType.RAID_BOSS if event.difficulty_id >= 14 else FightType.DUNGEON_BOSS
 
+        # Build metadata
+        metadata = {"group_size": event.group_size, "instance_id": event.instance_id}
+
+        # If this boss is during an M+ run, track the context
+        if self.current_challenge_mode:
+            metadata["parent_challenge_mode"] = self.current_challenge_mode.fight_id
+            metadata["keystone_level"] = self.current_challenge_mode.keystone_level
+            metadata["zone_name"] = self.current_challenge_mode.encounter_name
+
         self.current_fight = Fight(
             fight_id=self.fight_counter,
             fight_type=fight_type,
@@ -162,7 +171,7 @@ class EncounterSegmenter:
             encounter_id=event.encounter_id,
             encounter_name=event.encounter_name,
             difficulty=event.difficulty_id,
-            metadata={"group_size": event.group_size, "instance_id": event.instance_id},
+            metadata=metadata,
         )
         self.current_fight.add_event(event)
 
