@@ -716,6 +716,7 @@ class EventFactory:
     def _add_damage_info(cls, event: BaseEvent, params: List[Any]) -> DamageEvent:
         """Add damage-specific information to event."""
         import logging
+
         logger = logging.getLogger(__name__)
 
         # Handle different event types properly
@@ -734,11 +735,15 @@ class EventFactory:
                 dest_flags=event.dest_flags,
                 dest_raid_flags=event.dest_raid_flags,
             )
-            logger.debug(f"Created SWING DamageEvent: {event.event_type}, source: {event.source_guid}, dest: {event.dest_guid}")
+            logger.debug(
+                f"Created SWING DamageEvent: {event.event_type}, source: {event.source_guid}, dest: {event.dest_guid}"
+            )
         else:
             # SPELL_ events and others use event.__dict__
             damage_event = DamageEvent(**event.__dict__)
-            logger.debug(f"Created SPELL DamageEvent: {event.event_type}, source: {event.source_guid}, dest: {event.dest_guid}")
+            logger.debug(
+                f"Created SPELL DamageEvent: {event.event_type}, source: {event.source_guid}, dest: {event.dest_guid}"
+            )
 
         # Detect Advanced Combat Logging by parameter count
         # Advanced Combat Logging inserts unit info (19 fields) before damage parameters
@@ -768,6 +773,7 @@ class EventFactory:
             damage_event.glancing = bool(params[damage_offset + 7])
             damage_event.crushing = bool(params[damage_offset + 8])
 
+        logger.debug(f"Returning DamageEvent type: {type(damage_event).__name__}, amount: {damage_event.amount}")
         return damage_event
 
     @classmethod
