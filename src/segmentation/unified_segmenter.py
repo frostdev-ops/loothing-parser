@@ -19,6 +19,7 @@ from src.models.unified_encounter import UnifiedEncounter, EncounterType, Fight,
 from src.models.enhanced_character import EnhancedCharacter, DeathEvent
 from src.models.combat_periods import CombatPeriodDetector
 from src.analyzer.death_analyzer import DeathAnalyzer
+from src.config.wow_data import get_difficulty_name, is_bloodlust_spell, is_battle_res_spell
 
 logger = logging.getLogger(__name__)
 
@@ -149,10 +150,13 @@ class UnifiedSegmenter:
             return
 
         # Track NPC damage/healing
-        if event.source_guid and not event.is_player_source() and not event.source_guid.startswith("Pet-"):
+        if (
+            event.source_guid
+            and not event.is_player_source()
+            and not event.source_guid.startswith("Pet-")
+        ):
             npc = self.current_encounter.current_fight.add_enemy(
-                event.source_guid,
-                event.source_name or "Unknown"
+                event.source_guid, event.source_name or "Unknown"
             )
 
             if isinstance(event, DamageEvent):
@@ -163,11 +167,14 @@ class UnifiedSegmenter:
                 npc.healing_done += event.amount
 
         # Track damage to NPCs
-        if event.dest_guid and not event.is_player_dest() and not event.dest_guid.startswith("Pet-"):
+        if (
+            event.dest_guid
+            and not event.is_player_dest()
+            and not event.dest_guid.startswith("Pet-")
+        ):
             if self.current_encounter.current_fight:
                 npc = self.current_encounter.current_fight.add_enemy(
-                    event.dest_guid,
-                    event.dest_name or "Unknown"
+                    event.dest_guid, event.dest_name or "Unknown"
                 )
                 if isinstance(event, DamageEvent):
                     npc.damage_taken += event.amount
@@ -200,14 +207,16 @@ class UnifiedSegmenter:
                     timestamp=event.timestamp.timestamp(),
                     datetime=event.timestamp,
                     killing_blow=event if isinstance(event, DamageEvent) else None,
-                    overkill=event.overkill if isinstance(event, DamageEvent) else 0
+                    overkill=event.overkill if isinstance(event, DamageEvent) else 0,
                 )
 
                 # Add enhanced death tracking
                 char.add_enhanced_death(death)
 
                 # Analyze death
-                self.death_analyzer.analyze_character_death(char, event.timestamp, event if isinstance(event, DamageEvent) else None)
+                self.death_analyzer.analyze_character_death(
+                    char, event.timestamp, event if isinstance(event, DamageEvent) else None
+                )
 
             # Handle NPC death
             elif self.current_encounter.current_fight:
@@ -233,16 +242,17 @@ class UnifiedSegmenter:
             instance_id=event.instance_id,
             difficulty=self._get_difficulty_name(event.difficulty_id),
             pull_number=self.raid_pull_counts[encounter_id],
-            start_time=event.timestamp
+            start_time=event.timestamp,
         )
 
         # Start the main fight
         self.current_encounter.start_fight(
-            f"{event.encounter_name} - Pull {self.current_encounter.pull_number}",
-            event.timestamp
+            f"{event.encounter_name} - Pull {self.current_encounter.pull_number}", event.timestamp
         )
 
-        logger.info(f"Started raid encounter: {event.encounter_name} (Pull #{self.current_encounter.pull_number})")
+        logger.info(
+            f"Started raid encounter: {event.encounter_name} (Pull #{self.current_encounter.pull_number})"
+        )
 
     def _end_raid_encounter(self, event: EncounterEvent):
         """End the current raid encounter."""
@@ -256,7 +266,9 @@ class UnifiedSegmenter:
         if self.current_encounter.current_fight:
             self.current_encounter.end_fight(event.timestamp, event.success)
 
-        logger.info(f"Ended raid encounter: {self.current_encounter.encounter_name} ({'Success' if event.success else 'Wipe'})")
+        logger.info(
+            f"Ended raid encounter: {self.current_encounter.encounter_name} ({'Success' if event.success else 'Wipe'})"
+        )
 
         self._finalize_encounter()
 
@@ -273,7 +285,7 @@ class UnifiedSegmenter:
             instance_name=event.zone_name,
             keystone_level=event.keystone_level,
             affixes=event.affix_ids,
-            start_time=event.timestamp
+            start_time=event.timestamp,
         )
 
         logger.info(f"Started M+ run: {event.zone_name} +{event.keystone_level}")
@@ -291,7 +303,9 @@ class UnifiedSegmenter:
         if self.current_encounter.current_fight:
             self.current_encounter.end_fight(event.timestamp, event.success)
 
-        logger.info(f"Ended M+ run: {self.current_encounter.encounter_name} ({'In time' if event.success else 'Depleted'})")
+        logger.info(
+            f"Ended M+ run: {self.current_encounter.encounter_name} ({'In time' if event.success else 'Depleted'})"
+        )
 
         self._finalize_encounter()
 
@@ -335,12 +349,7 @@ class UnifiedSegmenter:
 
     def _get_difficulty_name(self, difficulty_id: int) -> str:
         """Get difficulty name from ID."""
-        difficulties = {
-            14: "Normal",
-            15: "Heroic",
-            16: "Mythic",
-            17: "LFR"
-        }
+        difficulties = {14: "Normal", 15: "Heroic", 16: "Mythic", 17: "LFR"}
         return difficulties.get(difficulty_id, f"Unknown ({difficulty_id})")
 
     def get_encounters(self) -> List[UnifiedEncounter]:
@@ -354,7 +363,9 @@ class UnifiedSegmenter:
     def get_stats(self) -> Dict[str, Any]:
         """Get segmentation statistics."""
         raid_encounters = [e for e in self.encounters if e.encounter_type == EncounterType.RAID]
-        mythic_plus_runs = [e for e in self.encounters if e.encounter_type == EncounterType.MYTHIC_PLUS]
+        mythic_plus_runs = [
+            e for e in self.encounters if e.encounter_type == EncounterType.MYTHIC_PLUS
+        ]
 
         return {
             "total_events": self.total_events,
@@ -363,5 +374,5 @@ class UnifiedSegmenter:
             "raid_encounters": len(raid_encounters),
             "mythic_plus_runs": len(mythic_plus_runs),
             "total_characters": sum(len(e.characters) for e in self.encounters),
-            "total_fights": sum(len(e.fights) for e in self.encounters)
+            "total_fights": sum(len(e.fights) for e in self.encounters),
         }
