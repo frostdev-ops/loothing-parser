@@ -40,6 +40,7 @@ class LineTokenizer:
     def __init__(self):
         self.line_count = 0
         self.error_count = 0
+        self.advanced_logging_enabled = False
 
     def parse_line(self, line: str) -> Optional[ParsedLine]:
         """
