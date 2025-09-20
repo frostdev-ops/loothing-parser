@@ -20,7 +20,7 @@ def test_parser_fixes():
     print("=" * 50)
 
     # Parse the file
-    parser = EventParser()
+    parser = CombatLogParser()
     segmenter = EnhancedSegmenter()
 
     print("Parsing events...")
