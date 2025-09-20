@@ -102,9 +102,7 @@ class RaidEncounter:
     bloodlust_time: Optional[float] = None
     battle_resurrections: int = 0
 
-    def add_character(
-        self, character_guid: str, character_name: str
-    ) -> CharacterEventStream:
+    def add_character(self, character_guid: str, character_name: str) -> CharacterEventStream:
         """
         Add or get a character stream.
 
@@ -128,11 +126,7 @@ class RaidEncounter:
 
         # Calculate raid composition
         self.raid_size = len(
-            [
-                c
-                for c in self.characters.values()
-                if not c.character_guid.startswith("Pet-")
-            ]
+            [c for c in self.characters.values() if not c.character_guid.startswith("Pet-")]
         )
 
         # Calculate per-character metrics
@@ -165,9 +159,7 @@ class RaidEncounter:
                 "healers": len(self.healers),
                 "dps": len(self.dps),
             },
-            "characters": {
-                guid: char.to_dict() for guid, char in self.characters.items()
-            },
+            "characters": {guid: char.to_dict() for guid, char in self.characters.items()},
             "phases": len(self.phases),
             "raid_events": len(self.raid_events),
         }
@@ -201,9 +193,7 @@ class CombatSegment:
     enemy_forces_end: float = 0.0  # % at segment end
     enemy_forces_gained: float = 0.0  # % gained in this segment
 
-    def add_character(
-        self, character_guid: str, character_name: str
-    ) -> CharacterEventStream:
+    def add_character(self, character_guid: str, character_name: str) -> CharacterEventStream:
         """Add or get a character stream for this segment."""
         if character_guid not in self.characters:
             self.characters[character_guid] = CharacterEventStream(
@@ -266,9 +256,7 @@ class MythicPlusRun:
     group_classes: Dict[str, str] = field(default_factory=dict)  # guid -> class
 
     # Key depletion events
-    death_penalties: List[float] = field(
-        default_factory=list
-    )  # Time penalties from deaths
+    death_penalties: List[float] = field(default_factory=list)  # Time penalties from deaths
 
     def add_segment(self, segment: CombatSegment):
         """Add a combat segment to the run."""
@@ -318,9 +306,7 @@ class MythicPlusRun:
         self.in_time = self.time_remaining >= 0
 
         # Count total deaths
-        self.num_deaths = sum(
-            char.death_count for char in self.overall_characters.values()
-        )
+        self.num_deaths = sum(char.death_count for char in self.overall_characters.values())
 
         # Calculate death penalties (5 seconds per death in most seasons)
         self.death_penalties = [5.0] * self.num_deaths
@@ -329,9 +315,28 @@ class MythicPlusRun:
         for segment in self.segments:
             segment.calculate_metrics()
 
-        # Calculate overall character metrics
+        # Calculate overall character metrics using combat periods
+        from ..models.combat_periods import CombatPeriodDetector
+
+        # Collect all events from all segments to detect combat periods
+        all_events = []
+        for segment in self.segments:
+            for character in segment.characters.values():
+                all_events.extend([ts_event.event for ts_event in character.all_events])
+
+        # Sort events by timestamp
+        all_events.sort(key=lambda e: e.timestamp)
+
+        # Detect combat periods for the entire run
+        if all_events:
+            detector = CombatPeriodDetector(gap_threshold=5.0)
+            combat_periods = detector.detect_periods(all_events)
+        else:
+            combat_periods = []
+
+        # Use combat-aware activity calculation
         for character in self.overall_characters.values():
-            character.calculate_activity(self.actual_time_seconds)
+            character.calculate_combat_metrics(combat_periods, self.actual_time_seconds)
 
     @property
     def characters(self) -> Dict[str, CharacterEventStream]:
@@ -368,7 +373,5 @@ class MythicPlusRun:
                 "bosses": len(self.boss_segments),
                 "trash": len(self.trash_segments),
             },
-            "characters": {
-                guid: char.to_dict() for guid, char in self.overall_characters.items()
-            },
+            "characters": {guid: char.to_dict() for guid, char in self.overall_characters.items()},
         }
