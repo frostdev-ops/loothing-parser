@@ -440,18 +440,16 @@ class LineTokenizer:
             # Non-ACL affected events, return params as-is
             return params
 
-        # Detect ACL presence by parameter count
-        # For SPELL_DAMAGE with ACL: we expect at least 18 ACL + 6+ damage params = 24+ total
-        # For SWING_DAMAGE with ACL: we expect at least 18 ACL + 6+ damage params = 24+ total
-        # For SPELL_HEAL with ACL: we expect at least 18 ACL + 4+ heal params = 22+ total
-
-        expected_min_acl_params = 22  # Conservative threshold
-
-        if len(params) >= expected_min_acl_params:
-            # Likely has ACL parameters - skip first 19 params
-            return params[19:]
+        # Use detected ACL flag instead of guessing
+        if self.advanced_logging_enabled:
+            # Skip 19 ACL parameters when advanced logging is enabled
+            if len(params) > 19:
+                return params[19:]
+            else:
+                # Insufficient params for ACL, return as-is
+                return params
         else:
-            # No ACL or insufficient params, return as-is
+            # No ACL, return params as-is
             return params
 
     def get_stats(self) -> Dict[str, int]:
