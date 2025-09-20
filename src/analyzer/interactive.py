@@ -467,6 +467,46 @@ class InteractiveAnalyzer:
                 character.combat_time = 0.0
                 character.time_alive = 0.0
 
+    def _is_damage_event(self, event) -> bool:
+        """Check if event represents damage."""
+        if isinstance(event, DamageEvent):
+            return True
+        # Also check by event type for events that might not be typed as DamageEvent
+        damage_types = {
+            "SPELL_DAMAGE", "SPELL_PERIODIC_DAMAGE", "SWING_DAMAGE",
+            "RANGE_DAMAGE", "ENVIRONMENTAL_DAMAGE"
+        }
+        return event.event_type in damage_types
+
+    def _is_heal_event(self, event) -> bool:
+        """Check if event represents healing."""
+        if isinstance(event, HealEvent):
+            return True
+        # Also check by event type for events that might not be typed as HealEvent
+        heal_types = {"SPELL_HEAL", "SPELL_PERIODIC_HEAL"}
+        return event.event_type in heal_types
+
+    def _get_total_damage(self, event) -> int:
+        """Get total damage including absorbed amounts."""
+        damage = 0
+        if hasattr(event, 'amount') and event.amount:
+            damage += event.amount
+        if hasattr(event, 'absorbed') and event.absorbed:
+            damage += event.absorbed
+        return damage
+
+    def _get_effective_healing(self, event) -> int:
+        """Get effective healing amount."""
+        if hasattr(event, 'effective_healing'):
+            return event.effective_healing
+        elif hasattr(event, 'amount') and hasattr(event, 'overhealing'):
+            # Calculate effective healing if we have both values
+            return event.amount - (event.overhealing or 0)
+        elif hasattr(event, 'amount'):
+            # Fallback to raw amount if no overhealing data
+            return event.amount
+        return 0
+
     def _show_help(self):
         """Show help panel."""
         self.console.clear()
