@@ -285,7 +285,9 @@ class CharacterEventStream:
             min(100, (active_events / total_possible_gcds) * 100) if total_possible_gcds > 0 else 0
         )
 
-    def calculate_combat_metrics(self, combat_periods: List[CombatPeriod], encounter_duration: float):
+    def calculate_combat_metrics(
+        self, combat_periods: List[CombatPeriod], encounter_duration: float
+    ):
         """
         Calculate activity and combat time using combat periods.
 
@@ -313,11 +315,7 @@ class CharacterEventStream:
                 time_dead += death.resurrect_time - death.timestamp
             else:
                 # Dead until end of encounter
-                end_time = (
-                    self.all_events[-1].timestamp
-                    if self.all_events
-                    else death.timestamp
-                )
+                end_time = self.all_events[-1].timestamp if self.all_events else death.timestamp
                 time_dead += end_time - death.timestamp
 
         self.time_alive = encounter_duration - time_dead
@@ -331,7 +329,10 @@ class CharacterEventStream:
             for period in combat_periods:
                 if period.contains_time(event_time):
                     # Only count active events (damage, healing, casts)
-                    if event.category in ['damage_done', 'healing_done'] or 'cast' in event.category:
+                    if (
+                        event.category in ["damage_done", "healing_done"]
+                        or "cast" in event.category
+                    ):
                         combat_events += 1
                     break
 
@@ -344,8 +345,10 @@ class CharacterEventStream:
             # Subtract time dead during combat periods
             for death in self.deaths:
                 death_start = death.timestamp
-                death_end = death.resurrect_time if death.resurrect_time else (
-                    self.all_events[-1].timestamp if self.all_events else death.timestamp
+                death_end = (
+                    death.resurrect_time
+                    if death.resurrect_time
+                    else (self.all_events[-1].timestamp if self.all_events else death.timestamp)
                 )
 
                 # Calculate overlap with combat periods
@@ -354,7 +357,7 @@ class CharacterEventStream:
                     overlap_end = min(death_end, period.end_time.timestamp())
 
                     if overlap_start < overlap_end:
-                        combat_time_alive -= (overlap_end - overlap_start)
+                        combat_time_alive -= overlap_end - overlap_start
 
             possible_gcds_in_combat = max(0, combat_time_alive) / 1.5  # 1.5s GCD
 
@@ -388,6 +391,7 @@ class CharacterEventStream:
                 "deaths": self.death_count,
                 "activity_percentage": round(self.activity_percentage, 1),
                 "time_alive_seconds": round(self.time_alive, 1),
+                "combat_time_seconds": round(self.combat_time, 1),
             },
             "event_counts": {
                 "total_events": len(self.all_events),
