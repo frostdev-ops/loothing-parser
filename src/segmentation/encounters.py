@@ -153,9 +153,7 @@ class EncounterSegmenter:
 
         # Start new encounter
         self.fight_counter += 1
-        fight_type = (
-            FightType.RAID_BOSS if event.difficulty_id >= 14 else FightType.DUNGEON_BOSS
-        )
+        fight_type = FightType.RAID_BOSS if event.difficulty_id >= 14 else FightType.DUNGEON_BOSS
 
         self.current_fight = Fight(
             fight_id=self.fight_counter,
@@ -176,9 +174,7 @@ class EncounterSegmenter:
             self.current_fight.add_event(event)
             self.current_fight.end_time = event.timestamp
             self.current_fight.success = event.success
-            self.current_fight.duration = (
-                event.duration / 1000.0 if event.duration else None
-            )
+            self.current_fight.duration = event.duration / 1000.0 if event.duration else None
             self.current_fight.finalize()
 
             # Store and clear current fight
@@ -190,9 +186,7 @@ class EncounterSegmenter:
 
         return None
 
-    def _handle_challenge_mode_start(
-        self, event: ChallengeModeEvent
-    ) -> Optional[Fight]:
+    def _handle_challenge_mode_start(self, event: ChallengeModeEvent) -> Optional[Fight]:
         """Handle CHALLENGE_MODE_START event."""
         # End any current fight
         completed_fight = None
@@ -248,7 +242,10 @@ class EncounterSegmenter:
         if self.current_fight:
             self.current_fight.add_event(event)
         elif self.current_challenge_mode:
-            # We're in a M+ but not in a boss fight - this is trash
+            # During M+, add events directly to the M+ run
+            self.current_challenge_mode.add_event(event)
+        else:
+            # Not in any encounter - this is open world or untracked trash
             self._handle_trash_combat(event)
 
         # Track last combat time for trash segmentation
@@ -260,10 +257,8 @@ class EncounterSegmenter:
         # Check if we should start a new trash segment
         if self.current_fight and self.current_fight.fight_type == FightType.TRASH:
             # Check for timeout
-            if (
-                self.last_combat_time
-                and event.timestamp - self.last_combat_time
-                > timedelta(seconds=self.trash_timeout)
+            if self.last_combat_time and event.timestamp - self.last_combat_time > timedelta(
+                seconds=self.trash_timeout
             ):
                 # End current trash segment and start new one
                 self.current_fight.finalize()
@@ -315,9 +310,7 @@ class EncounterSegmenter:
         """
         fight_types = {}
         for fight in self.fights:
-            fight_types[fight.fight_type.value] = (
-                fight_types.get(fight.fight_type.value, 0) + 1
-            )
+            fight_types[fight.fight_type.value] = fight_types.get(fight.fight_type.value, 0) + 1
 
         return {
             "total_fights": len(self.fights),
