@@ -13,7 +13,7 @@ from .navigation import NavigationState, ViewMode
 from .displays import DisplayBuilder
 from .metrics import MetricsCalculator
 from ..segmentation.encounters import Fight, FightType
-from ..parser.events import BaseEvent
+from ..parser.events import BaseEvent, DamageEvent, HealEvent
 from ..models.encounter_models import RaidEncounter, MythicPlusRun
 from ..models.character_events import CharacterEventStream
 
@@ -478,7 +478,7 @@ class InteractiveAnalyzer:
                         timestamp=event.timestamp.timestamp(),
                         datetime=event.timestamp,
                         event=event,
-                        category="death"
+                        category="death",
                     )
                 )
 
