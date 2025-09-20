@@ -99,6 +99,9 @@ class EventCategorizer:
             elif event.event_type in self.HEALING_EVENTS:
                 categories.update(self._categorize_healing(event))
 
+            elif event.event_type in self.ABSORPTION_EVENTS:
+                categories.update(self._categorize_absorption(event))
+
             elif event.event_type in self.AURA_APPLY_EVENTS:
                 categories.update(self._categorize_aura_apply(event))
 
