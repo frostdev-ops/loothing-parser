@@ -185,12 +185,12 @@ class CharacterEventStream:
 
     def _route_event(self, event: BaseEvent, category: str):
         """Route event to appropriate category list."""
+        import logging
+        logger = logging.getLogger(__name__)
+
         if category == "damage_done" and (
             isinstance(event, DamageEvent) or "_DAMAGE" in event.event_type
         ):
-            import logging
-
-            logger = logging.getLogger(__name__)
 
             self.damage_done.append(event)
             # Only count actual damage, not overkill (matches Details addon behavior)
@@ -261,7 +261,9 @@ class CharacterEventStream:
             if hasattr(event, "amount_absorbed"):
                 self.total_damage_absorbed_for_me += event.amount_absorbed
         else:
-            logger.debug(f"Event not routed: category={category}, event_type={event.event_type}, isinstance_damage={isinstance(event, DamageEvent)}, isinstance_heal={isinstance(event, HealEvent)}")
+            logger.debug(
+                f"Event not routed: category={category}, event_type={event.event_type}, isinstance_damage={isinstance(event, DamageEvent)}, isinstance_heal={isinstance(event, HealEvent)}"
+            )
 
     def add_death(self, death_event: DeathEvent):
         """Record a character death."""
