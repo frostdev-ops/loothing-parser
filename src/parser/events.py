@@ -796,15 +796,15 @@ class EventFactory:
             # spell_power, armor, resources, position, etc. (19 fields total)
             heal_offset = 19
 
-        # Heal parameters: total_heal, actual_heal, absorbed, critical
-        # overhealing = total_heal - actual_heal
+        # Heal parameters: pre_mitigation_heal, actual_heal, absorbed, critical
+        # For Advanced Combat Logging, position 19 is pre-mitigation, position 20 is actual healing
+        # Overhealing is not reliably available in this format
         min_params_needed = heal_offset + 3
         if len(params) >= min_params_needed:
-            total_heal = cls._safe_int(params[heal_offset])
+            pre_mitigation_heal = cls._safe_int(params[heal_offset])
             actual_heal = cls._safe_int(params[heal_offset + 1])
-            overhealing = max(0, total_heal - actual_heal)
             heal_event.amount = actual_heal  # Actual healing done (what target received)
-            heal_event.overhealing = overhealing  # Calculated overhealing
+            heal_event.overhealing = 0  # Overhealing not available in Advanced Combat Logging
             heal_event.absorbed = (
                 cls._safe_int(params[heal_offset + 2]) if len(params) > heal_offset + 2 else 0
             )
