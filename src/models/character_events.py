@@ -185,13 +185,19 @@ class CharacterEventStream:
 
     def _route_event(self, event: BaseEvent, category: str):
         """Route event to appropriate category list."""
-        if category == "damage_done" and isinstance(event, DamageEvent):
+        if category == "damage_done" and (isinstance(event, DamageEvent) or "_DAMAGE" in event.event_type):
+            import logging
+            logger = logging.getLogger(__name__)
+
             self.damage_done.append(event)
             # Only count actual damage, not overkill (matches Details addon behavior)
-            self.total_damage_done += event.amount
+            amount = getattr(event, 'amount', 0)
+            self.total_damage_done += amount
+            logger.debug(f"Added damage_done: {amount}, total now: {self.total_damage_done}, isinstance: {isinstance(event, DamageEvent)}")
             # Track overkill separately
-            if event.overkill > 0:
-                self.total_overkill_done += event.overkill
+            overkill = getattr(event, 'overkill', 0)
+            if overkill > 0:
+                self.total_overkill_done += overkill
 
         elif category == "healing_done" and isinstance(event, HealEvent):
             self.healing_done.append(event)
