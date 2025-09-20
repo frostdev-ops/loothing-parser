@@ -319,12 +319,12 @@ class EventCategorizer:
         return categories
 
     def _handle_summon(self, event: BaseEvent):
-        """Handle pet summon events to track ownership."""
+        """Handle pet/guardian summon events to track ownership."""
         if event.source_guid and event.dest_guid:
-            # Source summons dest - track pet ownership
-            if event.source_guid.startswith("Player-"):
+            # Source summons dest - track pet/guardian ownership
+            if event.source_guid.startswith("Player-") and event.dest_guid.startswith(("Pet-", "Creature-", "Vehicle-")):
                 self.pet_owners[event.dest_guid] = event.source_guid
-                logger.debug(f"Tracked pet {event.dest_name} -> owner {event.source_name}")
+                logger.debug(f"Tracked {event.dest_name} -> owner {event.source_name}")
 
     def _handle_combatant_info(self, event: BaseEvent):
         """Handle combatant info events for character metadata."""
