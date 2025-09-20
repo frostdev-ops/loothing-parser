@@ -1592,7 +1592,7 @@ class InteractiveAnalyzer:
                 results["encounters"].append(
                     {
                         "name": fight.encounter_name,
-                        "type": fight.fight_type.value.replace('_', ' ').title(),
+                        "type": fight.fight_type.value.replace("_", " ").title(),
                         "description": f"{fight.fight_type.value.replace('_', ' ').title()}: {fight.encounter_name}",
                         "fight": fight,
                     }
@@ -1600,7 +1600,7 @@ class InteractiveAnalyzer:
 
         # Search spells/abilities
         spell_matches = set()
-        for encounter in self.encounters:
+        for fight in self.fights:
             characters = self._get_encounter_characters(fight)
             if not characters:
                 continue
