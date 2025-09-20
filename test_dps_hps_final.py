@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Test DPS/HPS calculations after ACL fix."""
 
-from src.parser.log_parser import CombatLogParser
+from src.parser.parser import CombatLogParser
 from src.segmentation.encounters import EncounterSegmenter
 from src.models.character_events import CharacterEventStream
+
 
 def test_dps_hps():
     """Test DPS/HPS calculations."""
@@ -27,14 +28,14 @@ def test_dps_hps():
         segmenter.process_event(event)
 
         # Check damage events
-        if hasattr(event, 'amount') and 'DAMAGE' in event.event_type:
+        if hasattr(event, "amount") and "DAMAGE" in event.event_type:
             damage_events += 1
             total_damage += event.amount
             if damage_events <= 5:
                 print(f"Damage event {damage_events}: {event.event_type}, amount: {event.amount}")
 
         # Check heal events
-        if hasattr(event, 'amount') and 'HEAL' in event.event_type:
+        if hasattr(event, "amount") and "HEAL" in event.event_type:
             heal_events += 1
             total_healing += event.amount
             if heal_events <= 5:
@@ -63,13 +64,12 @@ def test_dps_hps():
         for guid, participant in fight.participants.items():
             if participant.get("is_player", False):
                 characters[guid] = CharacterEventStream(
-                    player_name=participant["name"],
-                    player_guid=guid
+                    player_name=participant["name"], player_guid=guid
                 )
 
         # Add events to character streams
         for event in fight.events:
-            if hasattr(event, 'source_guid') and event.source_guid in characters:
+            if hasattr(event, "source_guid") and event.source_guid in characters:
                 characters[event.source_guid].add_event(event)
 
         # Calculate DPS/HPS
@@ -78,6 +78,7 @@ def test_dps_hps():
             dps = char.get_dps()
             hps = char.get_hps()
             print(f"{char.player_name}: DPS={dps:.0f}, HPS={hps:.0f}")
+
 
 if __name__ == "__main__":
     test_dps_hps()
