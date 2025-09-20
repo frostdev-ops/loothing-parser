@@ -390,6 +390,9 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
 
     @app.on_event("startup")
     async def startup_event():
+        # Load custom configuration
+        load_and_apply_config()
+        logger.info("Custom configuration loaded")
         await _server_instance.start()
 
     @app.on_event("shutdown")
