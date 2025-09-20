@@ -224,7 +224,7 @@ def test_feature_preservation():
         for enc in parallel_encounters:
             if enc.characters:
                 for char in enc.characters.values():
-                    if char.damage_by_ability:
+                    if hasattr(char, 'dps_by_ability') and char.dps_by_ability:
                         enc_with_abilities = enc
                         break
                 if enc_with_abilities:
@@ -233,11 +233,13 @@ def test_feature_preservation():
         if enc_with_abilities:
             print(f"\n✓ Ability Breakdowns Preserved:")
             sample_char = list(enc_with_abilities.characters.values())[0]
-            if hasattr(sample_char, 'dps_by_ability') and sample_char.dps_by_ability:
+            if hasattr(sample_char, "dps_by_ability") and sample_char.dps_by_ability:
                 top_abilities = sorted(
                     sample_char.dps_by_ability.items(), key=lambda x: x[1], reverse=True
                 )[:3]
-                char_name = sample_char.name if hasattr(sample_char, 'name') else sample_char.character_name
+                char_name = (
+                    sample_char.name if hasattr(sample_char, "name") else sample_char.character_name
+                )
                 print(f"  Sample: {char_name}")
                 for ability, dps in top_abilities:
                     print(f"    - {ability}: {dps:.1f} DPS")
