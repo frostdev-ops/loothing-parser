@@ -427,29 +427,27 @@ class InteractiveAnalyzer:
         combat_periods = detector.detect_periods(events)
 
         for event in events:
-            # Track damage done
-            if isinstance(event, DamageEvent) and event.source_guid in characters:
-                # Add base damage
-                characters[event.source_guid].total_damage_done += event.amount
-                # Add absorbed damage if present
-                if hasattr(event, 'absorbed') and event.absorbed:
-                    characters[event.source_guid].total_damage_done += event.absorbed
+            # Track damage done (all damage event types)
+            if self._is_damage_event(event) and event.source_guid in characters:
+                damage_amount = self._get_total_damage(event)
+                characters[event.source_guid].total_damage_done += damage_amount
                 # Add to all_events for chronological tracking
-                total_damage_for_event = event.amount + (event.absorbed if hasattr(event, 'absorbed') and event.absorbed else 0)
                 characters[event.source_guid].all_events.append(
-                    (event.timestamp, "damage", total_damage_for_event)
+                    (event.timestamp, "damage", damage_amount)
                 )
 
-            # Track healing done
-            elif isinstance(event, HealEvent) and event.source_guid in characters:
-                characters[event.source_guid].total_healing_done += event.effective_healing
+            # Track healing done (all healing event types)
+            elif self._is_heal_event(event) and event.source_guid in characters:
+                heal_amount = self._get_effective_healing(event)
+                characters[event.source_guid].total_healing_done += heal_amount
                 characters[event.source_guid].all_events.append(
-                    (event.timestamp, "heal", event.amount)
+                    (event.timestamp, "heal", heal_amount)
                 )
 
             # Track damage taken
-            elif isinstance(event, DamageEvent) and event.dest_guid in characters:
-                characters[event.dest_guid].total_damage_taken += event.amount
+            elif self._is_damage_event(event) and event.dest_guid in characters:
+                damage_amount = self._get_total_damage(event)
+                characters[event.dest_guid].total_damage_taken += damage_amount
 
             # Track deaths
             elif event.event_type == "UNIT_DIED" and event.dest_guid in characters:
