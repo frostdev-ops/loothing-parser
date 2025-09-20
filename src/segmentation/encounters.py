@@ -8,7 +8,7 @@ from typing import List, Optional, Dict, Any
 from enum import Enum
 
 from src.parser.events import BaseEvent
-from src.models.combat_periods import CombatPeriod, CombatPeriodDetector, EncounterEvent, ChallengeModeEvent
+from src.models.combat_periods import CombatPeriod, CombatPeriodDetector
 
 
 class FightType(Enum):
