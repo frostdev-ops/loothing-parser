@@ -113,8 +113,12 @@ def compare_encounters(sequential_encounters, parallel_encounters):
                     success = False
 
         # Compare deaths
-        seq_deaths = seq_enc.metrics.total_deaths if hasattr(seq_enc, 'metrics') and seq_enc.metrics else 0
-        par_deaths = par_enc.metrics.total_deaths if hasattr(par_enc, 'metrics') and par_enc.metrics else 0
+        seq_deaths = (
+            seq_enc.metrics.total_deaths if hasattr(seq_enc, "metrics") and seq_enc.metrics else 0
+        )
+        par_deaths = (
+            par_enc.metrics.total_deaths if hasattr(par_enc, "metrics") and par_enc.metrics else 0
+        )
 
         if seq_deaths != par_deaths:
             print(f"  ⚠ Death count mismatch: {seq_deaths} vs {par_deaths}")
@@ -245,13 +249,19 @@ def test_feature_preservation():
                     print(f"    - {ability}: {dps:.1f} DPS")
 
         # Check death tracking
-        enc_with_deaths = next((e for e in parallel_encounters if e.deaths), None)
+        enc_with_deaths = next(
+            (e for e in parallel_encounters if hasattr(e, 'metrics') and e.metrics and e.metrics.total_deaths > 0),
+            None
+        )
         if enc_with_deaths:
             print(f"\n✓ Death Analysis Preserved:")
-            sample_death = enc_with_deaths.deaths[0]
-            print(f"  Sample death: {sample_death['victim_name']}")
-            if sample_death.get("recent_events"):
-                print(f"    Recent events tracked: {len(sample_death['recent_events'])}")
+            print(f"  Total deaths tracked: {enc_with_deaths.metrics.total_deaths}")
+            # Find a character with deaths
+            for char in enc_with_deaths.characters.values():
+                if hasattr(char, 'death_count') and char.death_count > 0:
+                    char_name = char.name if hasattr(char, 'name') else char.character_name
+                    print(f"  Sample: {char_name} died {char.death_count} time(s)")
+                    break
 
     # 5. Performance comparison
     print("\n" + "=" * 60)
