@@ -16,6 +16,7 @@ from collections import Counter
 
 from .parser.parser import CombatLogParser
 from .segmentation.encounters import EncounterSegmenter, FightType
+from .config.loader import load_and_apply_config
 
 
 # Set up rich console for pretty output
@@ -28,6 +29,9 @@ logging.basicConfig(
     handlers=[RichHandler(console=console, rich_tracebacks=True)],
 )
 logger = logging.getLogger(__name__)
+
+# Load custom configuration if available
+load_and_apply_config()
 
 
 @click.group()
