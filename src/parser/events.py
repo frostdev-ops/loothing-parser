@@ -608,6 +608,44 @@ class EventFactory:
         return event
 
     @classmethod
+    def _create_absorb_event(cls, parsed_line) -> AbsorbEvent:
+        """Create absorption event from SPELL_ABSORBED line."""
+        event = AbsorbEvent(
+            timestamp=parsed_line.timestamp,
+            event_type=parsed_line.event_type,
+            raw_line=parsed_line.raw_line,
+        )
+
+        # SPELL_ABSORBED format:
+        # timestamp,source_guid,source_name,source_flags,source_raid_flags,
+        # dest_guid,dest_name,dest_flags,dest_raid_flags,
+        # absorber_guid,absorber_name,absorber_flags,absorber_raid_flags,
+        # shield_spell_id,shield_spell_name,shield_spell_school,
+        # amount_absorbed,total_absorbed
+
+        params = parsed_line.suffix_params
+        if len(params) >= 17:
+            # Original damage event info
+            event.attacker_guid = params[0]
+            event.attacker_name = params[1]
+            event.target_guid = params[4]
+            event.target_name = params[5]
+
+            # Absorber info (who provided the shield)
+            event.absorber_guid = params[8]
+            event.absorber_name = params[9]
+
+            # Shield spell info
+            event.shield_spell_id = cls._safe_int(params[12])
+            event.shield_spell_name = params[13]
+            event.shield_spell_school = cls._safe_int(params[14])
+
+            # Amount absorbed
+            event.amount_absorbed = cls._safe_int(params[15])
+
+        return event
+
+    @classmethod
     def _add_damage_info(cls, event: BaseEvent, params: List[Any]) -> DamageEvent:
         """Add damage-specific information to event."""
         # Handle different event types properly
