@@ -257,43 +257,37 @@ def analyze(log_file, interactive, threads, no_parallel):
         console.print(f"[bold green]Parsing combat log:[/bold green] {log_path.name}")
         console.print("[cyan]This may take a moment for large files...[/cyan]\n")
 
-        # Parse the full log file using existing parser infrastructure
-        parser = CombatLogParser()
-        segmenter = EncounterSegmenter()
-        enhanced_segmenter = EnhancedSegmenter()
-
-        # Statistics tracking
-        total_events = 0
+        # Choose processing method based on options
         start_time = datetime.now()
 
-        # Parse with progress indication
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("[cyan]Processing events...", total=None)
+        if no_parallel:
+            # Force sequential processing
+            console.print("[yellow]Using sequential processing (--no-parallel)[/yellow]")
+            fights, enhanced_data, parse_errors = _process_sequential(log_path, console)
+        else:
+            # Try parallel processing first
+            from .processing import ParallelLogProcessor
+            processor = ParallelLogProcessor(max_workers=threads)
 
-            with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-                for line_num, line in enumerate(f, 1):
-                    if line.strip():
-                        try:
-                            parsed_line = parser.tokenizer.parse_line(line)
-                            event = parser.event_factory.create_event(parsed_line)
-                            segmenter.process_event(event)
-                            enhanced_segmenter.process_event(event)
-                            total_events += 1
+            console.print(f"[cyan]Using parallel processing ({processor.max_workers} threads)[/cyan]")
 
-                            # Update progress every 10k events
-                            if total_events % 10000 == 0:
-                                progress.update(
-                                    task, description=f"[cyan]Processed {total_events:,} events..."
-                                )
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task1 = progress.add_task("[cyan]Phase 1: Detecting encounters...", total=None)
 
-                        except Exception as e:
-                            parser.parse_errors.append(f"Line {line_num}: {str(e)}")
+                try:
+                    fights, enhanced_data = processor.process_file(log_path)
+                    parse_errors = processor.parse_errors
 
-            progress.update(task, description="[green]Finalizing encounters...")
+                    progress.update(task1, description="[green]Parallel processing complete!")
+
+                except Exception as e:
+                    console.print(f"[yellow]Parallel processing failed: {e}[/yellow]")
+                    console.print("[yellow]Falling back to sequential processing...[/yellow]")
+                    fights, enhanced_data, parse_errors = _process_sequential(log_path, console)
 
         # Finalize data
         fights = segmenter.finalize()
