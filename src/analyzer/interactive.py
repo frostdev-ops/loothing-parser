@@ -289,6 +289,7 @@ class InteractiveAnalyzer:
             selected_index = int(choice) - 1
             if 0 <= selected_index < len(self.filtered_fights):
                 self.navigation.selected_encounter_index = selected_index
+                self.navigation.selected_fight = self.filtered_fights[selected_index]
                 self.navigation.navigate_to(ViewMode.ENCOUNTER_DETAIL)
 
         return True
