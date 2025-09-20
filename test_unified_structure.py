@@ -8,8 +8,8 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Add src directory to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent))
 
 from src.parser.parser import CombatLogParser
 from src.segmentation.unified_segmenter import UnifiedSegmenter
