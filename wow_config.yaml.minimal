@@ -1,0 +1,22 @@
+# Minimal WoW Configuration Example
+# Copy this file to wow_config.yaml to use custom mappings
+
+# Fix unknown difficulty IDs
+difficulties:
+  8: "Challenge Mode"
+  20: "Mythic Keystone"
+
+# Add missing specializations
+specializations:
+  1444: "Shado-Pan"  # Remix: Mists of Pandaria special spec
+
+# Add custom affixes for special events
+affixes:
+  200: "Special Event Affix"
+
+# Track additional consumables
+flask_ids:
+  - 999999  # Custom flask ID
+
+food_buff_ids:
+  - 888888  # Custom food buff ID
