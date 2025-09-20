@@ -193,7 +193,8 @@ class CharacterEventStream:
 
         elif category == "healing_done" and isinstance(event, HealEvent):
             self.healing_done.append(event)
-            self.total_healing_done += event.effective_healing
+            # Use total amount (including overhealing) to match Details addon behavior
+            self.total_healing_done += event.amount
             self.total_overhealing += event.overhealing
 
         elif category == "damage_taken" and isinstance(event, DamageEvent):
