@@ -25,22 +25,15 @@ def test_parser_fixes():
 
     print("Parsing events...")
     event_count = 0
-    with open(log_file, "r", encoding="utf-8") as f:
-        for line_num, line in enumerate(f, 1):
-            if line.strip():
-                try:
-                    event = parser.parse_line(line.strip())
-                    if event:
-                        segmenter.process_event(event)
-                        event_count += 1
 
-                        # Progress indicator
-                        if event_count % 50000 == 0:
-                            print(f"  Processed {event_count:,} events...")
+    # Process events using the parser's parse_file method
+    for event in parser.parse_file(log_file):
+        segmenter.process_event(event)
+        event_count += 1
 
-                except Exception as e:
-                    print(f"Error parsing line {line_num}: {e}")
-                    continue
+        # Progress indicator
+        if event_count % 50000 == 0:
+            print(f"  Processed {event_count:,} events...")
 
     print(f"Parsed {event_count:,} events")
 
