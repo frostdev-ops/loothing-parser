@@ -31,7 +31,9 @@ def test_damage_fixes():
             if hasattr(event, "amount_absorbed"):
                 total_absorbed_damage += event.amount_absorbed
                 if spell_absorbed_count <= 3:  # Debug first few
-                    print(f"SPELL_ABSORBED #{spell_absorbed_count}: type={type(event)}, amount={event.amount_absorbed}")
+                    print(
+                        f"SPELL_ABSORBED #{spell_absorbed_count}: type={type(event)}, amount={event.amount_absorbed}"
+                    )
                     print(f"  attacker_guid={getattr(event, 'attacker_guid', 'MISSING')}")
                     print(f"  absorber_guid={getattr(event, 'absorber_guid', 'MISSING')}")
                     print(f"  target_guid={getattr(event, 'target_guid', 'MISSING')}")
@@ -68,6 +70,10 @@ def test_damage_fixes():
                 characters[guid] = CharacterEventStream(
                     character_guid=guid, character_name=participant["name"]
                 )
+
+        print(f"Created {len(characters)} character streams:")
+        for guid, char in characters.items():
+            print(f"  {guid}: {char.character_name}")
 
         categorizer.set_character_streams(characters)
 
