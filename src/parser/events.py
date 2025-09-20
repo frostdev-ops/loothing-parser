@@ -641,18 +641,18 @@ class EventFactory:
             event.shield_spell_name = params[5]
             event.shield_spell_school = cls._safe_int(params[6])
 
-            # Amount absorbed
-            if len(params) >= 8:
-                event.amount_absorbed = cls._safe_int(params[7])
+            # Amount absorbed - corrected position based on actual log format
+            if len(params) >= 5:
+                event.amount_absorbed = cls._safe_int(params[4])
 
             # Debug first few events
-            if hasattr(cls, '_debug_count') and cls._debug_count < 3:
+            if hasattr(cls, "_debug_count") and cls._debug_count < 3:
                 print(f"DEBUG: SPELL_ABSORBED parsing")
                 print(f"  params length: {len(params)}")
                 print(f"  params[7] (amount): {params[7] if len(params) > 7 else 'MISSING'}")
                 print(f"  params: {params[:10] if len(params) >= 10 else params}")
                 cls._debug_count += 1
-            elif not hasattr(cls, '_debug_count'):
+            elif not hasattr(cls, "_debug_count"):
                 cls._debug_count = 1
 
         return event
