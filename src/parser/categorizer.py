@@ -302,9 +302,8 @@ class EventCategorizer:
         """Categorize damage absorption events."""
         categories = {}
 
-        # For SPELL_ABSORBED events, we need to check if this is an AbsorbEvent
-        # with proper absorber info, or extract it from a generic event
-        if hasattr(event, "absorber_guid") and event.absorber_guid:
+        # For SPELL_ABSORBED events, check if this is an AbsorbEvent with attacker info
+        if hasattr(event, "attacker_guid") and hasattr(event, "amount_absorbed"):
             # This is a properly parsed AbsorbEvent
 
             # CRITICAL: Credit the attacker with the absorbed damage as damage done
@@ -312,15 +311,17 @@ class EventCategorizer:
             if attacker_guid and self._is_tracked_character(attacker_guid):
                 categories[attacker_guid] = "damage_done_absorbed"
 
-            # Track who provided the shield
-            absorber_guid = self._resolve_pet_owner(event.absorber_guid)
-            if absorber_guid and self._is_tracked_character(absorber_guid):
-                categories[absorber_guid] = "damage_absorbed_by_shield"
+            # Track who provided the shield (if available)
+            if hasattr(event, "absorber_guid") and event.absorber_guid:
+                absorber_guid = self._resolve_pet_owner(event.absorber_guid)
+                if absorber_guid and self._is_tracked_character(absorber_guid):
+                    categories[absorber_guid] = "damage_absorbed_by_shield"
 
             # Track who was protected by the shield
-            target_guid = self._resolve_pet_owner(event.target_guid)
-            if target_guid and self._is_tracked_character(target_guid):
-                categories[target_guid] = "damage_absorbed_for_me"
+            if hasattr(event, "target_guid") and event.target_guid:
+                target_guid = self._resolve_pet_owner(event.target_guid)
+                if target_guid and self._is_tracked_character(target_guid):
+                    categories[target_guid] = "damage_absorbed_for_me"
 
         return categories
 
