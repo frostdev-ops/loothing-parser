@@ -98,17 +98,17 @@ class BaseEvent:
         if self.source_name and self.is_player_source():
             parsed = parse_character_name(self.source_name)
             # Keep original name and add parsed components
-            self.source_name = parsed['name']
-            self.source_server = parsed['server']
-            self.source_region = parsed['region']
+            self.source_name = parsed["name"]
+            self.source_server = parsed["server"]
+            self.source_region = parsed["region"]
 
         # Parse destination name if it's a player
         if self.dest_name and self.is_player_dest():
             parsed = parse_character_name(self.dest_name)
             # Keep original name and add parsed components
-            self.dest_name = parsed['name']
-            self.dest_server = parsed['server']
-            self.dest_region = parsed['region']
+            self.dest_name = parsed["name"]
+            self.dest_server = parsed["server"]
+            self.dest_region = parsed["region"]
 
     def get_source_full_name(self) -> Optional[str]:
         """Get the full source name with server and region."""
@@ -465,6 +465,9 @@ class EventFactory:
             event.dest_name = parsed_line.base_params[5]
             event.dest_flags = cls._safe_int(parsed_line.base_params[6])
             event.dest_raid_flags = cls._safe_int(parsed_line.base_params[7])
+
+        # Parse character names into components
+        event._parse_character_names()
 
         return event
 
