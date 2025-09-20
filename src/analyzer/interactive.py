@@ -398,9 +398,7 @@ class InteractiveAnalyzer:
 
             # Process fight events to populate metrics
             if characters and fight.events:
-                self._populate_character_metrics_from_events(
-                    characters, fight
-                )
+                self._populate_character_metrics_from_events(characters, fight)
 
             return characters if characters else None
 
@@ -482,8 +480,8 @@ class InteractiveAnalyzer:
             self._wait_for_key()
             return
 
-        # Create DPS rankings table
-        dps_rankings = self.metrics_calculator.get_dps_rankings(characters, fight.duration)
+        # Create DPS rankings table using combat time for more accurate metrics
+        dps_rankings = self.metrics_calculator.get_dps_rankings(characters, fight.duration, use_combat_time=True)
 
         # Main DPS table
         from rich.table import Table
@@ -554,8 +552,8 @@ class InteractiveAnalyzer:
             self._wait_for_key()
             return
 
-        # Create HPS rankings table
-        hps_rankings = self.metrics_calculator.get_hps_rankings(characters, fight.duration)
+        # Create HPS rankings table using combat time for more accurate metrics
+        hps_rankings = self.metrics_calculator.get_hps_rankings(characters, fight.duration, use_combat_time=True)
 
         if not hps_rankings:
             self.console.print("[yellow]No healing data found for this encounter[/yellow]")
