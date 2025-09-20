@@ -264,8 +264,7 @@ class InteractiveAnalyzer:
         self.console.print()
         choice = Prompt.ask(
             "Enter choice",
-            choices=["n", "p", "f", "b", "h", "q"]
-            + [str(i) for i in range(start + 1, end + 1)],
+            choices=["n", "p", "f", "b", "h", "q"] + [str(i) for i in range(start + 1, end + 1)],
             default="b",
         )
 
@@ -287,7 +286,7 @@ class InteractiveAnalyzer:
             self._show_help()
         elif choice.isdigit():
             # Select encounter
-            selected_index = int(choice) - 1 + start
+            selected_index = int(choice) - 1
             if 0 <= selected_index < len(self.filtered_fights):
                 self.navigation.selected_encounter_index = selected_index
                 self.navigation.navigate_to(ViewMode.ENCOUNTER_DETAIL)
