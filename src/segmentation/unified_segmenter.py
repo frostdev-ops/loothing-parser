@@ -326,6 +326,43 @@ class UnifiedSegmenter:
 
         self._finalize_encounter()
 
+    def _start_dungeon_boss(self, event: EncounterEvent):
+        """Start a dungeon boss fight within a M+ run."""
+        if not self.current_encounter:
+            return
+
+        # End the current trash segment
+        if self.current_encounter.current_fight:
+            self.current_encounter.end_fight(event.timestamp)
+
+        # Start the boss fight
+        boss_fight = self.current_encounter.start_fight(
+            f"Boss: {event.encounter_name}", event.timestamp
+        )
+        boss_fight.is_boss = True
+
+        logger.debug(f"Started dungeon boss: {event.encounter_name} in M+ run")
+
+    def _end_dungeon_boss(self, event: EncounterEvent):
+        """End a dungeon boss fight within a M+ run."""
+        if not self.current_encounter:
+            return
+
+        # End the boss fight
+        if self.current_encounter.current_fight:
+            self.current_encounter.end_fight(event.timestamp, event.success)
+
+        # Start a new trash segment if the run is not over
+        # (the M+ will end with CHALLENGE_MODE_END)
+        trash_number = len([f for f in self.current_encounter.fights if "Trash" in f.fight_name]) + 1
+        self.current_encounter.start_fight(
+            f"{self.current_encounter.encounter_name} - Trash ({trash_number})", event.timestamp
+        )
+
+        logger.debug(
+            f"Ended dungeon boss: {event.encounter_name} ({'Success' if event.success else 'Wipe'})"
+        )
+
     def _finalize_encounter(self):
         """Finalize the current encounter and calculate metrics."""
         if not self.current_encounter:
