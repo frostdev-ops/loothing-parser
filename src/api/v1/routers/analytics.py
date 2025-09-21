@@ -64,9 +64,7 @@ async def get_performance_trends(
             db_column
         )
 
-        cursor = db.execute(
-            query, (start_date.date().isoformat(), end_date.date().isoformat())
-        )
+        cursor = db.execute(query, (start_date.date().isoformat(), end_date.date().isoformat()))
         results = cursor.fetchall()
 
         data_points = []
@@ -224,12 +222,12 @@ async def get_class_balance(
                 c.class_name,
                 c.spec,
                 COUNT(DISTINCT cm.encounter_id) as encounter_count,
-                AVG(CAST(json_extract(cm.metrics_data, '$.damage_done') AS FLOAT)) as avg_damage,
-                AVG(CAST(json_extract(cm.metrics_data, '$.healing_done') AS FLOAT)) as avg_healing,
-                COUNT(DISTINCT c.id) as sample_size
+                AVG(cm.damage_done) as avg_damage,
+                AVG(cm.healing_done) as avg_healing,
+                COUNT(DISTINCT c.character_id) as sample_size
             FROM characters c
-            JOIN character_metrics cm ON c.id = cm.character_id
-            JOIN encounters e ON cm.encounter_id = e.id
+            JOIN character_metrics cm ON c.character_id = cm.character_id
+            JOIN encounters e ON cm.encounter_id = e.encounter_id
             WHERE e.start_time BETWEEN ? AND ?
             {}
             {}
