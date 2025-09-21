@@ -82,13 +82,14 @@ services:
 
   # Optional: Grafana for visualization
   grafana:
-    image: grafana/grafana:latest
+    build:
+      context: .
+      dockerfile: grafana.Dockerfile
     container_name: wow-combat-grafana
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
