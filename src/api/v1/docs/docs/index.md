@@ -13,28 +13,33 @@ The WoW Combat Log Analysis API enables developers to:
 - **Generate Analytics** with advanced aggregation and trending
 - **Search and Filter** data with powerful query capabilities
 - **Stream Real-time** updates via WebSocket connections
+- **Manage Guild Data** with multi-tenant architecture and data isolation
 
 ## Key Features
 
 ### 🔍 **Advanced Analytics**
+
 - Performance trending and forecasting
 - Class balance analysis
 - Cross-encounter comparisons
 - Percentile calculations and distributions
 
 ### 📊 **Comprehensive Data Model**
+
 - Character profiles with complete performance history
 - Detailed encounter analysis with timeline reconstruction
 - Guild management and progression tracking
 - Spell usage statistics and optimization insights
 
 ### 🚀 **High Performance**
+
 - Optimized database queries with intelligent caching
 - Rate limiting and performance monitoring
 - Parallel processing for large datasets
 - Real-time streaming capabilities
 
 ### 🔐 **Enterprise Ready**
+
 - Robust authentication with API keys
 - Comprehensive rate limiting
 - Detailed audit logging
@@ -90,15 +95,15 @@ Get started with the API in minutes:
 
 ## API Endpoints Overview
 
-| Category | Endpoints | Description |
-|----------|-----------|-------------|
-| **Characters** | `/characters` | Character profiles, performance, rankings |
-| **Encounters** | `/encounters` | Encounter details, replay, analysis |
-| **Analytics** | `/analytics` | Trends, comparisons, advanced metrics |
-| **Search** | `/search` | Full-text search, fuzzy matching |
+| Category         | Endpoints       | Description                               |
+| ---------------- | --------------- | ----------------------------------------- |
+| **Characters**   | `/characters`   | Character profiles, performance, rankings |
+| **Encounters**   | `/encounters`   | Encounter details, replay, analysis       |
+| **Analytics**    | `/analytics`    | Trends, comparisons, advanced metrics     |
+| **Search**       | `/search`       | Full-text search, fuzzy matching          |
 | **Aggregations** | `/aggregations` | Custom metrics, percentiles, correlations |
-| **Logs** | `/logs` | Upload, processing, streaming |
-| **Streaming** | `/stream` | Real-time WebSocket updates |
+| **Logs**         | `/logs`         | Upload, processing, streaming             |
+| **Streaming**    | `/stream`       | Real-time WebSocket updates               |
 
 ## Interactive API Explorer
 
@@ -106,35 +111,36 @@ Explore the API interactively with our built-in tools:
 
 <div class="grid cards" markdown>
 
--   :material-api: **OpenAPI Spec**
+- :material-api: **OpenAPI Spec**
 
-    ---
+  ***
 
-    Browse the complete OpenAPI specification with interactive examples
+  Browse the complete OpenAPI specification with interactive examples
 
-    [Explore API :octicons-arrow-right-24:](../openapi.yaml){ .md-button }
+  [Explore API :octicons-arrow-right-24:](../openapi.yaml){ .md-button }
 
--   :material-code-braces: **Swagger UI**
+- :material-code-braces: **Swagger UI**
 
-    ---
+  ***
 
-    Test endpoints directly in your browser with Swagger UI
+  Test endpoints directly in your browser with Swagger UI
 
-    [Try API :octicons-arrow-right-24:](/api/v1/docs){ .md-button }
+  [Try API :octicons-arrow-right-24:](/api/v1/docs){ .md-button }
 
--   :material-book-open: **ReDoc**
+- :material-book-open: **ReDoc**
 
-    ---
+  ***
 
-    Beautiful, responsive API documentation with ReDoc
+  Beautiful, responsive API documentation with ReDoc
 
-    [View Docs :octicons-arrow-right-24:](/api/v1/redoc){ .md-button }
+  [View Docs :octicons-arrow-right-24:](/api/v1/redoc){ .md-button }
 
 </div>
 
 ## Example Use Cases
 
 ### Performance Monitoring
+
 Track character performance across raids and dungeons:
 
 ```python
@@ -151,6 +157,7 @@ print(f"Performance trend: {improvement}")
 ```
 
 ### Guild Analytics
+
 Monitor guild progression and member performance:
 
 ```python
@@ -162,14 +169,15 @@ avg_performance = sum(m.performance.avg_dps for m in guild.members) / len(guild.
 ```
 
 ### Real-time Monitoring
+
 Stream live encounter data:
 
 ```javascript
-const ws = new WebSocket('wss://api.example.com/api/v1/stream');
+const ws = new WebSocket("wss://api.example.com/api/v1/stream");
 
-ws.on('encounter_update', (data) => {
-    console.log(`Live DPS: ${data.current_dps}`);
-    updateDashboard(data);
+ws.on("encounter_update", (data) => {
+  console.log(`Live DPS: ${data.current_dps}`);
+  updateDashboard(data);
 });
 ```
 
