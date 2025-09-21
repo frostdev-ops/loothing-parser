@@ -322,7 +322,7 @@ class EventCompressor:
             return msgpack.packb(data, use_bin_type=True)
         else:
             logger.warning("msgpack not available, using JSON fallback")
-            return json.dumps(data).encode('utf-8')
+            return json.dumps(data).encode("utf-8")
 
     def _deserialize_columnar(self, data: bytes) -> Dict[str, Any]:
         """
@@ -334,9 +334,15 @@ class EventCompressor:
         Returns:
             Columnar data dictionary
         """
-        import msgpack
-
-        return msgpack.unpackb(data, raw=False, strict_map_key=False)
+        # Use MessagePack if available, otherwise try JSON fallback
+        if HAS_MSGPACK:
+            try:
+                return msgpack.unpackb(data, raw=False, strict_map_key=False)
+            except Exception:
+                logger.warning("Failed to deserialize with msgpack, trying JSON")
+                return json.loads(data.decode('utf-8'))
+        else:
+            return json.loads(data.decode('utf-8'))
 
     def _intern_string(self, s: Optional[str]) -> int:
         """
