@@ -68,6 +68,8 @@ class EventCategorizer:
         self.pet_owners: Dict[str, tuple] = {}  # pet_guid -> (owner_guid, owner_name)
         self.processed_count = 0
         self.categorization_errors = 0
+        # Track seen swing attacks to prevent double counting when ACL is enabled
+        self.seen_swings: Set[str] = set()  # Set of swing attack signatures
 
     def set_character_streams(self, streams: Dict[str, CharacterEventStream]):
         """
