@@ -40,9 +40,9 @@ def analyze_damage_line():
     print()
 
     # Show the suffix params (where damage should be)
-    if "suffix_params" in parsed:
+    if hasattr(parsed, 'suffix_params'):
         print("Suffix parameters (damage info):")
-        for i, param in enumerate(parsed["suffix_params"][:15]):  # First 15 params
+        for i, param in enumerate(parsed.suffix_params[:15]):  # First 15 params
             print(f"  [{i}]: {param}")
         print()
 
@@ -66,7 +66,7 @@ def analyze_damage_line():
 
     # After the ACL params (19 fields), we have damage params
     # From the line: 442823,632603,-1,1,0,0,0,nil,nil,nil,AOE
-    suffix = parsed.get("suffix_params", [])
+    suffix = getattr(parsed, 'suffix_params', [])
     if len(suffix) > 20:
         # ACL detected (19 ACL params before damage)
         damage_start = 19
