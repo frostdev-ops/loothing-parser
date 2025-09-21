@@ -15,12 +15,12 @@ from ..models.encounters import (
     EncounterTimeline,
     EncounterComparison,
     DeathAnalysis,
-    ResourceUsage
+    ResourceUsage,
 )
 from ..models.responses import PaginatedResponse, ComparisonResponse
 from ..models.common import TimeRange, SortOrder
-from ...database.schema import DatabaseManager
-from ...database.query import QueryAPI
+from src.database.schema import DatabaseManager
+from src.database.query import QueryAPI
 
 router = APIRouter()
 
@@ -29,7 +29,9 @@ router = APIRouter()
 async def list_encounters(
     limit: int = Query(20, ge=1, le=100, description="Number of encounters per page"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    encounter_type: Optional[str] = Query(None, description="Filter by encounter type (raid/mythic_plus)"),
+    encounter_type: Optional[str] = Query(
+        None, description="Filter by encounter type (raid/mythic_plus)"
+    ),
     boss_name: Optional[str] = Query(None, description="Filter by boss name"),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty"),
     success: Optional[bool] = Query(None, description="Filter by success status"),
@@ -37,7 +39,7 @@ async def list_encounters(
     end_date: Optional[datetime] = Query(None, description="End date filter"),
     sort_by: str = Query("start_time", description="Sort field"),
     sort_order: SortOrder = Query(SortOrder.DESC, description="Sort order"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     List encounters with comprehensive filtering and pagination.
@@ -51,17 +53,17 @@ async def list_encounters(
         # Build filters
         filters = {}
         if encounter_type:
-            filters['encounter_type'] = encounter_type
+            filters["encounter_type"] = encounter_type
         if boss_name:
-            filters['boss_name'] = boss_name
+            filters["boss_name"] = boss_name
         if difficulty:
-            filters['difficulty'] = difficulty
+            filters["difficulty"] = difficulty
         if success is not None:
-            filters['success'] = success
+            filters["success"] = success
         if start_date:
-            filters['start_date'] = start_date.timestamp()
+            filters["start_date"] = start_date.timestamp()
         if end_date:
-            filters['end_date'] = end_date.timestamp()
+            filters["end_date"] = end_date.timestamp()
 
         # Get encounters with pagination
         encounters = query_api.get_encounters(
@@ -69,7 +71,7 @@ async def list_encounters(
             offset=offset,
             filters=filters,
             sort_by=sort_by,
-            sort_order=sort_order.value
+            sort_order=sort_order.value,
         )
 
         # Get total count for pagination
@@ -90,10 +92,10 @@ async def list_encounters(
                 "has_next": has_next,
                 "has_previous": has_previous,
                 "page": page,
-                "total_pages": total_pages
+                "total_pages": total_pages,
             },
             filters=filters,
-            sort={sort_by: sort_order.value}
+            sort={sort_by: sort_order.value},
         )
 
     except Exception as e:
@@ -102,8 +104,7 @@ async def list_encounters(
 
 @router.get("/encounters/{encounter_id}", response_model=EncounterDetail)
 async def get_encounter_detail(
-    encounter_id: int = Path(..., description="Encounter ID"),
-    db: DatabaseManager = Depends()
+    encounter_id: int = Path(..., description="Encounter ID"), db: DatabaseManager = Depends()
 ):
     """
     Get detailed encounter information.
@@ -117,10 +118,7 @@ async def get_encounter_detail(
         encounter = query_api.get_encounter_detail(encounter_id)
 
         if not encounter:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Encounter {encounter_id} not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Encounter {encounter_id} not found")
 
         return encounter
 
@@ -132,8 +130,7 @@ async def get_encounter_detail(
 
 @router.get("/encounters/{encounter_id}/replay", response_model=EncounterReplay)
 async def get_encounter_replay(
-    encounter_id: int = Path(..., description="Encounter ID"),
-    db: DatabaseManager = Depends()
+    encounter_id: int = Path(..., description="Encounter ID"), db: DatabaseManager = Depends()
 ):
     """
     Get encounter replay data for event-by-event analysis.
@@ -148,8 +145,7 @@ async def get_encounter_replay(
 
         if not replay:
             raise HTTPException(
-                status_code=404,
-                detail=f"No replay data found for encounter {encounter_id}"
+                status_code=404, detail=f"No replay data found for encounter {encounter_id}"
             )
 
         return replay
@@ -157,13 +153,14 @@ async def get_encounter_replay(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve encounter replay: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve encounter replay: {str(e)}"
+        )
 
 
 @router.get("/encounters/{encounter_id}/timeline", response_model=EncounterTimeline)
 async def get_encounter_timeline(
-    encounter_id: int = Path(..., description="Encounter ID"),
-    db: DatabaseManager = Depends()
+    encounter_id: int = Path(..., description="Encounter ID"), db: DatabaseManager = Depends()
 ):
     """
     Get encounter timeline visualization data.
@@ -178,8 +175,7 @@ async def get_encounter_timeline(
 
         if not timeline:
             raise HTTPException(
-                status_code=404,
-                detail=f"No timeline data found for encounter {encounter_id}"
+                status_code=404, detail=f"No timeline data found for encounter {encounter_id}"
             )
 
         return timeline
@@ -187,13 +183,14 @@ async def get_encounter_timeline(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve encounter timeline: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve encounter timeline: {str(e)}"
+        )
 
 
 @router.get("/encounters/{encounter_id}/deaths", response_model=DeathAnalysis)
 async def get_encounter_deaths(
-    encounter_id: int = Path(..., description="Encounter ID"),
-    db: DatabaseManager = Depends()
+    encounter_id: int = Path(..., description="Encounter ID"), db: DatabaseManager = Depends()
 ):
     """
     Get detailed death analysis for an encounter.
@@ -208,8 +205,7 @@ async def get_encounter_deaths(
 
         if not deaths:
             raise HTTPException(
-                status_code=404,
-                detail=f"No death data found for encounter {encounter_id}"
+                status_code=404, detail=f"No death data found for encounter {encounter_id}"
             )
 
         return deaths
@@ -217,13 +213,14 @@ async def get_encounter_deaths(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve encounter deaths: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve encounter deaths: {str(e)}"
+        )
 
 
 @router.get("/encounters/{encounter_id}/resources", response_model=ResourceUsage)
 async def get_encounter_resources(
-    encounter_id: int = Path(..., description="Encounter ID"),
-    db: DatabaseManager = Depends()
+    encounter_id: int = Path(..., description="Encounter ID"), db: DatabaseManager = Depends()
 ):
     """
     Get resource usage analysis for an encounter.
@@ -238,8 +235,7 @@ async def get_encounter_resources(
 
         if not resources:
             raise HTTPException(
-                status_code=404,
-                detail=f"No resource data found for encounter {encounter_id}"
+                status_code=404, detail=f"No resource data found for encounter {encounter_id}"
             )
 
         return resources
@@ -247,13 +243,15 @@ async def get_encounter_resources(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve encounter resources: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve encounter resources: {str(e)}"
+        )
 
 
 @router.post("/encounters/compare", response_model=EncounterComparison)
 async def compare_encounters(
     encounter_ids: List[int] = Query(..., description="Encounter IDs to compare"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     Compare multiple encounters for analysis.
@@ -266,16 +264,14 @@ async def compare_encounters(
 
         if len(encounter_ids) < 2:
             raise HTTPException(
-                status_code=400,
-                detail="At least 2 encounters required for comparison"
+                status_code=400, detail="At least 2 encounters required for comparison"
             )
 
         comparison = query_api.compare_encounters(encounter_ids)
 
         if not comparison:
             raise HTTPException(
-                status_code=404,
-                detail="Unable to generate comparison for the specified encounters"
+                status_code=404, detail="Unable to generate comparison for the specified encounters"
             )
 
         return comparison
@@ -288,8 +284,7 @@ async def compare_encounters(
 
 @router.get("/encounters/{encounter_id}/participants")
 async def get_encounter_participants(
-    encounter_id: int = Path(..., description="Encounter ID"),
-    db: DatabaseManager = Depends()
+    encounter_id: int = Path(..., description="Encounter ID"), db: DatabaseManager = Depends()
 ):
     """
     Get list of participants for an encounter.
@@ -304,8 +299,7 @@ async def get_encounter_participants(
 
         if not participants:
             raise HTTPException(
-                status_code=404,
-                detail=f"No participants found for encounter {encounter_id}"
+                status_code=404, detail=f"No participants found for encounter {encounter_id}"
             )
 
         return {"encounter_id": encounter_id, "participants": participants}
@@ -313,13 +307,14 @@ async def get_encounter_participants(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve encounter participants: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve encounter participants: {str(e)}"
+        )
 
 
 @router.get("/encounters/{encounter_id}/summary")
 async def get_encounter_summary(
-    encounter_id: int = Path(..., description="Encounter ID"),
-    db: DatabaseManager = Depends()
+    encounter_id: int = Path(..., description="Encounter ID"), db: DatabaseManager = Depends()
 ):
     """
     Get encounter performance summary.
@@ -334,8 +329,7 @@ async def get_encounter_summary(
 
         if not summary:
             raise HTTPException(
-                status_code=404,
-                detail=f"No summary data found for encounter {encounter_id}"
+                status_code=404, detail=f"No summary data found for encounter {encounter_id}"
             )
 
         return summary
@@ -343,4 +337,6 @@ async def get_encounter_summary(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve encounter summary: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve encounter summary: {str(e)}"
+        )
