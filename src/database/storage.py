@@ -217,7 +217,7 @@ class EventStorage:
                 "storage_time": storage_time,
                 "file_hash": file_hash,
                 "characters_stored": len(
-                    set(char.guid for enc in encounters for char in enc.characters.values())
+                    set(char.character_guid for enc in encounters for char in enc.characters.values())
                 ),
             }
 
