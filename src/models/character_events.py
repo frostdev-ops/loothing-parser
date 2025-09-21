@@ -192,32 +192,42 @@ class CharacterEventStream:
         if category == "damage_done" and (
             isinstance(event, DamageEvent) or "_DAMAGE" in event.event_type
         ):
-
-            self.damage_done.append(event)
-            # Only count actual damage, not overkill (matches Details addon behavior)
-            amount = getattr(event, "amount", 0)
-            self.total_damage_done += amount
-            logger.debug(
-                f"Added damage_done: {amount}, total now: {self.total_damage_done}, isinstance: {isinstance(event, DamageEvent)}"
-            )
-            # Track overkill separately
-            overkill = getattr(event, "overkill", 0)
-            if overkill > 0:
-                self.total_overkill_done += overkill
+            # Ensure we have a valid DamageEvent with amount data
+            if isinstance(event, DamageEvent):
+                self.damage_done.append(event)
+                # Only count actual damage, not overkill (matches Details addon behavior)
+                amount = event.amount if hasattr(event, 'amount') else 0
+                self.total_damage_done += amount
+                logger.debug(
+                    f"Added damage_done: {amount}, total now: {self.total_damage_done}, event_type: {event.event_type}"
+                )
+                # Track overkill separately
+                if hasattr(event, 'overkill') and event.overkill > 0:
+                    self.total_overkill_done += event.overkill
+            else:
+                logger.warning(
+                    f"damage_done event is not DamageEvent instance: {type(event)}, event_type: {event.event_type}"
+                )
 
         elif category == "healing_done" and (
             isinstance(event, HealEvent) or "_HEAL" in event.event_type
         ):
-            self.healing_done.append(event)
-            # Use effective healing (excluding overhealing) to match WoW's "Healing Done" metric
-            amount = getattr(event, "amount", 0)
-            overhealing = getattr(event, "overhealing", 0)
-            effective_healing = amount - overhealing
-            self.total_healing_done += effective_healing
-            self.total_overhealing += overhealing
-            logger.debug(
-                f"Added healing_done: {effective_healing} (effective), total now: {self.total_healing_done}, isinstance: {isinstance(event, HealEvent)}"
-            )
+            # Ensure we have a valid HealEvent with amount data
+            if isinstance(event, HealEvent):
+                self.healing_done.append(event)
+                # Use effective healing (excluding overhealing) to match WoW's "Healing Done" metric
+                amount = event.amount if hasattr(event, 'amount') else 0
+                overhealing = event.overhealing if hasattr(event, 'overhealing') else 0
+                effective_healing = max(0, amount - overhealing)  # Ensure non-negative
+                self.total_healing_done += effective_healing
+                self.total_overhealing += overhealing
+                logger.debug(
+                    f"Added healing_done: {effective_healing} (effective), total now: {self.total_healing_done}, event_type: {event.event_type}"
+                )
+            else:
+                logger.warning(
+                    f"healing_done event is not HealEvent instance: {type(event)}, event_type: {event.event_type}"
+                )
 
         elif category == "damage_taken" and isinstance(event, DamageEvent):
             self.damage_taken.append(event)
@@ -287,11 +297,17 @@ class CharacterEventStream:
 
     def get_dps(self, duration: float) -> float:
         """Calculate DPS over a duration."""
-        return self.total_damage_done / duration if duration > 0 else 0
+        if duration <= 0:
+            return 0.0
+        dps = self.total_damage_done / duration
+        return round(dps, 2)
 
     def get_hps(self, duration: float) -> float:
         """Calculate HPS over a duration."""
-        return self.total_healing_done / duration if duration > 0 else 0
+        if duration <= 0:
+            return 0.0
+        hps = self.total_healing_done / duration
+        return round(hps, 2)
 
     def get_dtps(self, duration: float) -> float:
         """Calculate damage taken per second."""
@@ -300,12 +316,18 @@ class CharacterEventStream:
     def get_combat_dps(self, combat_time: Optional[float] = None) -> float:
         """Calculate DPS during combat periods only."""
         duration = combat_time if combat_time is not None else self.combat_time
-        return self.total_damage_done / duration if duration > 0 else 0
+        if duration <= 0:
+            return 0.0
+        combat_dps = self.total_damage_done / duration
+        return round(combat_dps, 2)
 
     def get_combat_hps(self, combat_time: Optional[float] = None) -> float:
         """Calculate HPS during combat periods only."""
         duration = combat_time if combat_time is not None else self.combat_time
-        return self.total_healing_done / duration if duration > 0 else 0
+        if duration <= 0:
+            return 0.0
+        combat_hps = self.total_healing_done / duration
+        return round(combat_hps, 2)
 
     def get_combat_dtps(self, combat_time: Optional[float] = None) -> float:
         """Calculate damage taken per second during combat periods only."""
