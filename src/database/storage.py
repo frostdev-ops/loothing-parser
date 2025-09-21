@@ -495,14 +495,14 @@ class EventStorage:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                character.character_guid,
-                character.character_name,
-                getattr(character, "server", None),
-                getattr(character, "region", None),
-                getattr(character, "class_name", None),
-                getattr(character, "spec_name", None),
-                datetime.now().isoformat(),
-                datetime.now().isoformat(),
+                safe_param(character.character_guid),
+                safe_param(character.character_name),
+                safe_param(getattr(character, "server", None)),
+                safe_param(getattr(character, "region", None)),
+                safe_param(getattr(character, "class_name", None)),
+                safe_param(getattr(character, "spec_name", None)),
+                safe_param(datetime.now().isoformat()),
+                safe_param(datetime.now().isoformat()),
             ),
         )
 
