@@ -12,6 +12,8 @@ from src.parser.events import BaseEvent
 from src.models.enhanced_character import EnhancedCharacter
 from src.models.combat_periods import CombatPeriod
 
+logger = logging.getLogger(__name__)
+
 
 class EncounterType(Enum):
     """Type of encounter."""
