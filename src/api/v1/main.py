@@ -172,12 +172,11 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
     )
 
     app.include_router(
-        export.router, prefix="/api/v1", tags=["Export"], dependencies=[db_dependency.dependency]
+        export.router, tags=["Export"], dependencies=[db_dependency.dependency]
     )
 
     app.include_router(
         webhooks.router,
-        prefix="/api/v1",
         tags=["Webhooks"],
         dependencies=[db_dependency.dependency],
     )
