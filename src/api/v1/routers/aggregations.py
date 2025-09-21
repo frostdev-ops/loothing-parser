@@ -12,8 +12,8 @@ from pydantic import BaseModel, Field
 
 from ..models.responses import PaginatedResponse, TimeSeriesResponse
 from ..models.common import TimeRange, FilterCriteria
-from ...database.schema import DatabaseManager
-from ...database.query import QueryAPI
+from src.database.schema import DatabaseManager
+from src.database.query import QueryAPI
 from ..dependencies import require_read_permission
 
 router = APIRouter()
@@ -33,9 +33,7 @@ class AggregationRequest(BaseModel):
     percentiles: List[float] = Field(
         default=[50, 75, 90, 95, 99], description="Percentiles to calculate"
     )
-    include_samples: bool = Field(
-        default=False, description="Include raw sample data"
-    )
+    include_samples: bool = Field(default=False, description="Include raw sample data")
 
 
 class PercentileData(BaseModel):
@@ -158,9 +156,7 @@ async def get_percentiles(
         # Parse percentiles
         percentile_list = [float(p.strip()) for p in percentiles.split(",")]
         if any(p < 0 or p > 100 for p in percentile_list):
-            raise HTTPException(
-                status_code=400, detail="Percentiles must be between 0 and 100"
-            )
+            raise HTTPException(status_code=400, detail="Percentiles must be between 0 and 100")
 
         # Build filters
         filters = {"days": days}
@@ -190,9 +186,7 @@ async def get_percentiles(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Percentile calculation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Percentile calculation failed: {str(e)}")
 
 
 @router.get("/aggregations/moving-averages/{metric}")
@@ -242,9 +236,7 @@ async def get_moving_averages(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Moving average calculation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Moving average calculation failed: {str(e)}")
 
 
 @router.post("/aggregations/composite-metrics")
@@ -276,9 +268,7 @@ async def calculate_composite_metrics(
 
         # Validate weight configuration
         if abs(sum(weight_config.values()) - 1.0) > 0.01:
-            raise HTTPException(
-                status_code=400, detail="Weights must sum to 1.0"
-            )
+            raise HTTPException(status_code=400, detail="Weights must sum to 1.0")
 
         # Build filters
         filters = {"days": days}
@@ -371,9 +361,7 @@ async def cross_encounter_comparison(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Cross-encounter comparison failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Cross-encounter comparison failed: {str(e)}")
 
 
 @router.get("/aggregations/bracket-analysis/{metric}")
@@ -430,17 +418,13 @@ async def bracket_analysis(
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Bracket analysis failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Bracket analysis failed: {str(e)}")
 
 
 @router.get("/aggregations/correlation-analysis")
 async def correlation_analysis(
     primary_metric: str = Query(..., description="Primary metric to analyze"),
-    secondary_metrics: str = Query(
-        ..., description="Comma-separated list of metrics to correlate"
-    ),
+    secondary_metrics: str = Query(..., description="Comma-separated list of metrics to correlate"),
     character_name: Optional[str] = Query(None),
     class_name: Optional[str] = Query(None),
     encounter_type: Optional[str] = Query(None),
@@ -488,6 +472,4 @@ async def correlation_analysis(
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Correlation analysis failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Correlation analysis failed: {str(e)}")
