@@ -203,6 +203,12 @@ class StreamingServer:
                 elif message.type == "checkpoint":
                     await self._handle_checkpoint(websocket, session, message)
 
+                elif message.type == "subscribe_upload":
+                    await self._handle_upload_subscription(websocket, session, message)
+
+                elif message.type == "unsubscribe_upload":
+                    await self._handle_upload_unsubscription(websocket, session, message)
+
                 else:
                     logger.warning(f"Unknown message type: {message.type}")
 
