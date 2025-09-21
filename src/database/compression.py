@@ -6,13 +6,27 @@ using zstd compression with event-specific optimizations.
 """
 
 import struct
-import zstd
 import json
 import logging
 from typing import List, Dict, Any, Optional, Tuple, Union
 from dataclasses import asdict
 from datetime import datetime
 import time
+
+# Optional imports - handle missing dependencies gracefully
+try:
+    import zstd
+    HAS_ZSTD = True
+except ImportError:
+    HAS_ZSTD = False
+    zstd = None
+
+try:
+    import msgpack
+    HAS_MSGPACK = True
+except ImportError:
+    HAS_MSGPACK = False
+    msgpack = None
 
 from src.models.character_events import TimestampedEvent, CharacterEventStream
 from src.parser.events import BaseEvent, DamageEvent, HealEvent, AuraEvent
