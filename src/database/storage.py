@@ -97,16 +97,12 @@ class EventStorage:
             logger.info(f"Storing {total_encounters} encounters from {log_file_path}")
 
             # Register log file
-            log_file_id = self._register_log_file(
-                log_file_path, file_hash, total_encounters
-            )
+            log_file_id = self._register_log_file(log_file_path, file_hash, total_encounters)
 
             # Store raid encounters
             for raid in raids:
                 encounter_id = self._store_encounter(raid, log_file_id, "raid")
-                total_events += self._store_character_streams(
-                    encounter_id, raid.characters
-                )
+                total_events += self._store_character_streams(encounter_id, raid.characters)
 
             # Store M+ runs
             for mplus in mythic_plus:
@@ -441,15 +437,9 @@ class EventStorage:
                 char_stream.death_count,
                 char_stream.activity_percentage,
                 char_stream.time_alive,
-                char_stream.get_dps(
-                    char_stream.time_alive if char_stream.time_alive > 0 else 1
-                ),
-                char_stream.get_hps(
-                    char_stream.time_alive if char_stream.time_alive > 0 else 1
-                ),
-                char_stream.get_dtps(
-                    char_stream.time_alive if char_stream.time_alive > 0 else 1
-                ),
+                char_stream.get_dps(char_stream.time_alive if char_stream.time_alive > 0 else 1),
+                char_stream.get_hps(char_stream.time_alive if char_stream.time_alive > 0 else 1),
+                char_stream.get_dtps(char_stream.time_alive if char_stream.time_alive > 0 else 1),
                 len(char_stream.all_events),
                 len(char_stream.casts_succeeded),
             ),
@@ -582,9 +572,7 @@ class EventStorage:
                 ),
             )
 
-    def _register_log_file(
-        self, file_path: str, file_hash: str, encounter_count: int
-    ) -> int:
+    def _register_log_file(self, file_path: str, file_hash: str, encounter_count: int) -> int:
         """Register log file and return file_id."""
         file_size = Path(file_path).stat().st_size
 
@@ -617,15 +605,20 @@ class EventStorage:
 
     def _load_caches(self):
         """Load character and file caches from database."""
-        # Load character cache
-        cursor = self.db.execute("SELECT character_guid, character_id FROM characters")
-        for row in cursor:
-            self.character_cache[row[0]] = row[1]
+        try:
+            # Load character cache if table exists
+            if self.db.table_exists("characters"):
+                cursor = self.db.execute("SELECT character_guid, character_id FROM characters")
+                for row in cursor:
+                    self.character_cache[row[0]] = row[1]
 
-        # Load file cache
-        cursor = self.db.execute("SELECT file_hash FROM log_files")
-        for row in cursor:
-            self.file_cache.add(row[0])
+            # Load file cache if table exists
+            if self.db.table_exists("log_files"):
+                cursor = self.db.execute("SELECT file_hash FROM log_files")
+                for row in cursor:
+                    self.file_cache.add(row[0])
+        except Exception as e:
+            logger.warning(f"Failed to load caches (will continue with empty caches): {e}")
 
         logger.info(
             f"Loaded caches: {len(self.character_cache)} characters, "
