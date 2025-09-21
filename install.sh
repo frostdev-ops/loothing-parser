@@ -332,7 +332,7 @@ services:
       - RELOAD=true
       - DEBUG=true
       - LOG_LEVEL=debug
-    command: ["python", "-m", "src.api.streaming_server", "--reload"]
+    command: ["python", "/app/src/api/streaming_server.py"]
 
   nginx:
     volumes:
