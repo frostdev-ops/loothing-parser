@@ -315,6 +315,81 @@ class StreamingServer:
         )
         await websocket.send_text(response.model_dump_json())
 
+    async def _handle_upload_subscription(
+        self, websocket: WebSocket, session: StreamSession, message: StreamMessage
+    ):
+        """Handle upload subscription message."""
+        try:
+            upload_id = message.metadata.get("upload_id") if message.metadata else None
+            if not upload_id:
+                error_response = StreamResponse(
+                    type="error",
+                    message="Missing upload_id in metadata"
+                )
+                await websocket.send_text(error_response.model_dump_json())
+                return
+
+            # Get WebSocket notifier and subscribe
+            from .v1.services.websocket_notifier import get_websocket_notifier
+            notifier = get_websocket_notifier()
+
+            # Set up WebSocket connections reference if not already done
+            notifier.set_websocket_connections(self._websocket_connections)
+
+            # Subscribe to upload progress
+            notifier.subscribe_to_upload(session.session_id, upload_id)
+
+            response = StreamResponse(
+                type="status",
+                message="Subscribed to upload progress",
+                data={"upload_id": upload_id, "session_id": session.session_id}
+            )
+            await websocket.send_text(response.model_dump_json())
+
+            logger.debug(f"Session {session.session_id} subscribed to upload {upload_id}")
+
+        except Exception as e:
+            error_response = StreamResponse(
+                type="error",
+                message=f"Failed to subscribe to upload: {str(e)}"
+            )
+            await websocket.send_text(error_response.model_dump_json())
+
+    async def _handle_upload_unsubscription(
+        self, websocket: WebSocket, session: StreamSession, message: StreamMessage
+    ):
+        """Handle upload unsubscription message."""
+        try:
+            upload_id = message.metadata.get("upload_id") if message.metadata else None
+            if not upload_id:
+                error_response = StreamResponse(
+                    type="error",
+                    message="Missing upload_id in metadata"
+                )
+                await websocket.send_text(error_response.model_dump_json())
+                return
+
+            # Get WebSocket notifier and unsubscribe
+            from .v1.services.websocket_notifier import get_websocket_notifier
+            notifier = get_websocket_notifier()
+            notifier.unsubscribe_from_upload(session.session_id, upload_id)
+
+            response = StreamResponse(
+                type="status",
+                message="Unsubscribed from upload progress",
+                data={"upload_id": upload_id, "session_id": session.session_id}
+            )
+            await websocket.send_text(response.model_dump_json())
+
+            logger.debug(f"Session {session.session_id} unsubscribed from upload {upload_id}")
+
+        except Exception as e:
+            error_response = StreamResponse(
+                type="error",
+                message=f"Failed to unsubscribe from upload: {str(e)}"
+            )
+            await websocket.send_text(error_response.model_dump_json())
+
     async def _cleanup_websocket_connection(
         self, session_id: str, context_id: Optional[str] = None
     ):
