@@ -257,9 +257,10 @@ def test_database_storage():
 
     encounter.add_character(character)
 
-    # Store encounter data
+    # Store encounter data using EventStorage
     try:
-        store_encounter_data(db, encounter)
+        storage = EventStorage(db)
+        storage._store_encounter(encounter, encounter.characters)
         logger.info("✓ Database storage successful")
 
         # Verify stored data
