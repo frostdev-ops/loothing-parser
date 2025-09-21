@@ -205,7 +205,7 @@ Now let's look at character performance data:
 
 ## Step 5: Explore Encounters
 
-Analyze specific encounters:
+Analyze specific encounters for your guild:
 
 ### List Recent Encounters
 
