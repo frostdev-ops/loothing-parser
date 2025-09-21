@@ -442,7 +442,9 @@ class EventFactory:
             event = cls._create_base_event(parsed_line)
 
         # Add suffix-specific data
-        if ("_DAMAGE" in event_type or event_type in ["RANGE_DAMAGE"]) and event_type not in ["SWING_DAMAGE_LANDED", "DAMAGE_SPLIT"]:
+        if ("_DAMAGE" in event_type or event_type in ["RANGE_DAMAGE"]) and event_type not in [
+            "DAMAGE_SPLIT",
+        ]:
             event = cls._add_damage_info(event, parsed_line.suffix_params)
         elif "_HEAL" in event_type and event_type != "SPELL_HEAL_ABSORBED":
             event = cls._add_heal_info(event, parsed_line.suffix_params)
