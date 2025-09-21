@@ -110,6 +110,8 @@ class AuthManager:
         self,
         client_id: str,
         description: str,
+        guild_id: Optional[int] = None,
+        guild_name: Optional[str] = None,
         permissions: Optional[Set[str]] = None,
         events_per_minute: int = 10000,
         max_connections: int = 5,
@@ -120,6 +122,8 @@ class AuthManager:
         Args:
             client_id: Unique client identifier
             description: Human-readable description
+            guild_id: Guild ID for multi-tenant access
+            guild_name: Guild name for display
             permissions: Set of permissions (defaults to default_permissions)
             events_per_minute: Rate limit for events
             max_connections: Maximum concurrent connections
@@ -139,13 +143,15 @@ class AuthManager:
             key_hash=self._hash_key(key),
             client_id=client_id,
             description=description,
+            guild_id=guild_id,
+            guild_name=guild_name,
             permissions=permissions,
             events_per_minute=events_per_minute,
             max_connections=max_connections,
         )
 
         self._api_keys[key_id] = api_key
-        logger.info(f"Generated API key {key_id} for client {client_id}")
+        logger.info(f"Generated API key {key_id} for client {client_id} (guild: {guild_name})")
 
         return key_id, key
 
