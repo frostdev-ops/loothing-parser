@@ -118,7 +118,13 @@ class StreamingServer:
             await websocket.close(code=4001, reason="Authentication failed")
             return
 
+        # Validate guild_id is present
+        if auth_response.guild_id is None:
+            await websocket.close(code=4003, reason="Guild ID required for streaming")
+            return
+
         client_id = auth_response.client_id
+        guild_id = auth_response.guild_id
         session_id = str(uuid.uuid4())
 
         # Check rate limits
@@ -131,9 +137,12 @@ class StreamingServer:
         await websocket.accept()
 
         try:
-            # Create session
+            # Create session with guild context
             session = self.session_manager.create_session(
-                client_id=client_id, session_id=session_id, api_key=api_key
+                client_id=client_id,
+                session_id=session_id,
+                api_key=api_key,
+                guild_id=guild_id
             )
 
             session.websocket_connected = True
@@ -559,21 +568,33 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
         if "database" in db_stats:
             # Handle nested database stats
             db_info = db_stats["database"]
-            metrics.append(f"loothing_database_encounters_total {db_info.get('total_encounters', 0)}")
-            metrics.append(f"loothing_database_characters_total {db_info.get('total_characters', 0)}")
+            metrics.append(
+                f"loothing_database_encounters_total {db_info.get('total_encounters', 0)}"
+            )
+            metrics.append(
+                f"loothing_database_characters_total {db_info.get('total_characters', 0)}"
+            )
             metrics.append(f"loothing_database_blocks_total {db_info.get('total_blocks', 0)}")
             metrics.append(f"loothing_database_events_total {db_info.get('total_events', 0)}")
-            metrics.append(f"loothing_database_compressed_bytes {db_info.get('total_compressed_bytes', 0)}")
+            metrics.append(
+                f"loothing_database_compressed_bytes {db_info.get('total_compressed_bytes', 0)}"
+            )
             metrics.append(
                 f"loothing_database_uncompressed_bytes {db_info.get('total_uncompressed_bytes', 0)}"
             )
         else:
             # Fallback for flat structure
-            metrics.append(f"loothing_database_encounters_total {db_stats.get('total_encounters', 0)}")
-            metrics.append(f"loothing_database_characters_total {db_stats.get('total_characters', 0)}")
+            metrics.append(
+                f"loothing_database_encounters_total {db_stats.get('total_encounters', 0)}"
+            )
+            metrics.append(
+                f"loothing_database_characters_total {db_stats.get('total_characters', 0)}"
+            )
             metrics.append(f"loothing_database_blocks_total {db_stats.get('total_blocks', 0)}")
             metrics.append(f"loothing_database_events_total {db_stats.get('total_events', 0)}")
-            metrics.append(f"loothing_database_compressed_bytes {db_stats.get('total_compressed_bytes', 0)}")
+            metrics.append(
+                f"loothing_database_compressed_bytes {db_stats.get('total_compressed_bytes', 0)}"
+            )
             metrics.append(
                 f"loothing_database_uncompressed_bytes {db_stats.get('total_uncompressed_bytes', 0)}"
             )
