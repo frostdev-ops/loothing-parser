@@ -21,6 +21,7 @@ sys.path.insert(0, "/app")
 from src.parser.events import EventFactory, DamageEvent, HealEvent
 from src.parser.tokenizer import ParsedLine
 from src.models.character_events import CharacterEventStream
+from src.models.enhanced_character import EnhancedCharacter
 from src.database.schema import DatabaseManager, create_tables
 from src.database.storage import EventStorage
 from src.models.unified_encounter import UnifiedEncounter, EncounterType
