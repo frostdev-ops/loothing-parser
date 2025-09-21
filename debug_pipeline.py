@@ -264,15 +264,13 @@ def test_database_storage():
     logger.info(f"Encounter type: {type(encounter)}")
     logger.info(f"Encounter methods: {[m for m in dir(encounter) if 'add' in m]}")
 
-    # Check if method exists
-    if hasattr(encounter, 'add_player'):
-        encounter.add_player("Player-1234-56789ABC", character)
+    # Use the correct method name - add_character instead of add_player
+    if hasattr(encounter, "add_character"):
+        encounter.add_character("Player-1234-56789ABC", "TestPlayer")
+    elif hasattr(encounter, "players"):
+        encounter.players["Player-1234-56789ABC"] = character
     else:
-        # Alternative method names
-        if hasattr(encounter, 'players'):
-            encounter.players["Player-1234-56789ABC"] = character
-        else:
-            logger.error("Cannot add player to encounter - no suitable method found")
+        logger.error("Cannot add player to encounter - no suitable method found")
 
     # Store encounter data using EventStorage
     try:
