@@ -111,11 +111,15 @@ def _migrate_character_schema(db: DatabaseManager) -> None:
     Args:
         db: Database manager instance
     """
+    # Only run migration if characters table exists
+    if not db.table_exists("characters"):
+        return
+
     # Check if old schema exists (has realm column but no server/region)
     cursor = db.execute("PRAGMA table_info(characters)")
     columns = {row[1]: row[2] for row in cursor.fetchall()}
 
-    if 'realm' in columns and 'server' not in columns:
+    if "realm" in columns and "server" not in columns:
         logger.info("Migrating characters table to new schema with server/region columns")
 
         # Add new columns
@@ -125,28 +129,28 @@ def _migrate_character_schema(db: DatabaseManager) -> None:
         # Migrate existing data: parse realm column for server-region format
         from src.models.character import parse_character_name
 
-        cursor = db.execute("SELECT character_id, character_name, realm FROM characters WHERE realm IS NOT NULL")
+        cursor = db.execute(
+            "SELECT character_id, character_name, realm FROM characters WHERE realm IS NOT NULL"
+        )
         for char_id, char_name, realm in cursor.fetchall():
             # Try to parse the realm as server-region or just server
-            if realm and '-' in realm:
-                parts = realm.split('-')
+            if realm and "-" in realm:
+                parts = realm.split("-")
                 if len(parts) == 2:
                     server, region = parts
                     db.execute(
                         "UPDATE characters SET server = ?, region = ? WHERE character_id = ?",
-                        (server, region, char_id)
+                        (server, region, char_id),
                     )
                 else:
                     # Just use as server
                     db.execute(
-                        "UPDATE characters SET server = ? WHERE character_id = ?",
-                        (realm, char_id)
+                        "UPDATE characters SET server = ? WHERE character_id = ?", (realm, char_id)
                     )
             else:
                 # Use as server
                 db.execute(
-                    "UPDATE characters SET server = ? WHERE character_id = ?",
-                    (realm, char_id)
+                    "UPDATE characters SET server = ? WHERE character_id = ?", (realm, char_id)
                 )
 
         logger.info("Character schema migration completed")
