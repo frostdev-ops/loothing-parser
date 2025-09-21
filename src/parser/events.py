@@ -760,7 +760,7 @@ class EventFactory:
         if len(params) >= min_params_needed:
             pre_mitigation_damage = cls._safe_int(params[damage_offset])
             actual_damage = cls._safe_int(params[damage_offset + 1])
-            damage_event.amount = actual_damage  # Actual damage dealt (what target took)
+            damage_event.amount = pre_mitigation_damage  # Use position 19 - the actual damage after mitigation
             damage_event.overkill = 0  # Overkill not available in Advanced Combat Logging
             damage_event.school = cls._safe_int(params[damage_offset + 2])
             damage_event.resisted = cls._safe_int(params[damage_offset + 3])
@@ -773,7 +773,9 @@ class EventFactory:
             damage_event.glancing = bool(params[damage_offset + 7])
             damage_event.crushing = bool(params[damage_offset + 8])
 
-        logger.debug(f"Returning DamageEvent type: {type(damage_event).__name__}, amount: {damage_event.amount}")
+        logger.debug(
+            f"Returning DamageEvent type: {type(damage_event).__name__}, amount: {damage_event.amount}"
+        )
         return damage_event
 
     @classmethod
