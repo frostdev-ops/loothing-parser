@@ -156,6 +156,94 @@ def _migrate_character_schema(db: DatabaseManager) -> None:
         logger.info("Character schema migration completed")
 
 
+def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
+    """
+    Migrate database to version 2 with guild support.
+
+    Args:
+        db: Database manager instance
+    """
+    # Check current schema version
+    cursor = db.execute("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
+    current_version = cursor.fetchone()
+
+    if current_version and current_version[0] >= 2:
+        return  # Already at v2 or higher
+
+    logger.info("Migrating database to version 2 (guild multi-tenancy)")
+
+    # Create guilds table if it doesn't exist
+    if not db.table_exists("guilds"):
+        db.execute("""
+            CREATE TABLE guilds (
+                guild_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_name TEXT NOT NULL,
+                server TEXT NOT NULL,
+                region TEXT NOT NULL,
+                faction TEXT CHECK(faction IN ('Alliance', 'Horde')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE,
+                UNIQUE(guild_name, server, region)
+            )
+        """)
+
+        # Create default guild for existing data
+        db.execute("""
+            INSERT INTO guilds (guild_id, guild_name, server, region, faction)
+            VALUES (1, 'Default Guild', 'Unknown', 'US', NULL)
+        """)
+
+    # Add guild_id columns to existing tables
+    tables_to_migrate = ['log_files', 'encounters', 'characters', 'character_metrics']
+
+    for table in tables_to_migrate:
+        if db.table_exists(table):
+            # Check if guild_id column already exists
+            cursor = db.execute(f"PRAGMA table_info({table})")
+            columns = {row[1]: row[2] for row in cursor.fetchall()}
+
+            if 'guild_id' not in columns:
+                logger.info(f"Adding guild_id column to {table}")
+                db.execute(f"ALTER TABLE {table} ADD COLUMN guild_id INTEGER NOT NULL DEFAULT 1")
+
+                # Add foreign key constraint (SQLite doesn't support adding FK constraints to existing tables)
+                # This would need to be done manually in production or with table recreation
+
+    # Create new multi-tenant indexes
+    indexes_to_create = [
+        "CREATE INDEX IF NOT EXISTS idx_guild_lookup ON guilds(guild_name, server, region)",
+        "CREATE INDEX IF NOT EXISTS idx_guild_active ON guilds(is_active, created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_log_guild ON log_files(guild_id, processed_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id, start_time DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id, boss_name, difficulty, start_time DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id, encounter_type, success, start_time DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id, instance_name, difficulty)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_progression ON encounters(guild_id, difficulty, success, start_time DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_name ON characters(guild_id, character_name, server)",
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_class ON characters(guild_id, class_name, spec_name)",
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_active ON characters(guild_id, last_seen DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_performance ON character_metrics(guild_id, dps DESC) WHERE dps > 0",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_healing ON character_metrics(guild_id, hps DESC) WHERE hps > 0",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_dps ON character_metrics(guild_id, combat_dps DESC) WHERE combat_dps > 0",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_hps ON character_metrics(guild_id, combat_hps DESC) WHERE combat_hps > 0",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_character ON character_metrics(guild_id, character_id, created_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_encounter ON character_metrics(guild_id, encounter_id)",
+    ]
+
+    for index_sql in indexes_to_create:
+        try:
+            db.execute(index_sql)
+        except Exception as e:
+            logger.warning(f"Failed to create index: {index_sql} - {e}")
+
+    # Update schema version
+    db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (2)")
+    db.commit()
+
+    logger.info("Migration to version 2 completed successfully")
+
+
 def create_tables(db: DatabaseManager) -> None:
     """
     Create all tables and indices for combat log storage.
