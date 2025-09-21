@@ -589,6 +589,22 @@ class EventStorage:
             ),
         )
 
+    def store_character_events(
+        self, encounter_id: int, character_id: int, events: List
+    ) -> int:
+        """
+        Store character events using the event blocks storage system.
+
+        Args:
+            encounter_id: Database encounter ID
+            character_id: Database character ID
+            events: List of events for the character
+
+        Returns:
+            Number of events stored
+        """
+        return self._store_event_blocks(encounter_id, character_id, events)
+
     def _store_event_blocks(
         self, encounter_id: int, character_id: int, events: List[TimestampedEvent]
     ) -> int:
