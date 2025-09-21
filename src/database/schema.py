@@ -400,26 +400,39 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute("CREATE INDEX IF NOT EXISTS idx_log_guild ON log_files(guild_id, processed_at DESC)")
 
     # Encounters indices (multi-tenant aware - guild_id first for row-level security)
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id, start_time DESC)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id, boss_name, difficulty, start_time DESC)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id, encounter_type, success, start_time DESC)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id, instance_name, difficulty)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_progression ON encounters(guild_id, difficulty, success, start_time DESC)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id, start_time DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id, boss_name, difficulty, start_time DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id, encounter_type, success, start_time DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id, instance_name, difficulty)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_progression ON encounters(guild_id, difficulty, success, start_time DESC)"
+    )
 
     # Legacy single-tenant indexes (for backward compatibility during migration)
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name, difficulty)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type, success)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type, success)"
+    )
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)")
 
-    # Characters indices
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, server, region)"
-    )
+    # Characters indices (multi-tenant aware)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_character_guild_name ON characters(guild_id, character_name, server)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_character_guild_class ON characters(guild_id, class_name, spec_name)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_character_guild_active ON characters(guild_id, last_seen DESC)")
+
+    # Legacy character indices (for backward compatibility)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, server, region)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)")
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name, spec_name)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name, spec_name)")
 
     # Event blocks indices (critical for performance)
     db.execute(
