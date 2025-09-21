@@ -585,6 +585,8 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
     @app.get("/stats")
     async def get_stats():
         """Get server statistics."""
+        if not _server_instance:
+            raise HTTPException(status_code=500, detail="Server not initialized")
         return _server_instance.get_server_stats()
 
     @app.get("/encounters/recent")
