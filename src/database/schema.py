@@ -281,6 +281,7 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS character_metrics (
             metric_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
             character_id INTEGER NOT NULL REFERENCES characters(character_id),
             damage_done INTEGER DEFAULT 0,
