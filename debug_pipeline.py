@@ -277,7 +277,8 @@ def test_database_storage():
         storage = EventStorage(db)
         # Create a temporary log file for testing
         import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as tmp_file:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as tmp_file:
             tmp_file.write("test log content")
             tmp_file_path = tmp_file.name
 
@@ -319,6 +320,13 @@ def test_database_storage():
         logger.error(f"Database storage failed: {e}")
         raise
     finally:
+        # Clean up temporary file
+        import os
+        if 'tmp_file_path' in locals():
+            try:
+                os.unlink(tmp_file_path)
+            except:
+                pass
         db.close()
 
 
