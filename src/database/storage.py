@@ -900,7 +900,7 @@ class EventStorage:
             INSERT INTO log_files (file_path, file_hash, file_size, encounter_count)
             VALUES (?, ?, ?, ?)
         """,
-            (file_path, file_hash, file_size, encounter_count),
+            (safe_param(file_path), safe_param(file_hash), safe_param(file_size), safe_param(encounter_count)),
         )
 
         file_id = cursor.lastrowid
