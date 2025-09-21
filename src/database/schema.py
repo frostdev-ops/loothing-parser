@@ -174,6 +174,23 @@ def create_tables(db: DatabaseManager) -> None:
     """
     )
 
+    # Guild management for multi-tenancy
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS guilds (
+            guild_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_name TEXT NOT NULL,
+            server TEXT NOT NULL,
+            region TEXT NOT NULL,
+            faction TEXT CHECK(faction IN ('Alliance', 'Horde')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE,
+            UNIQUE(guild_name, server, region)
+        )
+    """
+    )
+
     # Run migrations
     _migrate_character_schema(db)
 
