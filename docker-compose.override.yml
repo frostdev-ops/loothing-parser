@@ -5,6 +5,6 @@ services:
       - RELOAD=true
       - DEBUG=true
       - LOG_LEVEL=debug
-    command: ["python", "/app/src/api/streaming_server.py"]
+    command: ["python", "-m", "src.api.streaming_server"]
 
   nginx:
