@@ -405,6 +405,7 @@ class StreamingServer:
         # Clean up WebSocket upload subscriptions
         try:
             from .v1.services.websocket_notifier import get_websocket_notifier
+
             notifier = get_websocket_notifier()
             notifier.cleanup_session(session_id)
         except Exception as e:
@@ -522,6 +523,8 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
     @app.get("/metrics")
     async def get_metrics():
         """Prometheus-compatible metrics endpoint."""
+        if not _server_instance:
+            raise HTTPException(status_code=500, detail="Server not initialized")
         stats = _server_instance.get_server_stats()
 
         # Convert to Prometheus format
