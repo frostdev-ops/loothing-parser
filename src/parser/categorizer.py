@@ -155,6 +155,18 @@ class EventCategorizer:
         """Categorize damage events."""
         categories = {}
 
+        # Handle swing attack deduplication when ACL is enabled
+        if event.event_type in ["SWING_DAMAGE", "SWING_DAMAGE_LANDED"]:
+            # Create unique signature for this swing attack
+            swing_signature = f"{event.timestamp}_{event.source_guid}_{event.dest_guid}"
+
+            if swing_signature in self.seen_swings:
+                # Already processed this swing attack, skip it
+                return categories
+
+            # Mark this swing as seen
+            self.seen_swings.add(swing_signature)
+
         # Source deals damage
         source_guid, _ = self._resolve_pet_owner(event.source_guid)
         if source_guid and self._is_tracked_character(source_guid):
