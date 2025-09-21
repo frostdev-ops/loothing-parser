@@ -525,6 +525,8 @@ def export_csv(fights, output_file):
     default=True,
     help="Launch interactive analyzer (default) or show summary",
 )
+@click.option("--guild-id", type=int, help="Guild ID for multi-tenant support")
+@click.option("--guild-name", help="Guild name for new guild creation")
 @click.option(
     "--threads",
     default=None,
@@ -536,7 +538,7 @@ def export_csv(fights, output_file):
     is_flag=True,
     help="Disable parallel processing (force sequential)",
 )
-def analyze(log_file, interactive, threads, no_parallel):
+def analyze(log_file, interactive, guild_id, guild_name, threads, no_parallel):
     """Analyze a combat log file with interactive exploration using unified segmentation."""
     from .analyzer import InteractiveAnalyzer
 
