@@ -391,7 +391,9 @@ class EventStorage:
 
         return encounter_id
 
-    def _store_unified_character_streams(self, encounter_id: int, encounter: UnifiedEncounter) -> int:
+    def _store_unified_character_streams(
+        self, encounter_id: int, encounter: UnifiedEncounter
+    ) -> int:
         """
         Store character data from unified encounter.
 
@@ -420,19 +422,19 @@ class EventStorage:
     def _ensure_character_exists_unified(self, character) -> int:
         """Ensure character exists in database for unified encounter."""
         # Check cache first
-        if character.guid in self.character_cache:
-            return self.character_cache[character.guid]
+        if character.character_guid in self.character_cache:
+            return self.character_cache[character.character_guid]
 
         # Try to find existing character
         cursor = self.db.execute(
             "SELECT character_id FROM characters WHERE character_guid = ?",
-            (character.guid,),
+            (character.character_guid,),
         )
         result = cursor.fetchone()
 
         if result:
             character_id = result[0]
-            self.character_cache[character.guid] = character_id
+            self.character_cache[character.character_guid] = character_id
             return character_id
 
         # Create new character
@@ -444,26 +446,28 @@ class EventStorage:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                character.guid,
-                character.name,
-                getattr(character, 'server', None),
-                getattr(character, 'region', None),
-                getattr(character, 'class_name', None),
-                getattr(character, 'spec_name', None),
+                character.character_guid,
+                character.character_name,
+                getattr(character, "server", None),
+                getattr(character, "region", None),
+                getattr(character, "class_name", None),
+                getattr(character, "spec_name", None),
                 datetime.now().isoformat(),
                 datetime.now().isoformat(),
             ),
         )
 
         character_id = cursor.lastrowid
-        self.character_cache[character.guid] = character_id
-        logger.debug(f"Created character {character_id}: {character.name}")
+        self.character_cache[character.character_guid] = character_id
+        logger.debug(f"Created character {character_id}: {character.character_name}")
         return character_id
 
-    def _store_character_metrics_unified(self, encounter_id: int, character_id: int, character, encounter: UnifiedEncounter):
+    def _store_character_metrics_unified(
+        self, encounter_id: int, character_id: int, character, encounter: UnifiedEncounter
+    ):
         """Store character metrics from unified encounter."""
         # Extract metrics from character and encounter metrics
-        metrics = encounter.metrics if hasattr(encounter, 'metrics') else None
+        metrics = encounter.metrics if hasattr(encounter, "metrics") else None
 
         self.db.execute(
             """
@@ -478,24 +482,24 @@ class EventStorage:
             (
                 encounter_id,
                 character_id,
-                getattr(character, 'total_damage', 0),
-                getattr(character, 'total_healing', 0),
-                getattr(character, 'damage_taken', 0),
-                getattr(character, 'healing_received', 0),
-                getattr(character, 'overhealing', 0),
-                getattr(character, 'death_count', 0),
-                getattr(character, 'activity_percentage', 0.0),
-                getattr(character, 'time_alive', encounter.duration),
-                getattr(character, 'dps', 0.0),
-                getattr(character, 'hps', 0.0),
-                getattr(character, 'dtps', 0.0),
+                getattr(character, "total_damage", 0),
+                getattr(character, "total_healing", 0),
+                getattr(character, "damage_taken", 0),
+                getattr(character, "healing_received", 0),
+                getattr(character, "overhealing", 0),
+                getattr(character, "death_count", 0),
+                getattr(character, "activity_percentage", 0.0),
+                getattr(character, "time_alive", encounter.duration),
+                getattr(character, "dps", 0.0),
+                getattr(character, "hps", 0.0),
+                getattr(character, "dtps", 0.0),
                 encounter.combat_duration,
-                getattr(character, 'combat_dps', 0.0),
-                getattr(character, 'combat_hps', 0.0),
-                getattr(character, 'combat_dtps', 0.0),
-                getattr(character, 'combat_activity_percentage', 0.0),
-                len(getattr(character, 'events', [])),
-                getattr(character, 'cast_count', 0),
+                getattr(character, "combat_dps", 0.0),
+                getattr(character, "combat_hps", 0.0),
+                getattr(character, "combat_dtps", 0.0),
+                getattr(character, "combat_activity_percentage", 0.0),
+                len(getattr(character, "events", [])),
+                getattr(character, "cast_count", 0),
             ),
         )
 
@@ -517,7 +521,7 @@ class EventStorage:
                 0,  # time_limit_seconds - not available in unified model yet
                 encounter.duration,
                 encounter.success,
-                encounter.in_time if hasattr(encounter, 'in_time') else False,
+                encounter.in_time if hasattr(encounter, "in_time") else False,
                 0,  # time_remaining - calculate from duration if needed
                 0,  # num_deaths - sum from character metrics
                 0,  # death_penalties - calculate from deaths
