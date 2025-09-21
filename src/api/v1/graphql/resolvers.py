@@ -44,9 +44,7 @@ class BaseResolver:
 class CharacterResolver(BaseResolver):
     """Resolver for character-related queries."""
 
-    async def get_character(
-        self, name: str, server: Optional[str] = None
-    ) -> Optional[Character]:
+    async def get_character(self, name: str, server: Optional[str] = None) -> Optional[Character]:
         """Get a specific character by name and server."""
         try:
             # Query character data from database
@@ -152,9 +150,7 @@ class CharacterResolver(BaseResolver):
                 filters["difficulty"] = difficulty
 
             # Query performance data
-            performance_data = await self.query_api.get_character_performance(
-                **filters
-            )
+            performance_data = await self.query_api.get_character_performance(**filters)
 
             return [
                 CharacterPerformance(
@@ -196,9 +192,7 @@ class EncounterResolver(BaseResolver):
                 return None
 
             # Get participants for this encounter
-            participants_data = await self.query_api.get_encounter_participants(
-                encounter_id
-            )
+            participants_data = await self.query_api.get_encounter_participants(encounter_id)
             participants = [
                 Character(
                     id=p.get("id"),
@@ -506,9 +500,70 @@ class AnalyticsResolver(BaseResolver):
             if difficulty:
                 filters["difficulty"] = difficulty
 
-            # Implementation would analyze class performance distributions
-            # This is a placeholder for the actual implementation
-            return await self.query_api.get_class_balance(**filters)
+            # Get class balance data from database
+            from datetime import datetime, timedelta
+            import statistics
+
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+
+            # Choose metric column
+            metric_column = "damage_done" if metric == "dps" else "healing_done"
+
+            # Build query with filters
+            query = """
+                SELECT
+                    c.class_name,
+                    c.spec,
+                    COUNT(DISTINCT cm.encounter_id) as encounter_count,
+                    AVG(CAST(json_extract(cm.metrics_data, '$.' || ?) AS FLOAT)) as avg_value,
+                    COUNT(DISTINCT c.id) as sample_size
+                FROM characters c
+                JOIN character_metrics cm ON c.id = cm.character_id
+                JOIN encounters e ON cm.encounter_id = e.id
+                WHERE e.start_time BETWEEN ? AND ?
+                {}
+                {}
+                GROUP BY c.class_name, c.spec
+                ORDER BY avg_value DESC
+            """.format(
+                f"AND e.difficulty = ?" if difficulty else "",
+                f"AND e.type = ?" if encounter_type else ""
+            )
+
+            params = [metric_column, start_date.isoformat(), end_date.isoformat()]
+            if difficulty:
+                params.append(difficulty)
+            if encounter_type:
+                params.append(encounter_type)
+
+            cursor = self.db.execute(query, tuple(params))
+            results = cursor.fetchall()
+
+            class_data = []
+            all_values = []
+
+            for row in results:
+                if row["avg_value"]:
+                    all_values.append(row["avg_value"])
+
+                class_data.append({
+                    "class_name": row["class_name"],
+                    "spec": row["spec"],
+                    "average_performance": row["avg_value"] or 0,
+                    "sample_size": row["sample_size"],
+                    "encounter_count": row["encounter_count"]
+                })
+
+            # Add relative performance
+            avg_overall = statistics.mean(all_values) if all_values else 0
+            for entry in class_data:
+                if avg_overall > 0:
+                    entry["relative_performance"] = entry["average_performance"] / avg_overall
+                else:
+                    entry["relative_performance"] = 1.0
+
+            return class_data
 
         except Exception as e:
             self._handle_error(e, "get_class_balance")
@@ -537,9 +592,7 @@ class AnalyticsResolver(BaseResolver):
 class GuildResolver(BaseResolver):
     """Resolver for guild-related queries."""
 
-    async def get_guild(
-        self, name: str, server: Optional[str] = None
-    ) -> Optional[Guild]:
+    async def get_guild(self, name: str, server: Optional[str] = None) -> Optional[Guild]:
         """Get guild information and roster."""
         try:
             guild_data = await self.query_api.get_guild_info(name, server)
