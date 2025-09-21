@@ -253,14 +253,12 @@ def test_database_storage():
     character = test_dps_hps_calculation()
 
     encounter = UnifiedEncounter(
+        encounter_type=EncounterType.RAID,
         encounter_id=1234,
-        name="Test Boss",
-        difficulty_id=16,  # Mythic
+        encounter_name="Test Boss",
         start_time=datetime.now(),
         end_time=datetime.now(),
         duration=300.0,  # 5 minutes
-        success=True,
-        encounter_type=EncounterType.RAID,
     )
 
     encounter.add_player("Player-1234-56789ABC", character)
