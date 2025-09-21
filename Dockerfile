@@ -4,12 +4,14 @@ FROM python:3.11-slim AS builder
 
 LABEL maintainer="WoW Combat Log Parser Team"
 LABEL description="World of Warcraft combat log parser and streaming server"
+LABEL version="1.0.0"
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_DEFAULT_TIMEOUT=100
 
 # Install system dependencies required for building Python packages
 RUN apt-get update && apt-get install -y \
@@ -25,8 +27,9 @@ WORKDIR /app
 # Copy requirements first to leverage Docker layer caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with production optimizations
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Runtime - Create minimal production image
 FROM python:3.11-slim AS runtime
