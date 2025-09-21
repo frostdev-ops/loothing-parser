@@ -1,0 +1,15 @@
+# Development overrides
+services:
+  streaming-server:
+    volumes:
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+    environment:
+      - RELOAD=true
+      - DEBUG=true
+      - LOG_LEVEL=debug
+    command: ["python", "-m", "src.api.streaming_server", "--reload"]
+
+  nginx:
+    volumes:
+      - ./static:/usr/share/nginx/html/static:ro
