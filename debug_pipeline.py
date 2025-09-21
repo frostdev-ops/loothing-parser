@@ -23,7 +23,7 @@ from src.parser.tokenizer import ParsedLine
 from src.models.character_events import CharacterEventStream
 from src.database.schema import DatabaseManager, create_tables
 from src.database.storage import EventStorage
-from src.models.encounters import Encounter
+from src.models.unified_encounter import UnifiedEncounter, EncounterType
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s - %(name)s - %(message)s")
