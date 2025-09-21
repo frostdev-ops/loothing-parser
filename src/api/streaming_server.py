@@ -139,10 +139,7 @@ class StreamingServer:
         try:
             # Create session with guild context
             session = self.session_manager.create_session(
-                client_id=client_id,
-                session_id=session_id,
-                api_key=api_key,
-                guild_id=guild_id
+                client_id=client_id, session_id=session_id, api_key=api_key, guild_id=guild_id
             )
 
             session.websocket_connected = True
@@ -158,9 +155,11 @@ class StreamingServer:
             # Send welcome message
             welcome = StreamResponse(
                 type="status",
-                message="Connected successfully",
+                message=f"Connected successfully to {auth_response.guild_name}",
                 data={
                     "session_id": session_id,
+                    "guild_id": auth_response.guild_id,
+                    "guild_name": auth_response.guild_name,
                     "rate_limits": auth_response.rate_limit,
                     "permissions": auth_response.permissions,
                 },
