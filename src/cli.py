@@ -51,6 +51,8 @@ def cli(verbose):
 @click.argument("log_file", type=click.Path(exists=True))
 @click.option("--output", "-o", help="Output file for results")
 @click.option("--format", type=click.Choice(["json", "csv", "summary"]), default="summary")
+@click.option("--guild-id", type=int, help="Guild ID for multi-tenant support")
+@click.option("--guild-name", help="Guild name for new guild creation")
 @click.option(
     "--threads",
     default=None,
@@ -62,7 +64,7 @@ def cli(verbose):
     is_flag=True,
     help="Disable parallel processing (force sequential)",
 )
-def parse(log_file, output, format, threads, no_parallel):
+def parse(log_file, output, format, guild_id, guild_name, threads, no_parallel):
     """Parse a combat log file and extract encounters using unified segmentation."""
     log_path = Path(log_file)
     console.print(f"[bold green]Parsing combat log:[/bold green] {log_path.name}")
@@ -816,8 +818,6 @@ def server_status(host, port):
                 console.print(f"[red]✗ Failed to get status: HTTP {response.getcode()}[/red]")
     except Exception as e:
         console.print(f"[red]✗ Failed to connect: {e}[/red]")
-
-
 
 
 def main():
