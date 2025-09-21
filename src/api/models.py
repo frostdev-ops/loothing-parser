@@ -41,7 +41,15 @@ class StreamMessage(BaseModel):
 class StreamResponse(BaseModel):
     """Response from server to streaming client."""
 
-    type: Literal["ack", "error", "status", "metrics", "upload_progress", "encounter_found", "character_metrics"]
+    type: Literal[
+        "ack",
+        "error",
+        "status",
+        "metrics",
+        "upload_progress",
+        "encounter_found",
+        "character_metrics",
+    ]
     timestamp: float = Field(default_factory=lambda: datetime.now().timestamp())
     message: Optional[str] = None
     sequence_ack: Optional[int] = Field(None, description="Last processed sequence number")
@@ -86,6 +94,8 @@ class AuthResponse(BaseModel):
 
     authenticated: bool
     client_id: Optional[str] = None
+    guild_id: Optional[int] = None
+    guild_name: Optional[str] = None
     permissions: list[str] = Field(default_factory=list)
     rate_limit: Optional[Dict[str, int]] = None
     message: Optional[str] = None
@@ -95,6 +105,8 @@ class AuthResponse(BaseModel):
             "example": {
                 "authenticated": True,
                 "client_id": "client-123",
+                "guild_id": 1,
+                "guild_name": "My Guild",
                 "permissions": ["stream", "query"],
                 "rate_limit": {"events_per_minute": 10000, "connections": 5},
                 "message": "Authentication successful",
