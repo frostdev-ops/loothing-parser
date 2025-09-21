@@ -217,7 +217,11 @@ class EventStorage:
                 "storage_time": storage_time,
                 "file_hash": file_hash,
                 "characters_stored": len(
-                    set(char.character_guid for enc in encounters for char in enc.characters.values())
+                    set(
+                        char.character_guid
+                        for enc in encounters
+                        for char in enc.characters.values()
+                    )
                 ),
             }
 
@@ -371,7 +375,7 @@ class EventStorage:
                 encounter_type,
                 boss_name,
                 difficulty,
-                encounter.instance_id,
+                encounter.instance_id if isinstance(encounter.instance_id, (int, type(None))) else None,
                 encounter.instance_name,
                 encounter.start_time.timestamp() if encounter.start_time else None,
                 encounter.end_time.timestamp() if encounter.end_time else None,
