@@ -900,7 +900,12 @@ class EventStorage:
             INSERT INTO log_files (file_path, file_hash, file_size, encounter_count)
             VALUES (?, ?, ?, ?)
         """,
-            (safe_param(file_path), safe_param(file_hash), safe_param(file_size), safe_param(encounter_count)),
+            (
+                safe_param(file_path),
+                safe_param(file_hash),
+                safe_param(file_size),
+                safe_param(encounter_count),
+            ),
         )
 
         file_id = cursor.lastrowid
@@ -942,6 +947,35 @@ class EventStorage:
         logger.info(
             f"Loaded caches: {len(self.character_cache)} characters, "
             f"{len(self.file_cache)} processed files"
+        )
+
+    def _store_mythic_plus_metadata_unified(self, encounter_id: int, encounter: UnifiedEncounter):
+        """Store mythic+ specific metadata for unified encounter."""
+        if not encounter.keystone_level:
+            return
+
+        # Store mythic+ run data
+        self.db.execute(
+            """
+            INSERT INTO mythic_plus_runs (
+                encounter_id, dungeon_id, keystone_level, affixes,
+                time_limit_seconds, actual_time_seconds, completed,
+                in_time, time_remaining, num_deaths, death_penalties
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                safe_param(encounter_id),
+                safe_param(getattr(encounter, "dungeon_id", None)),
+                safe_param(encounter.keystone_level),
+                safe_param("[]"),  # TODO: Implement affix parsing
+                safe_param(getattr(encounter, "time_limit", None)),
+                safe_param(encounter.combat_duration),
+                safe_param(encounter.success),
+                safe_param(encounter.success),  # in_time same as success for now
+                safe_param(0.0),  # time_remaining
+                safe_param(0),  # num_deaths
+                safe_param(0.0),  # death_penalties
+            ),
         )
 
     def get_storage_stats(self) -> Dict[str, Any]:
