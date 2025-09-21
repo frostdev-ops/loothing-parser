@@ -43,7 +43,7 @@ def safe_param(value):
         return value
 
     # Catch any other iterable types (except strings and bytes)
-    if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+    if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
         logger.debug(f"Converting iterable type {type(value)} to None: {value}")
         return None
 
@@ -390,15 +390,34 @@ class EventStorage:
             boss_name = encounter.encounter_name
             difficulty = encounter.difficulty
 
-        # Ensure all parameters are properly typed for SQLite
-        def safe_param(value):
-            """Convert parameter to SQLite-safe type."""
-            if isinstance(value, list):
-                return None  # Convert lists to None for now
-            elif isinstance(value, (int, float, str, bool, type(None))):
-                return value
-            else:
-                return str(value) if value is not None else None
+        # Add type validation for instance_id before SQL operation
+        if encounter.instance_id is not None and not isinstance(encounter.instance_id, int):
+            logger.error(
+                f"instance_id has unexpected type: {type(encounter.instance_id)}, "
+                f"value: {encounter.instance_id} for encounter: {boss_name}"
+            )
+            encounter.instance_id = None  # Force to None to prevent SQL error
+
+        # Prepare all parameters with safe_param to ensure SQLite compatibility
+        params = (
+            safe_param(log_file_id),
+            safe_param(encounter_type),
+            safe_param(boss_name),
+            safe_param(difficulty),
+            safe_param(encounter.instance_id),
+            safe_param(encounter.instance_name),
+            safe_param(encounter.start_time.timestamp() if encounter.start_time else None),
+            safe_param(encounter.end_time.timestamp() if encounter.end_time else None),
+            safe_param(encounter.success),
+            safe_param(encounter.combat_duration),
+            safe_param(len(encounter.characters) if encounter.characters else 0),
+            safe_param(datetime.now().isoformat()),
+        )
+
+        # Debug logging to identify parameter types
+        logger.debug(f"SQL parameters for encounter {boss_name}:")
+        for i, param in enumerate(params, 1):
+            logger.debug(f"  Parameter {i}: {type(param)} = {param}")
 
         cursor = self.db.execute(
             """
@@ -409,20 +428,7 @@ class EventStorage:
                 created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (
-                safe_param(log_file_id),
-                safe_param(encounter_type),
-                safe_param(boss_name),
-                safe_param(difficulty),
-                safe_param(encounter.instance_id),
-                safe_param(encounter.instance_name),
-                encounter.start_time.timestamp() if encounter.start_time else None,
-                encounter.end_time.timestamp() if encounter.end_time else None,
-                safe_param(encounter.success),
-                safe_param(encounter.combat_duration),
-                safe_param(len(encounter.characters)),
-                datetime.now().isoformat(),
-            ),
+            params,
         )
 
         encounter_id = cursor.lastrowid
