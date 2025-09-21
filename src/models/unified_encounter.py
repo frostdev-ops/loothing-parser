@@ -2,6 +2,7 @@
 Unified encounter model for both Raid and Mythic+ encounters.
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Dict, Optional, Any
@@ -259,7 +260,9 @@ class UnifiedEncounter:
                     try:
                         cleaned_affixes.append(int(affix))
                     except (ValueError, TypeError):
-                        logger.warning(f"Skipping invalid affix ID: {affix} for encounter: {self.encounter_name}")
+                        logger.warning(
+                            f"Skipping invalid affix ID: {affix} for encounter: {self.encounter_name}"
+                        )
             self.affixes = cleaned_affixes
 
     def add_character(self, guid: str, name: str) -> EnhancedCharacter:
