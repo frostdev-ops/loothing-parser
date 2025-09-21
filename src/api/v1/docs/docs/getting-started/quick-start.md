@@ -421,10 +421,12 @@ print(f"Rate limit: {remaining}/{limit} requests remaining")
 
 Now that you're familiar with the basics:
 
-1. **Explore the [API Reference](../api-reference/overview.md)** for complete endpoint documentation
-2. **Check out [Examples](../examples/basic-usage.md)** for more complex use cases
-3. **Download [Client Libraries](../client-libraries/python.md)** for your preferred language
-4. **Join our [Discord Community](https://discord.gg/your-server)** for support and discussions
+1. **Read the [Guild Setup Guide](guild-setup.md)** to understand multi-tenant features
+2. **Explore the [API Reference](../api-reference/overview.md)** for complete endpoint documentation
+3. **Check out [Examples](../examples/basic-usage.md)** for more complex use cases
+4. **Download [Client Libraries](../client-libraries/python.md)** for your preferred language
+5. **Review [Guild Management](../api-reference/guilds.md)** for guild-specific features
+6. **Join our [Discord Community](https://discord.gg/your-server)** for support and discussions
 
 ## Common Issues
 
