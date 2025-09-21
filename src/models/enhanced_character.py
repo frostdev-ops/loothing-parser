@@ -216,6 +216,8 @@ class EnhancedCharacter(CharacterEventStream):
 
     def set_talent_data(self, combatant_info: CombatantInfo):
         """Set talent and equipment data from COMBATANT_INFO event."""
+        from ..config.wow_data import get_spec_name, get_class_name
+
         self.talent_data = combatant_info
 
         # Calculate average item level
@@ -224,9 +226,10 @@ class EnhancedCharacter(CharacterEventStream):
             if valid_items:
                 self.item_level = sum(item.item_level for item in valid_items) / len(valid_items)
 
-        # Set spec name if available
+        # Set class and spec name if available
         if combatant_info.spec_id:
-            self.spec_name = self._get_spec_name(combatant_info.spec_id)
+            self.spec_name = get_spec_name(combatant_info.spec_id)
+            self.class_name = get_class_name(combatant_info.spec_id)
 
     def calculate_ability_metrics(self, encounter_duration: float):
         """Calculate ability percentages and DPS/HPS."""
