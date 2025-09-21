@@ -463,16 +463,19 @@ class EventStorage:
             self._store_character_metrics_unified(encounter_id, character_id, character, encounter)
 
             # Extract and store events for this character from the unified encounter
-            if hasattr(encounter, 'events') and encounter.events:
+            if hasattr(encounter, "events") and encounter.events:
                 # Filter events for this character
                 character_events = [
-                    event for event in encounter.events
-                    if (hasattr(event, 'source_guid') and event.source_guid == char_guid) or
-                       (hasattr(event, 'dest_guid') and event.dest_guid == char_guid)
+                    event
+                    for event in encounter.events
+                    if (hasattr(event, "source_guid") and event.source_guid == char_guid)
+                    or (hasattr(event, "dest_guid") and event.dest_guid == char_guid)
                 ]
 
                 if character_events:
-                    events_stored = self._store_character_events(encounter_id, character_id, character_events)
+                    events_stored = self._store_character_events(
+                        encounter_id, character_id, character_events
+                    )
                     total_events += events_stored
 
         return total_events
@@ -974,7 +977,7 @@ class EventStorage:
             """,
             (
                 safe_param(encounter_id),
-                safe_param(getattr(encounter, "dungeon_id", None)),
+                safe_param(getattr(encounter, "dungeon_id", 0)),
                 safe_param(encounter.keystone_level),
                 safe_param("[]"),  # TODO: Implement affix parsing
                 safe_param(getattr(encounter, "time_limit", None)),
