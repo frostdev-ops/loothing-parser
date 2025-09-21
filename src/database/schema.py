@@ -274,15 +274,13 @@ def create_tables(db: DatabaseManager) -> None:
             dps REAL DEFAULT 0.0,
             hps REAL DEFAULT 0.0,
             dtps REAL DEFAULT 0.0,
-            -- Combat-aware metrics (based on combat time only)
             combat_time REAL DEFAULT 0.0,
             combat_dps REAL DEFAULT 0.0,
             combat_hps REAL DEFAULT 0.0,
             combat_dtps REAL DEFAULT 0.0,
             combat_activity_percentage REAL DEFAULT 0.0,
-            -- Absorption tracking
-            damage_absorbed_by_shields INTEGER DEFAULT 0,  -- Shields I provided for others
-            damage_absorbed_for_me INTEGER DEFAULT 0,      -- Damage prevented on me by shields
+            damage_absorbed_by_shields INTEGER DEFAULT 0,
+            damage_absorbed_for_me INTEGER DEFAULT 0,
             total_events INTEGER DEFAULT 0,
             cast_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
