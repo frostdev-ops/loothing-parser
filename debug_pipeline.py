@@ -308,7 +308,7 @@ def test_field_name_consistency():
     """Test that field names are consistent between models and storage."""
     logger.info("=== Testing Field Name Consistency ===")
 
-    character = CharacterEventStream(
+    character = EnhancedCharacter(
         character_guid="Player-1234-56789ABC", character_name="TestPlayer"
     )
 
