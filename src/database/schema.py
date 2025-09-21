@@ -215,6 +215,7 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS encounters (
             encounter_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
             log_file_id INTEGER REFERENCES log_files(file_id),
             encounter_type TEXT NOT NULL CHECK(encounter_type IN ('raid', 'mythic_plus')),
             boss_name TEXT NOT NULL,
