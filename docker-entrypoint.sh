@@ -19,36 +19,9 @@ fi
 
 # Initialize database if it doesn't exist
 if [ ! -f "$DB_PATH" ]; then
-    echo "Initializing database at $DB_PATH..."
-
+    echo "Database will be initialized by application at $DB_PATH..."
     # Create database directory if it doesn't exist
     mkdir -p "$(dirname "$DB_PATH")"
-
-
-    # Run database migrations
-    if [ -d "/app/migrations" ]; then
-        echo "Running database migrations..."
-        python -c "
-from src.database.schema import DatabaseManager, create_tables
-import os
-db_path = os.environ.get('DB_PATH', '/app/data/combat_logs.db')
-db_manager = DatabaseManager(db_path)
-create_tables(db_manager)
-db_manager.close()
-print('Database initialized successfully')
-"
-    else
-        echo "No migrations directory found, creating basic database..."
-        python -c "
-from src.database.schema import DatabaseManager, create_tables
-import os
-db_path = os.environ.get('DB_PATH', '/app/data/combat_logs.db')
-db_manager = DatabaseManager(db_path)
-create_tables(db_manager)
-db_manager.close()
-print('Basic database created')
-"
-    fi
 else
     echo "Database already exists at $DB_PATH"
 fi
