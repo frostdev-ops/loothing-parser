@@ -9,6 +9,7 @@ nav:
   - Getting Started:
     - Quick Start: getting-started/quick-start.md
     - Authentication: getting-started/authentication.md
+    - Guild Setup: getting-started/guild-setup.md
     - Rate Limiting: getting-started/rate-limiting.md
     - Error Handling: getting-started/error-handling.md
   - API Reference:
@@ -20,6 +21,7 @@ nav:
     - Aggregations: api-reference/aggregations.md
     - Logs: api-reference/logs.md
     - Streaming: api-reference/streaming.md
+    - Guilds: api-reference/guilds.md
   - Examples:
     - Basic Usage: examples/basic-usage.md
     - Advanced Queries: examples/advanced-queries.md
