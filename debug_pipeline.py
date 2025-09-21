@@ -282,9 +282,8 @@ def test_database_storage():
             tmp_file.write("test log content")
             tmp_file_path = tmp_file.name
 
-        # Create a temporary log file entry
-        log_file_id = storage._register_log_file(tmp_file_path, "test_hash", 1)
-        storage.store_unified_encounters([encounter], log_file_id)
+        # Store encounters using the correct interface
+        storage.store_unified_encounters([encounter], tmp_file_path)
         logger.info("✓ Database storage successful")
 
         # Verify stored data
@@ -322,7 +321,8 @@ def test_database_storage():
     finally:
         # Clean up temporary file
         import os
-        if 'tmp_file_path' in locals():
+
+        if "tmp_file_path" in locals():
             try:
                 os.unlink(tmp_file_path)
             except:
