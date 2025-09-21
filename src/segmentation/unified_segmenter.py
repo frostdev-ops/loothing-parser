@@ -189,10 +189,23 @@ class UnifiedSegmenter:
                     category = "buff_lost" if self._is_buff(event) else "debuff_lost"
 
         if category:
-            logger.debug(
-                f"Adding event to {char.character_name}: {category}, amount: {getattr(event, 'amount', 'N/A')}"
-            )
-            char.add_event(event, category)
+            # Handle swing attack deduplication when ACL is enabled
+            should_add_event = True
+            if isinstance(event, DamageEvent) and event.event_type in ["SWING_DAMAGE", "SWING_DAMAGE_LANDED"]:
+                swing_signature = f"{event.timestamp}_{event.source_guid}_{event.dest_guid}"
+                if swing_signature in self.seen_swings:
+                    # Already processed this swing attack, skip it
+                    should_add_event = False
+                    logger.debug(f"Skipping duplicate swing: {swing_signature}")
+                else:
+                    # Mark this swing as seen
+                    self.seen_swings.add(swing_signature)
+
+            if should_add_event:
+                logger.debug(
+                    f"Adding event to {char.character_name}: {category}, amount: {getattr(event, 'amount', 'N/A')}"
+                )
+                char.add_event(event, category)
         else:
             logger.debug(
                 f"No category for event: {event.event_type}, role: {role}, type: {type(event).__name__}"
