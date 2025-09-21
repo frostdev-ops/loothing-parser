@@ -760,27 +760,28 @@ class EventFactory:
             # spell_power, armor, resources, position, etc. (19 fields total)
             damage_offset = 19
 
-        # Damage parameters: actual_damage, base_damage, school, resisted, blocked, absorbed, critical, glancing, crushing
-        # For Advanced Combat Logging, position 19 is actual damage dealt, position 20 is base damage before mitigation
-        # Note: Variable names are misleading for historical reasons
-        min_params_needed = damage_offset + 6
+        # Damage parameters: amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing
+        # For Advanced Combat Logging, these come after the 19 unit info fields
+        min_params_needed = damage_offset + 9
         if len(params) >= min_params_needed:
-            pre_mitigation_damage = cls._safe_int(params[damage_offset])
-            actual_damage = cls._safe_int(params[damage_offset + 1])
-            damage_event.amount = (
-                pre_mitigation_damage  # Use position 19 - the actual damage after mitigation
-            )
-            damage_event.overkill = 0  # Overkill not available in Advanced Combat Logging
+            damage_event.amount = cls._safe_int(params[damage_offset])  # Actual damage amount
+            damage_event.overkill = cls._safe_int(params[damage_offset + 1])  # Overkill amount
+            damage_event.school = cls._safe_int(params[damage_offset + 2])
+            damage_event.resisted = cls._safe_int(params[damage_offset + 3])
+            damage_event.blocked = cls._safe_int(params[damage_offset + 4])
+            damage_event.absorbed = cls._safe_int(params[damage_offset + 5])
+            damage_event.critical = bool(params[damage_offset + 6])
+            damage_event.glancing = bool(params[damage_offset + 7])
+            damage_event.crushing = bool(params[damage_offset + 8])
+        elif len(params) >= damage_offset + 6:
+            # Fallback for shorter parameter lists
+            damage_event.amount = cls._safe_int(params[damage_offset])
+            damage_event.overkill = cls._safe_int(params[damage_offset + 1])
             damage_event.school = cls._safe_int(params[damage_offset + 2])
             damage_event.resisted = cls._safe_int(params[damage_offset + 3])
             damage_event.blocked = cls._safe_int(params[damage_offset + 4])
             damage_event.absorbed = cls._safe_int(params[damage_offset + 5])
 
-        min_params_extended = damage_offset + 9
-        if len(params) >= min_params_extended:
-            damage_event.critical = bool(params[damage_offset + 6])
-            damage_event.glancing = bool(params[damage_offset + 7])
-            damage_event.crushing = bool(params[damage_offset + 8])
 
         logger.debug(
             f"Returning DamageEvent type: {type(damage_event).__name__}, amount: {damage_event.amount}"
@@ -818,22 +819,18 @@ class EventFactory:
             # spell_power, armor, resources, position, etc. (19 fields total)
             heal_offset = 19
 
-        # Heal parameters: pre_mitigation_heal, actual_heal, absorbed, critical
-        # For Advanced Combat Logging, position 19 is pre-mitigation, position 20 is actual healing
-        # Overhealing is not reliably available in this format
-        min_params_needed = heal_offset + 3
+        # Heal parameters: amount, overhealing, absorbed, critical
+        # For Advanced Combat Logging, these come after the 19 unit info fields
+        min_params_needed = heal_offset + 4
         if len(params) >= min_params_needed:
-            pre_mitigation_heal = cls._safe_int(params[heal_offset])
-            actual_heal = cls._safe_int(params[heal_offset + 1])
-            heal_event.amount = actual_heal  # Actual healing done (what target received)
-            heal_event.overhealing = 0  # Overhealing not available in Advanced Combat Logging
-            heal_event.absorbed = (
-                cls._safe_int(params[heal_offset + 2]) if len(params) > heal_offset + 2 else 0
-            )
-
-        min_params_critical = heal_offset + 4
-        if len(params) >= min_params_critical:
-            heal_event.critical = bool(params[heal_offset + 3])
+            heal_event.amount = cls._safe_int(params[heal_offset])  # Total healing including overheal
+            heal_event.overhealing = cls._safe_int(params[heal_offset + 1])  # Overhealing amount
+            heal_event.absorbed = cls._safe_int(params[heal_offset + 2])  # Absorbed healing
+            heal_event.critical = bool(params[heal_offset + 3])  # Critical heal flag
+        elif len(params) >= heal_offset + 2:
+            # Fallback for shorter parameter lists
+            heal_event.amount = cls._safe_int(params[heal_offset])
+            heal_event.overhealing = cls._safe_int(params[heal_offset + 1]) if len(params) > heal_offset + 1 else 0
 
         return heal_event
 
