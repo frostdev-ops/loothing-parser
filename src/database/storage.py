@@ -149,6 +149,81 @@ class EventStorage:
             self.db.rollback()
             raise
 
+    def store_unified_encounters(
+        self,
+        encounters: List[UnifiedEncounter],
+        log_file_path: str,
+    ) -> Dict[str, Any]:
+        """
+        Store unified encounters in database.
+
+        Args:
+            encounters: List of unified encounters to store
+            log_file_path: Path to source log file
+
+        Returns:
+            Dictionary with storage statistics
+        """
+        start_time = time.time()
+
+        try:
+            # Check if file already processed
+            file_hash = self._calculate_file_hash(log_file_path)
+            if file_hash in self.file_cache:
+                logger.info(f"File {log_file_path} already processed, skipping")
+                return {"status": "skipped", "reason": "already_processed"}
+
+            # Begin transaction
+            total_events = 0
+            total_encounters = len(encounters)
+
+            logger.info(f"Storing {total_encounters} unified encounters from {log_file_path}")
+
+            # Register log file
+            log_file_id = self._register_log_file(log_file_path, file_hash, total_encounters)
+
+            # Store encounters
+            for encounter in encounters:
+                encounter_id = self._store_unified_encounter(encounter, log_file_id)
+                total_events += self._store_unified_character_streams(encounter_id, encounter)
+
+            # Flush any pending blocks
+            self._flush_pending_blocks()
+
+            # Update log file with final counts
+            self.db.execute(
+                "UPDATE log_files SET event_count = ?, encounter_count = ? WHERE file_id = ?",
+                (total_events, total_encounters, log_file_id),
+            )
+
+            # Commit transaction
+            self.db.commit()
+
+            # Update statistics
+            storage_time = time.time() - start_time
+            self.stats["encounters_stored"] += total_encounters
+            self.stats["events_stored"] += total_events
+            self.stats["storage_time"] += storage_time
+
+            logger.info(
+                f"Successfully stored {total_encounters} unified encounters "
+                f"({total_events:,} events) in {storage_time:.2f}s"
+            )
+
+            return {
+                "status": "success",
+                "encounters_stored": total_encounters,
+                "events_stored": total_events,
+                "storage_time": storage_time,
+                "file_hash": file_hash,
+                "characters_stored": len(set(char.guid for enc in encounters for char in enc.characters.values())),
+            }
+
+        except Exception as e:
+            logger.error(f"Error storing unified encounters: {e}")
+            self.db.rollback()
+            raise
+
     def _store_encounter(
         self,
         encounter: Union[RaidEncounter, MythicPlusRun],
