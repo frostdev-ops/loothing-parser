@@ -15,9 +15,10 @@ Before you begin, ensure you have:
 
 Contact our support team to obtain your API key. You'll receive:
 
-- **API Key**: Your unique authentication token
+- **API Key**: Your unique authentication token (associated with your guild)
 - **Base URL**: The API endpoint (typically `https://api.example.com/api/v1`)
 - **Rate Limits**: Your specific usage limits
+- **Guild Context**: Automatic data filtering for your guild
 
 !!! tip "API Key Security"
 Keep your API key secure and never expose it in client-side code or public repositories.
