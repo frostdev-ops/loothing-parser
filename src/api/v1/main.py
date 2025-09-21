@@ -166,14 +166,11 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
 
     app.include_router(
         guilds.router,
-        prefix="/api/v1",
         tags=["Guild Management"],
         dependencies=[db_dependency.dependency],
     )
 
-    app.include_router(
-        export.router, tags=["Export"], dependencies=[db_dependency.dependency]
-    )
+    app.include_router(export.router, tags=["Export"], dependencies=[db_dependency.dependency])
 
     app.include_router(
         webhooks.router,
