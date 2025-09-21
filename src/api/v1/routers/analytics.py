@@ -14,18 +14,16 @@ from ..models.analytics import (
     ProgressionTracking,
     ClassBalance,
     SpellUsageStats,
-    DamageBreakdown
+    DamageBreakdown,
 )
-from ...database.schema import DatabaseManager
+from src.database.schema import DatabaseManager
 
 router = APIRouter()
 
 
 @router.get("/analytics/trends/{metric}", response_model=PerformanceTrend)
 async def get_performance_trends(
-    metric: str,
-    days: int = Query(30, ge=7, le=365),
-    db: DatabaseManager = Depends()
+    metric: str, days: int = Query(30, ge=7, le=365), db: DatabaseManager = Depends()
 ):
     """Get performance trends for a specific metric over time."""
     # Placeholder implementation
@@ -36,7 +34,7 @@ async def get_performance_trends(
 async def get_progression_tracking(
     guild_name: Optional[str] = Query(None),
     days: int = Query(30, ge=7, le=365),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """Get raid progression tracking data."""
     raise HTTPException(status_code=501, detail="Analytics endpoints not yet implemented")
@@ -47,7 +45,7 @@ async def get_class_balance(
     encounter_type: Optional[str] = Query(None),
     difficulty: Optional[str] = Query(None),
     days: int = Query(30, ge=7, le=365),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """Get class balance analysis."""
     raise HTTPException(status_code=501, detail="Analytics endpoints not yet implemented")
@@ -58,7 +56,7 @@ async def get_spell_usage_stats(
     class_name: Optional[str] = Query(None),
     character_name: Optional[str] = Query(None),
     days: int = Query(30, ge=7, le=365),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """Get spell usage statistics."""
     raise HTTPException(status_code=501, detail="Analytics endpoints not yet implemented")
@@ -69,7 +67,7 @@ async def get_damage_breakdown(
     encounter_id: Optional[int] = Query(None),
     character_name: Optional[str] = Query(None),
     days: int = Query(30, ge=7, le=365),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """Get damage breakdown analysis."""
     raise HTTPException(status_code=501, detail="Analytics endpoints not yet implemented")
