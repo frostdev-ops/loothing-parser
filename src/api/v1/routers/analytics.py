@@ -220,7 +220,7 @@ async def get_class_balance(
         query = """
             SELECT
                 c.class_name,
-                c.spec,
+                c.spec_name as spec,
                 COUNT(DISTINCT cm.encounter_id) as encounter_count,
                 AVG(cm.damage_done) as avg_damage,
                 AVG(cm.healing_done) as avg_healing,
@@ -231,7 +231,7 @@ async def get_class_balance(
             WHERE e.start_time BETWEEN ? AND ?
             {}
             {}
-            GROUP BY c.class_name, c.spec
+            GROUP BY c.class_name, c.spec_name
             ORDER BY avg_damage DESC
         """.format(
             f"AND e.difficulty = ?" if difficulty else "",
