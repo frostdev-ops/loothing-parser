@@ -323,17 +323,16 @@ EOF
     if [[ "$INSTALL_MODE" == "development" ]]; then
         cat > docker-compose.override.yml << EOF
 # Development overrides
-version: '3.8'
-
 services:
-  api:
+  streaming-server:
     volumes:
       - ./src:/app/src:ro
       - ./tests:/app/tests:ro
     environment:
       - RELOAD=true
       - DEBUG=true
-    command: ["--reload"]
+      - LOG_LEVEL=debug
+    command: ["python", "-m", "src.api.streaming_server", "--reload"]
 
   nginx:
     volumes:
