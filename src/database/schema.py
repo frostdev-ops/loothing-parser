@@ -174,7 +174,8 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
 
     # Create guilds table if it doesn't exist
     if not db.table_exists("guilds"):
-        db.execute("""
+        db.execute(
+            """
             CREATE TABLE guilds (
                 guild_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_name TEXT NOT NULL,
@@ -186,16 +187,19 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
                 is_active BOOLEAN DEFAULT TRUE,
                 UNIQUE(guild_name, server, region)
             )
-        """)
+        """
+        )
 
         # Create default guild for existing data
-        db.execute("""
+        db.execute(
+            """
             INSERT INTO guilds (guild_id, guild_name, server, region, faction)
             VALUES (1, 'Default Guild', 'Unknown', 'US', NULL)
-        """)
+        """
+        )
 
     # Add guild_id columns to existing tables
-    tables_to_migrate = ['log_files', 'encounters', 'characters', 'character_metrics']
+    tables_to_migrate = ["log_files", "encounters", "characters", "character_metrics"]
 
     for table in tables_to_migrate:
         if db.table_exists(table):
@@ -203,7 +207,7 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
             cursor = db.execute(f"PRAGMA table_info({table})")
             columns = {row[1]: row[2] for row in cursor.fetchall()}
 
-            if 'guild_id' not in columns:
+            if "guild_id" not in columns:
                 logger.info(f"Adding guild_id column to {table}")
                 db.execute(f"ALTER TABLE {table} ADD COLUMN guild_id INTEGER NOT NULL DEFAULT 1")
 
@@ -281,6 +285,7 @@ def create_tables(db: DatabaseManager) -> None:
 
     # Run migrations
     _migrate_character_schema(db)
+    _migrate_to_v2_guilds(db)
 
     # Log files tracking (prevent duplicate processing)
     db.execute(
