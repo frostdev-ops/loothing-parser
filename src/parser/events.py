@@ -53,8 +53,11 @@ class EventType(Enum):
     SPELL_INTERRUPT = "SPELL_INTERRUPT"
     SPELL_DISPEL = "SPELL_DISPEL"
 
-    # Environmental
+    # Environmental and other damage types
     ENVIRONMENTAL_DAMAGE = "ENVIRONMENTAL_DAMAGE"
+    DAMAGE_SPLIT = "DAMAGE_SPLIT"
+    RANGE_DAMAGE = "RANGE_DAMAGE"
+    SWING_DAMAGE_LANDED = "SWING_DAMAGE_LANDED"
 
     # Meta events
     ENCOUNTER_START = "ENCOUNTER_START"
