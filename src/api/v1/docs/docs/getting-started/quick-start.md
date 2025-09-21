@@ -447,5 +447,12 @@ Now that you're familiar with the basics:
 - Characters must have recent activity to appear in results
 - Check server names are spelled correctly
 - Verify the time range includes the data you're looking for
+- Ensure your API key is associated with the correct guild
+
+### Guild Context Issues
+
+- Empty results may indicate guild context problems
+- Verify your API key is guild-associated: contact support if needed
+- Check that your guild has uploaded combat logs recently
 
 For more help, see our [Troubleshooting Guide](../guides/troubleshooting.md) or contact support.
