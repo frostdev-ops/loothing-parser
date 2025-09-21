@@ -201,6 +201,8 @@ class AuthManager:
                 return AuthResponse(
                     authenticated=True,
                     client_id=stored_key.client_id,
+                    guild_id=stored_key.guild_id,
+                    guild_name=stored_key.guild_name,
                     permissions=list(stored_key.permissions),
                     rate_limit=rate_limit_info,
                     message="Authentication successful",
