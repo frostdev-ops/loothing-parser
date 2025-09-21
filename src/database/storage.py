@@ -980,7 +980,7 @@ class EventStorage:
                 safe_param(getattr(encounter, "dungeon_id", 0)),
                 safe_param(encounter.keystone_level),
                 safe_param("[]"),  # TODO: Implement affix parsing
-                safe_param(getattr(encounter, "time_limit", None)),
+                safe_param(getattr(encounter, "time_limit", 0)),
                 safe_param(encounter.combat_duration),
                 safe_param(encounter.success),
                 safe_param(encounter.success),  # in_time same as success for now
