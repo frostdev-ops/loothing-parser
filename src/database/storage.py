@@ -589,9 +589,7 @@ class EventStorage:
             ),
         )
 
-    def store_character_events(
-        self, encounter_id: int, character_id: int, events: List
-    ) -> int:
+    def store_character_events(self, encounter_id: int, character_id: int, events: List) -> int:
         """
         Store character events using the event blocks storage system.
 
@@ -603,7 +601,35 @@ class EventStorage:
         Returns:
             Number of events stored
         """
-        return self._store_event_blocks(encounter_id, character_id, events)
+        if not events:
+            return 0
+
+        # Import TimestampedEvent here to avoid circular imports
+        from ..models.character_events import TimestampedEvent
+
+        # Wrap raw events in TimestampedEvent objects
+        timestamped_events = []
+        for event in events:
+            if hasattr(event, 'timestamp'):
+                # Determine basic category based on event type
+                category = "other"
+                if hasattr(event, 'event_type'):
+                    if "_DAMAGE" in event.event_type:
+                        category = "damage"
+                    elif "_HEAL" in event.event_type:
+                        category = "healing"
+                    elif "_AURA_" in event.event_type:
+                        category = "aura"
+
+                ts_event = TimestampedEvent(
+                    timestamp=event.timestamp.timestamp(),
+                    datetime=event.timestamp,
+                    event=event,
+                    category=category,
+                )
+                timestamped_events.append(ts_event)
+
+        return self._store_event_blocks(encounter_id, character_id, timestamped_events)
 
     def _store_event_blocks(
         self, encounter_id: int, character_id: int, events: List[TimestampedEvent]
