@@ -63,9 +63,9 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
         Maximum limit is 1000 items per request.
         """,
         version="1.0.0",
-        docs_url="/api/v1/docs",
-        redoc_url="/api/v1/redoc",
-        openapi_url="/api/v1/openapi.json",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
     )
 
     # Add middleware
