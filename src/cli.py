@@ -67,7 +67,20 @@ def cli(verbose):
 def parse(log_file, output, format, guild_id, guild_name, threads, no_parallel):
     """Parse a combat log file and extract encounters using unified segmentation."""
     log_path = Path(log_file)
+
+    # Handle guild context for multi-tenancy
+    if guild_id is None:
+        if guild_name:
+            console.print(f"[yellow]No guild ID provided, using default guild (ID: 1)[/yellow]")
+            guild_id = 1
+        else:
+            console.print(f"[yellow]No guild specified, using default guild (ID: 1)[/yellow]")
+            guild_id = 1
+
     console.print(f"[bold green]Parsing combat log:[/bold green] {log_path.name}")
+    console.print(f"[cyan]Guild ID:[/cyan] {guild_id}")
+    if guild_name:
+        console.print(f"[cyan]Guild Name:[/cyan] {guild_name}")
     console.print(f"[cyan]File size:[/cyan] {log_path.stat().st_size / 1024 / 1024:.1f} MB")
 
     start_time = datetime.now()
