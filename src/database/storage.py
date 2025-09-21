@@ -23,6 +23,35 @@ from src.models.unified_encounter import UnifiedEncounter, EncounterType
 logger = logging.getLogger(__name__)
 
 
+def safe_param(value):
+    """
+    Convert parameter to SQLite-safe type.
+
+    This function ensures all parameters passed to SQLite are of supported types.
+    Lists, tuples, dicts, and other collection types are converted to None.
+    """
+    if value is None:
+        return None
+
+    # Convert all collection types to None
+    if isinstance(value, (list, tuple, dict, set)):
+        logger.debug(f"Converting collection type {type(value)} to None: {value}")
+        return None
+
+    # Allow basic SQLite types
+    if isinstance(value, (int, float, str, bool)):
+        return value
+
+    # Catch any other iterable types (except strings and bytes)
+    if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+        logger.debug(f"Converting iterable type {type(value)} to None: {value}")
+        return None
+
+    # Convert other types to string
+    logger.debug(f"Converting {type(value)} to string: {value}")
+    return str(value)
+
+
 class EventStorage:
     """
     High-performance storage layer for combat log events.
