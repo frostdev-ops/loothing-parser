@@ -1,7 +1,9 @@
 # Implementation Summary: Enhanced Data Structure
 
 ## Overview
+
 Successfully implemented a comprehensive data structure overhaul that provides detailed combat analysis with:
+
 - **Ability breakdowns with percentages** for damage/healing
 - **Death analysis** with last 10 damage/healing events
 - **Talent and equipment tracking** from COMBATANT_INFO
@@ -11,6 +13,7 @@ Successfully implemented a comprehensive data structure overhaul that provides d
 ## New Data Structure Hierarchy
 
 ### 1. **UnifiedEncounter** (Top Level)
+
 ```
 UnifiedEncounter
 ├── encounter_type: EncounterType (RAID/MYTHIC_PLUS)
@@ -24,6 +27,7 @@ UnifiedEncounter
 ```
 
 ### 2. **EnhancedCharacter** (Character Level)
+
 ```
 EnhancedCharacter
 ├── Basic Info (name, server, region)
@@ -41,6 +45,7 @@ EnhancedCharacter
 ```
 
 ### 3. **AbilityMetrics** (Ability Level)
+
 ```
 AbilityMetrics
 ├── spell_id: int
@@ -54,6 +59,7 @@ AbilityMetrics
 ```
 
 ### 4. **Fight** (Combat Segment)
+
 ```
 Fight
 ├── players: Dict[str, EnhancedCharacter]
@@ -66,6 +72,7 @@ Fight
 ```
 
 ### 5. **EnhancedDeathEvent** (Death Analysis)
+
 ```
 EnhancedDeathEvent
 ├── killing_blow: DamageEvent
@@ -78,12 +85,14 @@ EnhancedDeathEvent
 ## Key Features Implemented
 
 ### 1. **Ability Tracking & Percentages**
+
 - Tracks every ability used by spell_id
 - Calculates percentage of total damage/healing
 - Provides hit counts, average damage, and crit rates
 - Separate tracking for damage done, healing done, and damage taken
 
 ### 2. **Death Analysis**
+
 - Stores last 10 damage events before death
 - Stores last 10 healing events before death
 - Aggregates damage sources to identify what killed players
@@ -91,6 +100,7 @@ EnhancedDeathEvent
 - Analyzes death preventability
 
 ### 3. **Talent & Equipment Integration**
+
 - Parses COMBATANT_INFO events for full character snapshot
 - Tracks equipped items with item levels
 - Records talent builds
@@ -98,12 +108,14 @@ EnhancedDeathEvent
 - Calculates average item level
 
 ### 4. **Fight Grouping (Players vs NPCs)**
+
 - Separates players and enemy forces
 - Tracks NPC abilities and damage patterns
 - Identifies boss/elite status
 - Aggregates enemy threat levels
 
 ### 5. **Unified Encounter Model**
+
 - Single structure for both raids and M+
 - Consistent metrics across encounter types
 - Hierarchical fight segmentation
@@ -249,6 +261,7 @@ for encounter in encounters:
 ## Files Created/Modified
 
 ### New Files:
+
 1. `src/models/enhanced_character.py` - Enhanced character model with ability tracking
 2. `src/models/unified_encounter.py` - Unified encounter structure
 3. `src/analyzer/death_analyzer.py` - Death event analysis
@@ -256,6 +269,7 @@ for encounter in encounters:
 5. `test_unified_structure.py` - Comprehensive test script
 
 ### Key Improvements Over Previous Version:
+
 - **Ability Percentages**: Now shows % of total damage/healing per ability
 - **Death Context**: Last 10 events before death for analysis
 - **Talent/Gear**: Full character snapshot including equipment
@@ -265,11 +279,13 @@ for encounter in encounters:
 ## Testing
 
 Run the test script to see the new structure in action:
+
 ```bash
 python test_unified_structure.py
 ```
 
 This processes a combat log and displays:
+
 - Encounter summary with metrics
 - Character performance breakdown
 - Ability percentages and statistics
@@ -281,22 +297,26 @@ This processes a combat log and displays:
 The enhanced data structure successfully provides:
 
 ✅ **Encounter Level**
+
 - Unified model for raids and M+
 - Combat period detection
 - Comprehensive metrics
 
 ✅ **Character Level**
+
 - Complete ability breakdown with percentages
 - Death analysis with recent events
 - Talent and equipment tracking
 - Role detection
 
 ✅ **Fight Level**
+
 - Player vs NPC separation
 - Enemy threat tracking
 - Combat timing analysis
 
 ✅ **Event Level**
+
 - All parsed events preserved
 - Categorized routing to characters
 - Pet attribution to owners

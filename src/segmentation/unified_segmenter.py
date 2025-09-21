@@ -191,7 +191,10 @@ class UnifiedSegmenter:
         if category:
             # Handle swing attack deduplication when ACL is enabled
             should_add_event = True
-            if isinstance(event, DamageEvent) and event.event_type in ["SWING_DAMAGE", "SWING_DAMAGE_LANDED"]:
+            if isinstance(event, DamageEvent) and event.event_type in [
+                "SWING_DAMAGE",
+                "SWING_DAMAGE_LANDED",
+            ]:
                 swing_signature = f"{event.timestamp}_{event.source_guid}_{event.dest_guid}"
                 if swing_signature in self.seen_swings:
                     # Already processed this swing attack, skip it

@@ -13,12 +13,4 @@ This package contains all the FastAPI routers for different endpoint categories:
 
 from . import characters, encounters, analytics, logs, guilds, export, webhooks
 
-__all__ = [
-    "characters",
-    "encounters",
-    "analytics",
-    "logs",
-    "guilds",
-    "export",
-    "webhooks"
-]
+__all__ = ["characters", "encounters", "analytics", "logs", "guilds", "export", "webhooks"]

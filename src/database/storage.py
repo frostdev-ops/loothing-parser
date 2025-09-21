@@ -1041,7 +1041,11 @@ class EventStorage:
                 safe_param(encounter_id),
                 safe_param(getattr(encounter, "dungeon_id", 0)),
                 safe_param(encounter.keystone_level),
-                safe_param(json.dumps(encounter.affixes) if hasattr(encounter, "affixes") and encounter.affixes else "[]"),
+                safe_param(
+                    json.dumps(encounter.affixes)
+                    if hasattr(encounter, "affixes") and encounter.affixes
+                    else "[]"
+                ),
                 safe_param(getattr(encounter, "time_limit", 0)),
                 safe_param(encounter.combat_duration),
                 safe_param(encounter.success),

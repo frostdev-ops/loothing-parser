@@ -56,7 +56,7 @@ class EncounterDetail(BaseModel):
                 "raid_size": 20,
                 "total_damage": 50000000,
                 "total_healing": 15000000,
-                "total_deaths": 2
+                "total_deaths": 2,
             }
         }
 
@@ -66,8 +66,12 @@ class EncounterReplay(BaseModel):
 
     encounter_id: int = Field(..., description="Encounter ID")
     events: List[Dict[str, Any]] = Field(..., description="Chronological event list")
-    timeline_markers: List[Dict[str, Any]] = Field(default_factory=list, description="Important timeline markers")
-    playback_speed_options: List[float] = Field(default_factory=lambda: [0.25, 0.5, 1.0, 2.0, 4.0], description="Available playback speeds")
+    timeline_markers: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Important timeline markers"
+    )
+    playback_speed_options: List[float] = Field(
+        default_factory=lambda: [0.25, 0.5, 1.0, 2.0, 4.0], description="Available playback speeds"
+    )
 
     class Config:
         schema_extra = {
@@ -77,20 +81,20 @@ class EncounterReplay(BaseModel):
                     {
                         "timestamp": 0.0,
                         "type": "encounter_start",
-                        "data": {"boss_name": "Raszageth"}
+                        "data": {"boss_name": "Raszageth"},
                     },
                     {
                         "timestamp": 5.2,
                         "type": "damage",
                         "source": "PlayerOne",
                         "target": "Raszageth",
-                        "amount": 125000
-                    }
+                        "amount": 125000,
+                    },
                 ],
                 "timeline_markers": [
                     {"time": 0.0, "label": "Pull Start", "type": "phase"},
-                    {"time": 120.0, "label": "Phase 2", "type": "phase"}
-                ]
+                    {"time": 120.0, "label": "Phase 2", "type": "phase"},
+                ],
             }
         }
 
@@ -111,12 +115,12 @@ class EncounterTimeline(BaseModel):
                 "encounter_id": 12345,
                 "phases": [
                     {"start": 0.0, "end": 120.0, "name": "Phase 1", "description": "Ground phase"},
-                    {"start": 120.0, "end": 245.7, "name": "Phase 2", "description": "Air phase"}
+                    {"start": 120.0, "end": 245.7, "name": "Phase 2", "description": "Air phase"},
                 ],
                 "damage_timeline": [
                     {"time": 0.0, "raid_dps": 0},
-                    {"time": 10.0, "raid_dps": 2500000}
-                ]
+                    {"time": 10.0, "raid_dps": 2500000},
+                ],
             }
         }
 
@@ -125,9 +129,15 @@ class EncounterComparison(BaseModel):
     """Comparison between multiple encounter attempts."""
 
     encounters: List[EncounterDetail] = Field(..., description="Encounters being compared")
-    metrics_comparison: Dict[str, List[float]] = Field(..., description="Metric comparisons across attempts")
-    improvement_analysis: List[str] = Field(default_factory=list, description="Analysis of improvements")
-    regression_analysis: List[str] = Field(default_factory=list, description="Analysis of regressions")
+    metrics_comparison: Dict[str, List[float]] = Field(
+        ..., description="Metric comparisons across attempts"
+    )
+    improvement_analysis: List[str] = Field(
+        default_factory=list, description="Analysis of improvements"
+    )
+    regression_analysis: List[str] = Field(
+        default_factory=list, description="Analysis of regressions"
+    )
 
     class Config:
         schema_extra = {
@@ -136,12 +146,12 @@ class EncounterComparison(BaseModel):
                 "metrics_comparison": {
                     "raid_dps": [2300000, 2450000, 2500000],
                     "deaths": [5, 3, 2],
-                    "duration": [280.5, 265.2, 245.7]
+                    "duration": [280.5, 265.2, 245.7],
                 },
                 "improvement_analysis": [
                     "DPS improved by 8.7% from attempt 1 to 3",
-                    "Death count reduced by 60%"
-                ]
+                    "Death count reduced by 60%",
+                ],
             }
         }
 
@@ -166,14 +176,11 @@ class DeathAnalysis(BaseModel):
                         "character": "PlayerOne",
                         "time": 120.5,
                         "cause": "Storm Breath",
-                        "avoidable": True
+                        "avoidable": True,
                     }
                 ],
-                "death_causes": {
-                    "Storm Breath": 2,
-                    "Lightning Strike": 1
-                },
-                "avoidable_deaths": 2
+                "death_causes": {"Storm Breath": 2, "Lightning Strike": 1},
+                "avoidable_deaths": 2,
             }
         }
 
@@ -182,11 +189,21 @@ class ResourceUsage(BaseModel):
     """Resource usage analysis for encounter."""
 
     encounter_id: int = Field(..., description="Encounter ID")
-    mana_usage: List[Dict[str, Any]] = Field(default_factory=list, description="Mana usage over time")
-    energy_usage: List[Dict[str, Any]] = Field(default_factory=list, description="Energy usage over time")
-    rage_usage: List[Dict[str, Any]] = Field(default_factory=list, description="Rage usage over time")
-    cooldown_usage: List[Dict[str, Any]] = Field(default_factory=list, description="Major cooldown usage")
-    potion_usage: List[Dict[str, Any]] = Field(default_factory=list, description="Potion and consumable usage")
+    mana_usage: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Mana usage over time"
+    )
+    energy_usage: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Energy usage over time"
+    )
+    rage_usage: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Rage usage over time"
+    )
+    cooldown_usage: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Major cooldown usage"
+    )
+    potion_usage: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Potion and consumable usage"
+    )
 
     class Config:
         schema_extra = {
@@ -197,8 +214,8 @@ class ResourceUsage(BaseModel):
                         "character": "PlayerOne",
                         "ability": "Combustion",
                         "uses": 2,
-                        "timestamps": [45.2, 180.7]
+                        "timestamps": [45.2, 180.7],
                     }
-                ]
+                ],
             }
         }

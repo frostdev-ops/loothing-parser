@@ -18,6 +18,7 @@ from src.segmentation.encounters import Fight
 @dataclass
 class TimelineEvent:
     """Enhanced event for timeline display."""
+
     timestamp: datetime
     relative_time: float  # Seconds from encounter start
     event_type: str
@@ -47,32 +48,26 @@ class TimelineBuilder:
             # Death events are always critical
             "UNIT_DIED": 5,
             "UNIT_DESTROYED": 5,
-
             # Boss mechanics and encounters
             "ENCOUNTER_START": 5,
             "ENCOUNTER_END": 5,
             "CHALLENGE_MODE_START": 5,
             "CHALLENGE_MODE_END": 5,
-
             # Major cooldowns and interrupts
             "SPELL_INTERRUPT": 4,
             "SPELL_DISPEL": 4,
-
             # Damage and healing (varies by amount)
             "SPELL_DAMAGE": 2,  # Base, modified by amount
             "SWING_DAMAGE": 2,
             "SPELL_HEAL": 2,
-
             # Auras and buffs
             "SPELL_AURA_APPLIED": 2,
             "SPELL_AURA_REMOVED": 2,
-
             # Spell casts
             "SPELL_CAST_SUCCESS": 1,
             "SPELL_CAST_START": 1,
-
             # Default
-            "default": 1
+            "default": 1,
         }
 
     def build(self, fight: Fight, combat_periods: List[CombatPeriod]) -> List[TimelineEvent]:
@@ -105,13 +100,13 @@ class TimelineBuilder:
                 event_type=event.event_type,
                 category=self._categorize_event(event),
                 importance=self._score_importance(event),
-                source=getattr(event, 'source_name', None),
-                target=getattr(event, 'dest_name', None),
-                spell=getattr(event, 'spell_name', None),
-                amount=getattr(event, 'amount', None),
+                source=getattr(event, "source_name", None),
+                target=getattr(event, "dest_name", None),
+                spell=getattr(event, "spell_name", None),
+                amount=getattr(event, "amount", None),
                 is_combat=is_combat,
                 combat_period=period_num,
-                description=self._create_description(event)
+                description=self._create_description(event),
             )
             timeline.append(timeline_event)
 
@@ -126,19 +121,30 @@ class TimelineBuilder:
             return EventCategory.DEATH
 
         # Boss mechanics and encounters
-        if any(keyword in event_type for keyword in [
-            "ENCOUNTER_", "CHALLENGE_MODE_", "BOSS_", "MECHANIC_"
-        ]):
+        if any(
+            keyword in event_type
+            for keyword in ["ENCOUNTER_", "CHALLENGE_MODE_", "BOSS_", "MECHANIC_"]
+        ):
             return EventCategory.BOSS_MECHANIC
 
         # Major cooldowns (heuristic: high-impact spells)
-        if hasattr(event, 'spell_name') and event.spell_name:
+        if hasattr(event, "spell_name") and event.spell_name:
             spell_name = event.spell_name.lower()
-            if any(keyword in spell_name for keyword in [
-                "heroism", "bloodlust", "time warp", "ancient hysteria",
-                "guardian spirit", "divine hymn", "tranquility",
-                "avenging wrath", "metamorphosis", "avatar"
-            ]):
+            if any(
+                keyword in spell_name
+                for keyword in [
+                    "heroism",
+                    "bloodlust",
+                    "time warp",
+                    "ancient hysteria",
+                    "guardian spirit",
+                    "divine hymn",
+                    "tranquility",
+                    "avenging wrath",
+                    "metamorphosis",
+                    "avatar",
+                ]
+            ):
                 return EventCategory.MAJOR_COOLDOWN
 
         # Damage events
@@ -173,11 +179,10 @@ class TimelineBuilder:
 
     def _score_importance(self, event: BaseEvent) -> int:
         """Score event importance (1-5 scale)."""
-        base_score = self.importance_rules.get(event.event_type,
-                                             self.importance_rules["default"])
+        base_score = self.importance_rules.get(event.event_type, self.importance_rules["default"])
 
         # Modify score based on event details
-        if hasattr(event, 'amount') and event.amount:
+        if hasattr(event, "amount") and event.amount:
             amount = event.amount
             # High damage/healing gets higher importance
             if "_DAMAGE" in event.event_type or "_HEAL" in event.event_type:
@@ -187,7 +192,7 @@ class TimelineBuilder:
                     base_score = min(5, base_score + 1)
 
         # Player events are more important than NPC events
-        if hasattr(event, 'source_guid') and event.source_guid:
+        if hasattr(event, "source_guid") and event.source_guid:
             if event.source_guid.startswith("Player-"):
                 base_score = min(5, base_score + 1)
 
@@ -196,10 +201,10 @@ class TimelineBuilder:
     def _create_description(self, event: BaseEvent) -> str:
         """Create human-readable description of event."""
         event_type = event.event_type
-        source = getattr(event, 'source_name', 'Unknown')
-        target = getattr(event, 'dest_name', 'Unknown')
-        spell = getattr(event, 'spell_name', 'Unknown')
-        amount = getattr(event, 'amount', 0)
+        source = getattr(event, "source_name", "Unknown")
+        target = getattr(event, "dest_name", "Unknown")
+        spell = getattr(event, "spell_name", "Unknown")
+        amount = getattr(event, "amount", 0)
 
         # Death events
         if event_type == "UNIT_DIED":
@@ -221,9 +226,17 @@ class TimelineBuilder:
 
         # Aura events
         if "AURA_APPLIED" in event_type:
-            return f"{spell} applied to {target}" if spell != "Unknown" else f"Buff applied to {target}"
+            return (
+                f"{spell} applied to {target}"
+                if spell != "Unknown"
+                else f"Buff applied to {target}"
+            )
         elif "AURA_REMOVED" in event_type:
-            return f"{spell} removed from {target}" if spell != "Unknown" else f"Buff removed from {target}"
+            return (
+                f"{spell} removed from {target}"
+                if spell != "Unknown"
+                else f"Buff removed from {target}"
+            )
 
         # Cast events
         if "CAST_SUCCESS" in event_type:
@@ -237,7 +250,7 @@ class TimelineBuilder:
         if event_type == "ENCOUNTER_START":
             return f"Encounter started: {getattr(event, 'encounter_name', 'Unknown')}"
         elif event_type == "ENCOUNTER_END":
-            success = getattr(event, 'success', None)
+            success = getattr(event, "success", None)
             status = "Success" if success else "Wipe" if success is False else "Unknown"
             return f"Encounter ended: {status}"
 
@@ -249,7 +262,9 @@ class TimelineFilter:
     """Filter timeline events based on various criteria."""
 
     @staticmethod
-    def filter_by_combat(events: List[TimelineEvent], combat_only: bool = True) -> List[TimelineEvent]:
+    def filter_by_combat(
+        events: List[TimelineEvent], combat_only: bool = True
+    ) -> List[TimelineEvent]:
         """Filter events by combat periods."""
         if combat_only:
             return [e for e in events if e.is_combat]
@@ -257,29 +272,29 @@ class TimelineFilter:
             return [e for e in events if not e.is_combat]
 
     @staticmethod
-    def filter_by_category(events: List[TimelineEvent], category: EventCategory) -> List[TimelineEvent]:
+    def filter_by_category(
+        events: List[TimelineEvent], category: EventCategory
+    ) -> List[TimelineEvent]:
         """Filter events by category."""
         return [e for e in events if e.category == category]
 
     @staticmethod
-    def filter_by_importance(events: List[TimelineEvent], min_importance: int = 3) -> List[TimelineEvent]:
+    def filter_by_importance(
+        events: List[TimelineEvent], min_importance: int = 3
+    ) -> List[TimelineEvent]:
         """Filter events by minimum importance level."""
         return [e for e in events if e.importance >= min_importance]
 
     @staticmethod
     def filter_by_time_window(
-        events: List[TimelineEvent],
-        start_time: float,
-        end_time: float
+        events: List[TimelineEvent], start_time: float, end_time: float
     ) -> List[TimelineEvent]:
         """Filter events by time window (relative to encounter start)."""
         return [e for e in events if start_time <= e.relative_time <= end_time]
 
     @staticmethod
     def filter_by_participant(
-        events: List[TimelineEvent],
-        participant_name: str,
-        include_as_target: bool = True
+        events: List[TimelineEvent], participant_name: str, include_as_target: bool = True
     ) -> List[TimelineEvent]:
         """Filter events involving a specific participant."""
         filtered = []
@@ -295,7 +310,9 @@ class TimelineAnalyzer:
     """Analyze timeline data for insights."""
 
     @staticmethod
-    def analyze_combat_gaps(timeline: List[TimelineEvent], combat_periods: List[CombatPeriod]) -> Dict[str, Any]:
+    def analyze_combat_gaps(
+        timeline: List[TimelineEvent], combat_periods: List[CombatPeriod]
+    ) -> Dict[str, Any]:
         """Analyze gaps between combat periods."""
         if len(combat_periods) < 2:
             return {"gap_count": 0, "gaps": []}
@@ -306,25 +323,28 @@ class TimelineAnalyzer:
             next_start = combat_periods[i + 1].start_time
             gap_duration = (next_start - current_end).total_seconds()
 
-            gaps.append({
-                "start_time": current_end,
-                "end_time": next_start,
-                "duration": gap_duration,
-                "events_during_gap": len([
-                    e for e in timeline
-                    if current_end <= e.timestamp <= next_start
-                ])
-            })
+            gaps.append(
+                {
+                    "start_time": current_end,
+                    "end_time": next_start,
+                    "duration": gap_duration,
+                    "events_during_gap": len(
+                        [e for e in timeline if current_end <= e.timestamp <= next_start]
+                    ),
+                }
+            )
 
         return {
             "gap_count": len(gaps),
             "gaps": gaps,
             "total_gap_time": sum(gap["duration"] for gap in gaps),
-            "avg_gap_duration": sum(gap["duration"] for gap in gaps) / len(gaps) if gaps else 0
+            "avg_gap_duration": sum(gap["duration"] for gap in gaps) / len(gaps) if gaps else 0,
         }
 
     @staticmethod
-    def get_activity_bursts(timeline: List[TimelineEvent], window_size: float = 10.0) -> List[Dict[str, Any]]:
+    def get_activity_bursts(
+        timeline: List[TimelineEvent], window_size: float = 10.0
+    ) -> List[Dict[str, Any]]:
         """Find periods of high activity (event density)."""
         if not timeline:
             return []
@@ -338,18 +358,19 @@ class TimelineAnalyzer:
 
             # Count events in this window
             events_in_window = [
-                e for e in timeline
-                if window_start <= e.relative_time <= window_end
+                e for e in timeline if window_start <= e.relative_time <= window_end
             ]
 
             if len(events_in_window) >= 10:  # Threshold for "burst"
-                bursts.append({
-                    "start_time": window_start,
-                    "end_time": window_end,
-                    "event_count": len(events_in_window),
-                    "events_per_second": len(events_in_window) / window_size,
-                    "categories": list(set(e.category for e in events_in_window))
-                })
+                bursts.append(
+                    {
+                        "start_time": window_start,
+                        "end_time": window_end,
+                        "event_count": len(events_in_window),
+                        "events_per_second": len(events_in_window) / window_size,
+                        "categories": list(set(e.category for e in events_in_window)),
+                    }
+                )
 
         # Merge overlapping bursts
         merged_bursts = []

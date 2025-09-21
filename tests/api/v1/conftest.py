@@ -53,7 +53,7 @@ def mock_auth() -> AuthResponse:
         user_id="test_user_123",
         permissions=["read", "write", "admin"],
         rate_limit_tier="premium",
-        message="Authentication successful"
+        message="Authentication successful",
     )
 
 
@@ -68,10 +68,11 @@ def api_client(mock_db: DatabaseManager) -> TestClient:
             authenticated=True,
             user_id="test_user_123",
             permissions=["read", "write", "admin"],
-            rate_limit_tier="premium"
+            rate_limit_tier="premium",
         )
 
     from src.api.v1.dependencies import get_authenticated_user
+
     app.dependency_overrides[get_authenticated_user] = override_auth
 
     return TestClient(app)
@@ -88,10 +89,11 @@ async def async_client(mock_db: DatabaseManager) -> AsyncClient:
             authenticated=True,
             user_id="test_user_123",
             permissions=["read", "write", "admin"],
-            rate_limit_tier="premium"
+            rate_limit_tier="premium",
         )
 
     from src.api.v1.dependencies import get_authenticated_user
+
     app.dependency_overrides[get_authenticated_user] = override_auth
 
     async with AsyncClient(app=app, base_url="http://test") as client:
@@ -125,8 +127,8 @@ def sample_character_data() -> Dict[str, Any]:
             "best_hps": 25000.0,
             "survival_rate": 92.5,
             "activity_percentage": 87.3,
-            "parse_percentile": 75.2
-        }
+            "parse_percentile": 75.2,
+        },
     }
 
 
@@ -166,9 +168,9 @@ def sample_encounter_data() -> Dict[str, Any]:
                 "interrupts": 3,
                 "dispels": 1,
                 "activity_percentage": 89.5,
-                "item_level": 489.5
+                "item_level": 489.5,
             }
-        ]
+        ],
     }
 
 
@@ -193,7 +195,7 @@ def sample_performance_data() -> Dict[str, Any]:
         "dispels": 1,
         "activity_percentage": 89.5,
         "parse_percentile": 75.2,
-        "item_level": 489.5
+        "item_level": 489.5,
     }
 
 
@@ -210,22 +212,15 @@ def sample_search_data() -> Dict[str, Any]:
                 "relevance_score": 0.95,
                 "highlights": {
                     "name": ["<mark>Thrall</mark>"],
-                    "class_name": ["<mark>Shaman</mark>"]
+                    "class_name": ["<mark>Shaman</mark>"],
                 },
-                "data": {
-                    "name": "Thrall",
-                    "class_name": "Shaman",
-                    "guild_name": "Earthen Ring"
-                }
+                "data": {"name": "Thrall", "class_name": "Shaman", "guild_name": "Earthen Ring"},
             }
         ],
         "total_count": 1,
         "query_time_ms": 15.5,
         "suggestions": [],
-        "facets": {
-            "class_name": {"Shaman": 1},
-            "guild_name": {"Earthen Ring": 1}
-        }
+        "facets": {"class_name": {"Shaman": 1}, "guild_name": {"Earthen Ring": 1}},
     }
 
 
@@ -244,7 +239,7 @@ def sample_aggregation_data() -> Dict[str, Any]:
                 "dps_p75": 140000.0,
                 "dps_p90": 160000.0,
                 "dps_p95": 170000.0,
-                "dps_p99": 175000.0
+                "dps_p99": 175000.0,
             }
         ],
         "metadata": {
@@ -252,55 +247,39 @@ def sample_aggregation_data() -> Dict[str, Any]:
             "metrics": ["dps"],
             "group_by": ["class_name"],
             "functions": ["avg", "min", "max", "count"],
-            "generated_at": "2024-01-15T10:30:00Z"
-        }
+            "generated_at": "2024-01-15T10:30:00Z",
+        },
     }
 
 
 @pytest.fixture
 def valid_headers() -> Dict[str, str]:
     """Provide valid authentication headers for API requests."""
-    return {
-        "Authorization": "Bearer test_api_key_123",
-        "Content-Type": "application/json"
-    }
+    return {"Authorization": "Bearer test_api_key_123", "Content-Type": "application/json"}
 
 
 @pytest.fixture
 def invalid_headers() -> Dict[str, str]:
     """Provide invalid authentication headers for testing auth failures."""
-    return {
-        "Authorization": "Bearer invalid_key",
-        "Content-Type": "application/json"
-    }
+    return {"Authorization": "Bearer invalid_key", "Content-Type": "application/json"}
 
 
 @pytest.fixture
 def rate_limited_headers() -> Dict[str, str]:
     """Provide headers that will trigger rate limiting for testing."""
-    return {
-        "Authorization": "Bearer rate_limited_key",
-        "Content-Type": "application/json"
-    }
+    return {"Authorization": "Bearer rate_limited_key", "Content-Type": "application/json"}
 
 
 @pytest.fixture
 def pagination_params() -> Dict[str, Any]:
     """Provide standard pagination parameters for testing."""
-    return {
-        "limit": 20,
-        "offset": 0
-    }
+    return {"limit": 20, "offset": 0}
 
 
 @pytest.fixture
 def time_range_params() -> Dict[str, Any]:
     """Provide time range parameters for testing."""
-    return {
-        "days": 30,
-        "start_date": "2024-01-01T00:00:00Z",
-        "end_date": "2024-01-31T23:59:59Z"
-    }
+    return {"days": 30, "start_date": "2024-01-01T00:00:00Z", "end_date": "2024-01-31T23:59:59Z"}
 
 
 @pytest.fixture
@@ -311,7 +290,7 @@ def filter_params() -> Dict[str, Any]:
         "guild": "Earthen Ring",
         "encounter_type": "raid",
         "difficulty": "heroic",
-        "server": "Stormrage"
+        "server": "Stormrage",
     }
 
 

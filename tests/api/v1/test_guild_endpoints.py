@@ -203,7 +203,9 @@ class TestGuildUploadEndpoints:
             mock_upload_service.return_value = mock_service
 
             # Create test file
-            test_file_content = b"9/15/2025 21:30:21.462-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1"
+            test_file_content = (
+                b"9/15/2025 21:30:21.462-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1"
+            )
             files = {"file": ("test_log.txt", test_file_content, "text/plain")}
 
             response = client.post("/api/v1/logs/upload", files=files)
@@ -249,7 +251,9 @@ class TestGuildUploadEndpoints:
         client = TestClient(app)
 
         # Try to upload without guild context
-        test_file_content = b"9/15/2025 21:30:21.462-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1"
+        test_file_content = (
+            b"9/15/2025 21:30:21.462-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1"
+        )
         files = {"file": ("test_log.txt", test_file_content, "text/plain")}
 
         response = client.post("/api/v1/logs/upload", files=files)
@@ -302,7 +306,9 @@ class TestGuildUploadEndpoints:
         guild_id = 3  # Guild with no upload permission
         client = create_guild_api_client(guild_id, mock_db, guild_auth_responses)
 
-        test_file_content = b"9/15/2025 21:30:21.462-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1"
+        test_file_content = (
+            b"9/15/2025 21:30:21.462-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1"
+        )
         files = {"file": ("test_log.txt", test_file_content, "text/plain")}
 
         response = client.post("/api/v1/logs/upload", files=files)

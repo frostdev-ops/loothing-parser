@@ -196,13 +196,13 @@ class CharacterEventStream:
             if isinstance(event, DamageEvent):
                 self.damage_done.append(event)
                 # Only count actual damage, not overkill (matches Details addon behavior)
-                amount = event.amount if hasattr(event, 'amount') else 0
+                amount = event.amount if hasattr(event, "amount") else 0
                 self.total_damage_done += amount
                 logger.debug(
                     f"Added damage_done: {amount}, total now: {self.total_damage_done}, event_type: {event.event_type}"
                 )
                 # Track overkill separately
-                if hasattr(event, 'overkill') and event.overkill > 0:
+                if hasattr(event, "overkill") and event.overkill > 0:
                     self.total_overkill_done += event.overkill
             else:
                 logger.warning(
@@ -216,8 +216,8 @@ class CharacterEventStream:
             if isinstance(event, HealEvent):
                 self.healing_done.append(event)
                 # Use effective healing (excluding overhealing) to match WoW's "Healing Done" metric
-                amount = event.amount if hasattr(event, 'amount') else 0
-                overhealing = event.overhealing if hasattr(event, 'overhealing') else 0
+                amount = event.amount if hasattr(event, "amount") else 0
+                overhealing = event.overhealing if hasattr(event, "overhealing") else 0
                 effective_healing = max(0, amount - overhealing)  # Ensure non-negative
                 self.total_healing_done += effective_healing
                 self.total_overhealing += overhealing

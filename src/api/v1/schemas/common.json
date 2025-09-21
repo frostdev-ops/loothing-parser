@@ -211,10 +211,22 @@
           "type": "string",
           "description": "Filter operator",
           "enum": [
-            "equals", "not_equals", "greater_than", "less_than",
-            "greater_equal", "less_equal", "contains", "not_contains",
-            "starts_with", "ends_with", "in", "not_in", "is_null",
-            "is_not_null", "between", "regex"
+            "equals",
+            "not_equals",
+            "greater_than",
+            "less_than",
+            "greater_equal",
+            "less_equal",
+            "contains",
+            "not_contains",
+            "starts_with",
+            "ends_with",
+            "in",
+            "not_in",
+            "is_null",
+            "is_not_null",
+            "between",
+            "regex"
           ]
         },
         "value": {
@@ -256,9 +268,19 @@
       "type": "string",
       "description": "World of Warcraft class names",
       "enum": [
-        "Death Knight", "Demon Hunter", "Druid", "Evoker", "Hunter",
-        "Mage", "Monk", "Paladin", "Priest", "Rogue", "Shaman",
-        "Warlock", "Warrior"
+        "Death Knight",
+        "Demon Hunter",
+        "Druid",
+        "Evoker",
+        "Hunter",
+        "Mage",
+        "Monk",
+        "Paladin",
+        "Priest",
+        "Rogue",
+        "Shaman",
+        "Warlock",
+        "Warrior"
       ]
     },
     "WoWFaction": {
@@ -269,7 +291,14 @@
     "EncounterDifficulty": {
       "type": "string",
       "description": "Encounter difficulty levels",
-      "enum": ["lfr", "normal", "heroic", "mythic", "mythic_plus", "timewalking"]
+      "enum": [
+        "lfr",
+        "normal",
+        "heroic",
+        "mythic",
+        "mythic_plus",
+        "timewalking"
+      ]
     },
     "EncounterType": {
       "type": "string",
@@ -285,15 +314,35 @@
       "type": "string",
       "description": "Performance metrics that can be analyzed",
       "enum": [
-        "dps", "hps", "dtps", "damage_done", "healing_done", "damage_taken",
-        "deaths", "activity_percentage", "survivability", "parse_percentile",
-        "interrupts", "dispels", "item_level", "duration"
+        "dps",
+        "hps",
+        "dtps",
+        "damage_done",
+        "healing_done",
+        "damage_taken",
+        "deaths",
+        "activity_percentage",
+        "survivability",
+        "parse_percentile",
+        "interrupts",
+        "dispels",
+        "item_level",
+        "duration"
       ]
     },
     "AggregationFunction": {
       "type": "string",
       "description": "Available aggregation functions",
-      "enum": ["avg", "min", "max", "sum", "count", "stddev", "variance", "median"]
+      "enum": [
+        "avg",
+        "min",
+        "max",
+        "sum",
+        "count",
+        "stddev",
+        "variance",
+        "median"
+      ]
     },
     "SearchScope": {
       "type": "string",

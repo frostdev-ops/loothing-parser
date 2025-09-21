@@ -43,7 +43,7 @@ class LineBuffer:
         max_size: int = 5000,
         batch_size: int = 1000,
         flush_interval: float = 1.0,
-        on_batch_ready: Optional[Callable[[List[BufferedLine]], None]] = None
+        on_batch_ready: Optional[Callable[[List[BufferedLine]], None]] = None,
     ):
         """
         Initialize line buffer.
@@ -81,7 +81,9 @@ class LineBuffer:
 
         self._running = True
         self._flush_task = asyncio.create_task(self._flush_timer())
-        logger.info(f"Line buffer started (max_size={self.max_size}, batch_size={self.batch_size})")
+        logger.info(
+            f"Line buffer started (max_size={self.max_size}, batch_size={self.batch_size})"
+        )
 
     async def stop(self):
         """Stop the buffer and flush remaining lines."""
@@ -98,7 +100,12 @@ class LineBuffer:
         await self.flush()
         logger.info("Line buffer stopped")
 
-    def add_line(self, line: str, timestamp: Optional[float] = None, sequence: Optional[int] = None) -> int:
+    def add_line(
+        self,
+        line: str,
+        timestamp: Optional[float] = None,
+        sequence: Optional[int] = None,
+    ) -> int:
         """
         Add a line to the buffer.
 
@@ -122,13 +129,15 @@ class LineBuffer:
                 sequence=sequence,
                 timestamp=timestamp,
                 line=line,
-                received_at=time.time()
+                received_at=time.time(),
             )
 
             # Check for overflow
             if len(self._buffer) >= self.max_size:
                 self._overflows += 1
-                logger.warning(f"Buffer overflow! Dropping oldest line (total overflows: {self._overflows})")
+                logger.warning(
+                    f"Buffer overflow! Dropping oldest line (total overflows: {self._overflows})"
+                )
 
             self._buffer.append(buffered_line)
             self._total_added += 1
@@ -182,7 +191,9 @@ class LineBuffer:
 
         # Process batch outside of lock
         try:
-            await asyncio.get_event_loop().run_in_executor(None, self.on_batch_ready, batch)
+            await asyncio.get_event_loop().run_in_executor(
+                None, self.on_batch_ready, batch
+            )
             logger.debug(f"Flushed batch of {lines_flushed} lines")
         except Exception as e:
             logger.error(f"Error processing batch: {e}")
@@ -267,7 +278,7 @@ class MultiClientBuffer:
     def __init__(
         self,
         default_buffer_config: Optional[Dict[str, Any]] = None,
-        max_clients: int = 100
+        max_clients: int = 100,
     ):
         """
         Initialize multi-client buffer manager.
@@ -279,14 +290,16 @@ class MultiClientBuffer:
         self.default_config = default_buffer_config or {
             "max_size": 5000,
             "batch_size": 1000,
-            "flush_interval": 1.0
+            "flush_interval": 1.0,
         }
         self.max_clients = max_clients
 
         self._buffers: Dict[str, LineBuffer] = {}
         self._lock = threading.RLock()
 
-    def get_buffer(self, client_id: str, on_batch_ready: Optional[Callable] = None) -> LineBuffer:
+    def get_buffer(
+        self, client_id: str, on_batch_ready: Optional[Callable] = None
+    ) -> LineBuffer:
         """
         Get or create buffer for client.
 
@@ -300,12 +313,13 @@ class MultiClientBuffer:
         with self._lock:
             if client_id not in self._buffers:
                 if len(self._buffers) >= self.max_clients:
-                    raise ValueError(f"Maximum client limit reached ({self.max_clients})")
+                    raise ValueError(
+                        f"Maximum client limit reached ({self.max_clients})"
+                    )
 
                 # Create new buffer
                 buffer = LineBuffer(
-                    on_batch_ready=on_batch_ready,
-                    **self.default_config
+                    on_batch_ready=on_batch_ready, **self.default_config
                 )
                 self._buffers[client_id] = buffer
                 logger.info(f"Created buffer for client {client_id}")

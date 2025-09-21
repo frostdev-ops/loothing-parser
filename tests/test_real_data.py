@@ -284,7 +284,11 @@ class TestRealDataParser:
                     for event in events_from_line:
                         if event and hasattr(event, "source_name"):
                             source_name = getattr(event, "source_name", None)
-                            if source_name and isinstance(source_name, str) and source_name.startswith("Player-"):
+                            if (
+                                source_name
+                                and isinstance(source_name, str)
+                                and source_name.startswith("Player-")
+                            ):
                                 # This is a player event
                                 if source_name not in character_events:
                                     character_events[source_name] = []

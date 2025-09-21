@@ -88,8 +88,8 @@ class WebSocketNotifier:
                 "encounters_found": status.encounters_found,
                 "characters_found": status.characters_found,
                 "events_processed": status.events_processed,
-                "error_message": status.error_message
-            }
+                "error_message": status.error_message,
+            },
         }
 
         # Send to all subscribed sessions
@@ -122,10 +122,7 @@ class WebSocketNotifier:
         notification = {
             "type": "encounter_found",
             "timestamp": datetime.now().timestamp(),
-            "data": {
-                "upload_id": upload_id,
-                "encounter": encounter_data
-            }
+            "data": {"upload_id": upload_id, "encounter": encounter_data},
         }
 
         subscribed_sessions = self._upload_subscriptions[upload_id].copy()
@@ -135,7 +132,9 @@ class WebSocketNotifier:
                     websocket = self._websocket_connections[session_id]
                     await websocket.send_text(json.dumps(notification))
             except Exception as e:
-                logger.warning(f"Failed to send encounter notification to session {session_id}: {e}")
+                logger.warning(
+                    f"Failed to send encounter notification to session {session_id}: {e}"
+                )
 
     async def notify_character_metrics(self, upload_id: str, character_data: Dict[str, Any]):
         """Send notification when character metrics are calculated."""
@@ -145,10 +144,7 @@ class WebSocketNotifier:
         notification = {
             "type": "character_metrics",
             "timestamp": datetime.now().timestamp(),
-            "data": {
-                "upload_id": upload_id,
-                "character": character_data
-            }
+            "data": {"upload_id": upload_id, "character": character_data},
         }
 
         subscribed_sessions = self._upload_subscriptions[upload_id].copy()
@@ -158,7 +154,9 @@ class WebSocketNotifier:
                     websocket = self._websocket_connections[session_id]
                     await websocket.send_text(json.dumps(notification))
             except Exception as e:
-                logger.warning(f"Failed to send character notification to session {session_id}: {e}")
+                logger.warning(
+                    f"Failed to send character notification to session {session_id}: {e}"
+                )
 
     def get_subscriptions_count(self) -> Dict[str, int]:
         """Get statistics about current subscriptions."""
@@ -166,7 +164,7 @@ class WebSocketNotifier:
             "total_upload_subscriptions": len(self._upload_subscriptions),
             "total_client_subscriptions": len(self._client_subscriptions),
             "active_uploads": list(self._upload_subscriptions.keys()),
-            "active_clients": list(self._client_subscriptions.keys())
+            "active_clients": list(self._client_subscriptions.keys()),
         }
 
 

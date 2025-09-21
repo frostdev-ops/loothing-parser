@@ -23,7 +23,7 @@ class RateLimitConfig:
         requests_per_minute: int = 60,
         requests_per_hour: int = 1000,
         burst_limit: int = 10,
-        window_size: int = 60
+        window_size: int = 60,
     ):
         """
         Initialize rate limit configuration.
@@ -67,7 +67,10 @@ class RateLimitTracker:
         current_hour = int(current_time // 3600)
 
         # Reset counters if needed
-        if client_id not in self.last_reset_minute or self.last_reset_minute[client_id] != current_minute:
+        if (
+            client_id not in self.last_reset_minute
+            or self.last_reset_minute[client_id] != current_minute
+        ):
             self.minute_counts[client_id] = 0
             self.last_reset_minute[client_id] = current_minute
 
@@ -87,7 +90,7 @@ class RateLimitTracker:
             remaining = {
                 "minute": max(0, self.config.requests_per_minute - self.minute_counts[client_id]),
                 "hour": max(0, self.config.requests_per_hour - self.hour_counts[client_id]),
-                "burst": 0
+                "burst": 0,
             }
             return True, "Burst limit exceeded", remaining
 
@@ -96,7 +99,7 @@ class RateLimitTracker:
             remaining = {
                 "minute": 0,
                 "hour": max(0, self.config.requests_per_hour - self.hour_counts[client_id]),
-                "burst": max(0, self.config.burst_limit - len(burst_times))
+                "burst": max(0, self.config.burst_limit - len(burst_times)),
             }
             return True, "Minute limit exceeded", remaining
 
@@ -105,7 +108,7 @@ class RateLimitTracker:
             remaining = {
                 "minute": max(0, self.config.requests_per_minute - self.minute_counts[client_id]),
                 "hour": 0,
-                "burst": max(0, self.config.burst_limit - len(burst_times))
+                "burst": max(0, self.config.burst_limit - len(burst_times)),
             }
             return True, "Hour limit exceeded", remaining
 
@@ -118,7 +121,7 @@ class RateLimitTracker:
         remaining = {
             "minute": max(0, self.config.requests_per_minute - self.minute_counts[client_id]),
             "hour": max(0, self.config.requests_per_hour - self.hour_counts[client_id]),
-            "burst": max(0, self.config.burst_limit - len(burst_times))
+            "burst": max(0, self.config.burst_limit - len(burst_times)),
         }
 
         return False, "", remaining
@@ -136,7 +139,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self,
         app,
         default_config: Optional[RateLimitConfig] = None,
-        custom_configs: Optional[Dict[str, RateLimitConfig]] = None
+        custom_configs: Optional[Dict[str, RateLimitConfig]] = None,
     ):
         """
         Initialize rate limiting middleware.
@@ -221,7 +224,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             HTTPException: If rate limit is exceeded
         """
         # Skip rate limiting for health checks and docs
-        if request.url.path in ["/health", "/api/v1/health", "/api/v1/docs", "/api/v1/redoc", "/api/v1/openapi.json"]:
+        if request.url.path in [
+            "/health",
+            "/api/v1/health",
+            "/api/v1/docs",
+            "/api/v1/redoc",
+            "/api/v1/openapi.json",
+        ]:
             return await call_next(request)
 
         # Get client ID and tracker
@@ -242,8 +251,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "X-RateLimit-Remaining-Minute": str(remaining["minute"]),
                     "X-RateLimit-Remaining-Hour": str(remaining["hour"]),
                     "X-RateLimit-Remaining-Burst": str(remaining["burst"]),
-                    "Retry-After": "60"  # Suggest retry after 1 minute
-                }
+                    "Retry-After": "60",  # Suggest retry after 1 minute
+                },
             )
 
         # Process request

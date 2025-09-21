@@ -608,7 +608,9 @@ class AnalyticsResolver(BaseResolver):
                 GROUP BY e.id
                 ORDER BY e.start_time DESC
                 LIMIT 200
-            """.format("AND e.guild_name = ?" if guild_name else "")
+            """.format(
+                "AND e.guild_name = ?" if guild_name else ""
+            )
 
             params = [start_date.isoformat(), end_date.isoformat()]
             if guild_name:
@@ -626,7 +628,7 @@ class AnalyticsResolver(BaseResolver):
                     "kill_time": row["start_time"] if row["is_kill"] else None,
                     "is_kill": bool(row["is_kill"]),
                     "duration_seconds": row["duration"],
-                    "player_count": row["player_count"]
+                    "player_count": row["player_count"],
                 }
                 progression_data.append(encounter)
 

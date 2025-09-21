@@ -10,33 +10,30 @@ from typing import Any, Dict, List, Optional, Generic, TypeVar, Union
 from enum import Enum
 from pydantic import BaseModel, Field, validator
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class SortOrder(str, Enum):
     """Sort order enumeration."""
+
     ASC = "asc"
     DESC = "desc"
 
 
 class TimeRange(BaseModel):
     """Time range specification for queries."""
+
     start: datetime = Field(..., description="Start time (inclusive)")
     end: datetime = Field(..., description="End time (inclusive)")
 
-    @validator('end')
+    @validator("end")
     def end_after_start(cls, v, values):
-        if 'start' in values and v <= values['start']:
-            raise ValueError('End time must be after start time')
+        if "start" in values and v <= values["start"]:
+            raise ValueError("End time must be after start time")
         return v
 
     class Config:
-        schema_extra = {
-            "example": {
-                "start": "2023-10-01T00:00:00Z",
-                "end": "2023-10-31T23:59:59Z"
-            }
-        }
+        schema_extra = {"example": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"}}
 
 
 class PaginationMeta(BaseModel):
@@ -50,28 +47,28 @@ class PaginationMeta(BaseModel):
     page: int = Field(..., description="Current page number (1-based)", ge=1)
     total_pages: int = Field(..., description="Total number of pages", ge=1)
 
-    @validator('page', pre=True)
+    @validator("page", pre=True)
     def calculate_page(cls, v, values):
-        if 'offset' in values and 'limit' in values:
-            return (values['offset'] // values['limit']) + 1
+        if "offset" in values and "limit" in values:
+            return (values["offset"] // values["limit"]) + 1
         return v
 
-    @validator('total_pages', pre=True)
+    @validator("total_pages", pre=True)
     def calculate_total_pages(cls, v, values):
-        if 'total' in values and 'limit' in values:
-            return max(1, (values['total'] + values['limit'] - 1) // values['limit'])
+        if "total" in values and "limit" in values:
+            return max(1, (values["total"] + values["limit"] - 1) // values["limit"])
         return v
 
-    @validator('has_next', pre=True)
+    @validator("has_next", pre=True)
     def calculate_has_next(cls, v, values):
-        if 'offset' in values and 'limit' in values and 'total' in values:
-            return values['offset'] + values['limit'] < values['total']
+        if "offset" in values and "limit" in values and "total" in values:
+            return values["offset"] + values["limit"] < values["total"]
         return v
 
-    @validator('has_previous', pre=True)
+    @validator("has_previous", pre=True)
     def calculate_has_previous(cls, v, values):
-        if 'offset' in values:
-            return values['offset'] > 0
+        if "offset" in values:
+            return values["offset"] > 0
         return v
 
     class Config:
@@ -83,7 +80,7 @@ class PaginationMeta(BaseModel):
                 "has_next": True,
                 "has_previous": True,
                 "page": 3,
-                "total_pages": 13
+                "total_pages": 13,
             }
         }
 
@@ -95,20 +92,16 @@ class FilterCriteria(BaseModel):
     operator: str = Field(..., description="Filter operator (eq, ne, gt, lt, ge, le, in, like)")
     value: Union[str, int, float, bool, List[Any]] = Field(..., description="Filter value")
 
-    @validator('operator')
+    @validator("operator")
     def validate_operator(cls, v):
-        allowed_operators = ['eq', 'ne', 'gt', 'lt', 'ge', 'le', 'in', 'like', 'not_in']
+        allowed_operators = ["eq", "ne", "gt", "lt", "ge", "le", "in", "like", "not_in"]
         if v not in allowed_operators:
             raise ValueError(f'Operator must be one of: {", ".join(allowed_operators)}')
         return v
 
     class Config:
         schema_extra = {
-            "example": {
-                "field": "difficulty",
-                "operator": "in",
-                "value": ["HEROIC", "MYTHIC"]
-            }
+            "example": {"field": "difficulty", "operator": "in", "value": ["HEROIC", "MYTHIC"]}
         }
 
 
@@ -126,7 +119,7 @@ class ServerInfo(BaseModel):
                 "name": "Stormrage",
                 "region": "US",
                 "locale": "enUS",
-                "timezone": "America/New_York"
+                "timezone": "America/New_York",
             }
         }
 
@@ -137,7 +130,9 @@ class WoWClass(BaseModel):
     id: int = Field(..., description="Class ID")
     name: str = Field(..., description="Class name")
     color: str = Field(..., description="Class color hex code")
-    specs: List[Dict[str, Any]] = Field(default_factory=list, description="Available specializations")
+    specs: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Available specializations"
+    )
 
     class Config:
         schema_extra = {
@@ -148,8 +143,8 @@ class WoWClass(BaseModel):
                 "specs": [
                     {"id": 71, "name": "Arms", "role": "DPS"},
                     {"id": 72, "name": "Fury", "role": "DPS"},
-                    {"id": 73, "name": "Protection", "role": "Tank"}
-                ]
+                    {"id": 73, "name": "Protection", "role": "Tank"},
+                ],
             }
         }
 
@@ -159,7 +154,9 @@ class ItemInfo(BaseModel):
 
     id: int = Field(..., description="Item ID")
     name: str = Field(..., description="Item name")
-    quality: str = Field(..., description="Item quality (Poor, Common, Uncommon, Rare, Epic, Legendary)")
+    quality: str = Field(
+        ..., description="Item quality (Poor, Common, Uncommon, Rare, Epic, Legendary)"
+    )
     item_level: int = Field(..., description="Item level", ge=1)
     slot: Optional[str] = Field(None, description="Equipment slot")
     icon: Optional[str] = Field(None, description="Item icon name")
@@ -172,7 +169,7 @@ class ItemInfo(BaseModel):
                 "quality": "Epic",
                 "item_level": 415,
                 "slot": "Shoulder",
-                "icon": "inv_shoulder_plate_raiddeathknight_s_01"
+                "icon": "inv_shoulder_plate_raiddeathknight_s_01",
             }
         }
 
@@ -195,7 +192,7 @@ class SpellInfo(BaseModel):
                 "school": "Nature",
                 "icon": "spell_druid_incarnation",
                 "cooldown": 180000,
-                "cast_time": 0
+                "cast_time": 0,
             }
         }
 
@@ -204,16 +201,15 @@ class PerformanceMetric(BaseModel):
     """Performance metric with metadata."""
 
     value: float = Field(..., description="Metric value")
-    percentile: Optional[float] = Field(None, description="Percentile ranking (0-100)", ge=0, le=100)
+    percentile: Optional[float] = Field(
+        None, description="Percentile ranking (0-100)", ge=0, le=100
+    )
     rank: Optional[int] = Field(None, description="Absolute ranking", ge=1)
-    total_participants: Optional[int] = Field(None, description="Total number of participants", ge=1)
+    total_participants: Optional[int] = Field(
+        None, description="Total number of participants", ge=1
+    )
 
     class Config:
         schema_extra = {
-            "example": {
-                "value": 125000.5,
-                "percentile": 95.3,
-                "rank": 2,
-                "total_participants": 20
-            }
+            "example": {"value": 125000.5, "percentile": 95.3, "rank": 2, "total_participants": 20}
         }

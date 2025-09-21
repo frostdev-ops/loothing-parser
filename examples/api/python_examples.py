@@ -35,13 +35,15 @@ class WoWAnalyticsAPI:
             base_url: Base URL for the API (e.g., 'https://api.example.com/api/v1')
             api_key: Your API authentication key
         """
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.session = requests.Session()
-        self.session.headers.update({
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json',
-            'User-Agent': 'WoW-Analytics-Python-Client/1.0'
-        })
+        self.session.headers.update(
+            {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "WoW-Analytics-Python-Client/1.0",
+            }
+        )
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make an HTTP request to the API."""
@@ -54,7 +56,7 @@ class WoWAnalyticsAPI:
         except requests.exceptions.HTTPError as e:
             if response.status_code == 429:
                 # Handle rate limiting
-                retry_after = int(response.headers.get('Retry-After', 60))
+                retry_after = int(response.headers.get("Retry-After", 60))
                 print(f"Rate limited. Waiting {retry_after} seconds...")
                 time.sleep(retry_after)
                 return self._make_request(method, endpoint, **kwargs)
@@ -69,85 +71,80 @@ class WoWAnalyticsAPI:
         """Get character profile information."""
         params = {}
         if server:
-            params['server'] = server
+            params["server"] = server
 
-        return self._make_request('GET', f'/characters/{name}', params=params)
+        return self._make_request("GET", f"/characters/{name}", params=params)
 
     def get_character_performance(
         self,
         name: str,
         days: int = 30,
         encounter_type: Optional[str] = None,
-        difficulty: Optional[str] = None
+        difficulty: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Get character performance data."""
-        params = {'days': days}
+        params = {"days": days}
         if encounter_type:
-            params['encounter_type'] = encounter_type
+            params["encounter_type"] = encounter_type
         if difficulty:
-            params['difficulty'] = difficulty
+            params["difficulty"] = difficulty
 
-        return self._make_request('GET', f'/characters/{name}/performance', params=params)
+        return self._make_request("GET", f"/characters/{name}/performance", params=params)
 
     def get_encounters(
         self,
         limit: int = 50,
         boss_name: Optional[str] = None,
         success_only: Optional[bool] = None,
-        days: int = 7
+        days: int = 7,
     ) -> Dict[str, Any]:
         """Get encounter list with filtering."""
-        params = {'limit': limit, 'days': days}
+        params = {"limit": limit, "days": days}
         if boss_name:
-            params['boss_name'] = boss_name
+            params["boss_name"] = boss_name
         if success_only is not None:
-            params['success_only'] = success_only
+            params["success_only"] = success_only
 
-        return self._make_request('GET', '/encounters', params=params)
+        return self._make_request("GET", "/encounters", params=params)
 
     def get_performance_trends(
         self,
         metric: str,
         character_name: Optional[str] = None,
         class_name: Optional[str] = None,
-        days: int = 90
+        days: int = 90,
     ) -> Dict[str, Any]:
         """Get performance trends over time."""
-        params = {'days': days}
+        params = {"days": days}
         if character_name:
-            params['character_name'] = character_name
+            params["character_name"] = character_name
         if class_name:
-            params['class_name'] = class_name
+            params["class_name"] = class_name
 
-        return self._make_request('GET', f'/analytics/trends/{metric}', params=params)
+        return self._make_request("GET", f"/analytics/trends/{metric}", params=params)
 
-    def search(self, query: str, scope: str = 'all', fuzzy: bool = False) -> Dict[str, Any]:
+    def search(self, query: str, scope: str = "all", fuzzy: bool = False) -> Dict[str, Any]:
         """Search across combat log data."""
-        search_request = {
-            'query': query,
-            'scope': scope,
-            'fuzzy_matching': fuzzy,
-            'limit': 20
-        }
+        search_request = {"query": query, "scope": scope, "fuzzy_matching": fuzzy, "limit": 20}
 
-        return self._make_request('POST', '/search', json=search_request)
+        return self._make_request("POST", "/search", json=search_request)
 
     def custom_aggregation(
         self,
         metrics: List[str],
         group_by: List[str],
         filters: Dict[str, Any],
-        percentiles: List[float] = [50, 75, 90, 95, 99]
+        percentiles: List[float] = [50, 75, 90, 95, 99],
     ) -> Dict[str, Any]:
         """Perform custom aggregation query."""
         aggregation_request = {
-            'metrics': metrics,
-            'group_by': group_by,
-            'filters': filters,
-            'percentiles': percentiles
+            "metrics": metrics,
+            "group_by": group_by,
+            "filters": filters,
+            "percentiles": percentiles,
         }
 
-        return self._make_request('POST', '/aggregations/custom', json=aggregation_request)
+        return self._make_request("POST", "/aggregations/custom", json=aggregation_request)
 
 
 def example_1_basic_character_analysis(api: WoWAnalyticsAPI):
@@ -166,7 +163,7 @@ def example_1_basic_character_analysis(api: WoWAnalyticsAPI):
 
     if performance:
         # Calculate statistics
-        dps_values = [p['dps'] for p in performance]
+        dps_values = [p["dps"] for p in performance]
         avg_dps = sum(dps_values) / len(dps_values)
         max_dps = max(dps_values)
 
@@ -178,7 +175,7 @@ def example_1_basic_character_analysis(api: WoWAnalyticsAPI):
         # Show recent encounters
         print(f"\nRecent Encounters:")
         for encounter in performance[:5]:
-            date = encounter['date'][:10]  # Just the date part
+            date = encounter["date"][:10]  # Just the date part
             print(f"  {date}: {encounter['encounter_name']} - {encounter['dps']:,.0f} DPS")
 
     print()
@@ -189,38 +186,32 @@ def example_2_guild_raid_analysis(api: WoWAnalyticsAPI):
     print("=== Example 2: Guild Raid Analysis ===")
 
     # Get recent successful raids
-    encounters = api.get_encounters(
-        limit=20,
-        success_only=True,
-        days=14
-    )
+    encounters = api.get_encounters(limit=20, success_only=True, days=14)
 
     print(f"Recent Successful Raids ({len(encounters['data'])} encounters):")
 
     # Group by boss and difficulty
     boss_kills = {}
-    for encounter in encounters['data']:
-        boss = encounter['boss_name']
-        difficulty = encounter['difficulty']
+    for encounter in encounters["data"]:
+        boss = encounter["boss_name"]
+        difficulty = encounter["difficulty"]
         key = f"{boss} ({difficulty})"
 
         if key not in boss_kills:
-            boss_kills[key] = {
-                'count': 0,
-                'total_duration': 0,
-                'best_time': float('inf')
-            }
+            boss_kills[key] = {"count": 0, "total_duration": 0, "best_time": float("inf")}
 
-        boss_kills[key]['count'] += 1
-        duration = encounter['duration']
-        boss_kills[key]['total_duration'] += duration
-        boss_kills[key]['best_time'] = min(boss_kills[key]['best_time'], duration)
+        boss_kills[key]["count"] += 1
+        duration = encounter["duration"]
+        boss_kills[key]["total_duration"] += duration
+        boss_kills[key]["best_time"] = min(boss_kills[key]["best_time"], duration)
 
     # Display results
     for boss, stats in boss_kills.items():
-        avg_time = stats['total_duration'] / stats['count']
-        best_time = stats['best_time']
-        print(f"  {boss}: {stats['count']} kills, avg {avg_time/60:.1f}min, best {best_time/60:.1f}min")
+        avg_time = stats["total_duration"] / stats["count"]
+        best_time = stats["best_time"]
+        print(
+            f"  {boss}: {stats['count']} kills, avg {avg_time/60:.1f}min, best {best_time/60:.1f}min"
+        )
 
     print()
 
@@ -231,31 +222,25 @@ def example_3_class_performance_comparison(api: WoWAnalyticsAPI):
 
     # Get DPS aggregation by class
     aggregation = api.custom_aggregation(
-        metrics=['dps'],
-        group_by=['class_name'],
-        filters={
-            'encounter_type': 'raid',
-            'difficulty': 'heroic',
-            'days': 30
-        }
+        metrics=["dps"],
+        group_by=["class_name"],
+        filters={"encounter_type": "raid", "difficulty": "heroic", "days": 30},
     )
 
     print("Heroic Raid DPS by Class (Last 30 days):")
 
     # Sort by median DPS
-    class_data = sorted(
-        aggregation['data'],
-        key=lambda x: x.get('dps_p50', 0),
-        reverse=True
-    )
+    class_data = sorted(aggregation["data"], key=lambda x: x.get("dps_p50", 0), reverse=True)
 
     for class_stats in class_data:
-        class_name = class_stats['class_name']
-        median_dps = class_stats.get('dps_p50', 0)
-        p95_dps = class_stats.get('dps_p95', 0)
-        count = class_stats.get('dps_count', 0)
+        class_name = class_stats["class_name"]
+        median_dps = class_stats.get("dps_p50", 0)
+        p95_dps = class_stats.get("dps_p95", 0)
+        count = class_stats.get("dps_count", 0)
 
-        print(f"  {class_name:15}: {median_dps:7,.0f} (median), {p95_dps:7,.0f} (95th%), {count} samples")
+        print(
+            f"  {class_name:15}: {median_dps:7,.0f} (median), {p95_dps:7,.0f} (95th%), {count} samples"
+        )
 
     print()
 
@@ -265,24 +250,22 @@ def example_4_performance_trends_visualization(api: WoWAnalyticsAPI):
     print("=== Example 4: Performance Trends Visualization ===")
 
     # Get DPS trends for a character
-    trends = api.get_performance_trends(
-        metric='dps',
-        character_name='Thrall',
-        days=90
-    )
+    trends = api.get_performance_trends(metric="dps", character_name="Thrall", days=90)
 
-    if not trends['data_points']:
+    if not trends["data_points"]:
         print("No trend data available")
         return
 
     # Prepare data for plotting
-    dates = [datetime.fromisoformat(dp['timestamp'].replace('Z', '+00:00'))
-             for dp in trends['data_points']]
-    values = [dp['value'] for dp in trends['data_points']]
+    dates = [
+        datetime.fromisoformat(dp["timestamp"].replace("Z", "+00:00"))
+        for dp in trends["data_points"]
+    ]
+    values = [dp["value"] for dp in trends["data_points"]]
 
     # Create plot
     plt.figure(figsize=(12, 6))
-    plt.plot(dates, values, marker='o', linewidth=2, markersize=4)
+    plt.plot(dates, values, marker="o", linewidth=2, markersize=4)
     plt.title(f"DPS Trend for {trends.get('character_name', 'Character')} (90 days)")
     plt.xlabel("Date")
     plt.ylabel("DPS")
@@ -293,10 +276,10 @@ def example_4_performance_trends_visualization(api: WoWAnalyticsAPI):
     if len(values) > 1:
         z = np.polyfit(range(len(values)), values, 1)
         trend_line = np.poly1d(z)
-        plt.plot(dates, trend_line(range(len(values))), "--", alpha=0.8, color='red')
+        plt.plot(dates, trend_line(range(len(values))), "--", alpha=0.8, color="red")
 
     plt.tight_layout()
-    plt.savefig('dps_trend.png', dpi=300, bbox_inches='tight')
+    plt.savefig("dps_trend.png", dpi=300, bbox_inches="tight")
     plt.show()
 
     print(f"Trend Direction: {trends['trend_direction']}")
@@ -315,10 +298,10 @@ def example_5_advanced_search(api: WoWAnalyticsAPI):
 
     print(f"Search Results: {results['total_count']} found in {results['query_time_ms']:.1f}ms")
 
-    for result in results['results'][:5]:
+    for result in results["results"][:5]:
         print(f"  {result['title']} (relevance: {result['relevance_score']:.2f})")
-        if 'highlights' in result:
-            for field, highlights in result['highlights'].items():
+        if "highlights" in result:
+            for field, highlights in result["highlights"].items():
                 print(f"    {field}: {highlights[0]}")
 
     # Try fuzzy search with typos
@@ -326,7 +309,7 @@ def example_5_advanced_search(api: WoWAnalyticsAPI):
     fuzzy_results = api.search("enhancment shamn", scope="characters", fuzzy=True)
 
     print(f"Fuzzy Results: {fuzzy_results['total_count']} found")
-    for result in fuzzy_results['results'][:3]:
+    for result in fuzzy_results["results"][:3]:
         print(f"  {result['title']} (relevance: {result['relevance_score']:.2f})")
 
     print()
@@ -337,12 +320,9 @@ def example_6_encounter_analysis(api: WoWAnalyticsAPI):
     print("=== Example 6: Encounter Analysis ===")
 
     # Get encounters for a specific boss
-    encounters = api.get_encounters(
-        boss_name="Fyrakk the Blazing",
-        days=30
-    )
+    encounters = api.get_encounters(boss_name="Fyrakk the Blazing", days=30)
 
-    if not encounters['data']:
+    if not encounters["data"]:
         print("No encounters found for this boss")
         return
 
@@ -351,25 +331,27 @@ def example_6_encounter_analysis(api: WoWAnalyticsAPI):
     # Analyze success rate by difficulty
     difficulty_stats = {}
 
-    for encounter in encounters['data']:
-        diff = encounter['difficulty']
+    for encounter in encounters["data"]:
+        diff = encounter["difficulty"]
         if diff not in difficulty_stats:
-            difficulty_stats[diff] = {'total': 0, 'successful': 0, 'durations': []}
+            difficulty_stats[diff] = {"total": 0, "successful": 0, "durations": []}
 
-        difficulty_stats[diff]['total'] += 1
-        if encounter['success']:
-            difficulty_stats[diff]['successful'] += 1
-            difficulty_stats[diff]['durations'].append(encounter['duration'])
+        difficulty_stats[diff]["total"] += 1
+        if encounter["success"]:
+            difficulty_stats[diff]["successful"] += 1
+            difficulty_stats[diff]["durations"].append(encounter["duration"])
 
     # Display statistics
     for difficulty, stats in difficulty_stats.items():
-        success_rate = (stats['successful'] / stats['total']) * 100
+        success_rate = (stats["successful"] / stats["total"]) * 100
 
-        if stats['durations']:
-            avg_duration = sum(stats['durations']) / len(stats['durations'])
-            best_duration = min(stats['durations'])
-            print(f"  {difficulty.capitalize():10}: {success_rate:5.1f}% success rate, "
-                  f"avg {avg_duration/60:.1f}min, best {best_duration/60:.1f}min")
+        if stats["durations"]:
+            avg_duration = sum(stats["durations"]) / len(stats["durations"])
+            best_duration = min(stats["durations"])
+            print(
+                f"  {difficulty.capitalize():10}: {success_rate:5.1f}% success rate, "
+                f"avg {avg_duration/60:.1f}min, best {best_duration/60:.1f}min"
+            )
         else:
             print(f"  {difficulty.capitalize():10}: {success_rate:5.1f}% success rate (no kills)")
 
@@ -393,7 +375,7 @@ async def example_7_real_time_monitoring(api_key: str):
             # Subscribe to encounter updates
             subscribe_message = {
                 "action": "subscribe",
-                "topics": ["encounters", "performance_alerts"]
+                "topics": ["encounters", "performance_alerts"],
             }
             await websocket.send(json.dumps(subscribe_message))
 
@@ -403,15 +385,19 @@ async def example_7_real_time_monitoring(api_key: str):
                 try:
                     data = json.loads(message)
 
-                    if data.get('type') == 'encounter_update':
-                        encounter = data['data']
-                        print(f"🔥 Live Encounter: {encounter['boss_name']} "
-                              f"({encounter['duration']:.0f}s, {encounter['raid_size']} players)")
+                    if data.get("type") == "encounter_update":
+                        encounter = data["data"]
+                        print(
+                            f"🔥 Live Encounter: {encounter['boss_name']} "
+                            f"({encounter['duration']:.0f}s, {encounter['raid_size']} players)"
+                        )
 
-                    elif data.get('type') == 'performance_alert':
-                        alert = data['data']
-                        print(f"⚡ Performance Alert: {alert['character']} "
-                              f"{alert['metric']} = {alert['value']:,.0f}")
+                    elif data.get("type") == "performance_alert":
+                        alert = data["data"]
+                        print(
+                            f"⚡ Performance Alert: {alert['character']} "
+                            f"{alert['metric']} = {alert['value']:,.0f}"
+                        )
 
                 except json.JSONDecodeError:
                     print(f"Invalid JSON received: {message}")
@@ -435,7 +421,7 @@ def example_8_data_export_and_analysis(api: WoWAnalyticsAPI):
         try:
             performance = api.get_character_performance(char_name, days=30)
             for perf in performance:
-                perf['character'] = char_name
+                perf["character"] = char_name
                 all_performance.append(perf)
         except Exception as e:
             print(f"Failed to get data for {char_name}: {e}")
@@ -449,33 +435,29 @@ def example_8_data_export_and_analysis(api: WoWAnalyticsAPI):
 
     # Basic statistics
     print("Performance Statistics by Character:")
-    stats = df.groupby('character')['dps'].agg([
-        'count', 'mean', 'std', 'min', 'max'
-    ]).round(0)
+    stats = df.groupby("character")["dps"].agg(["count", "mean", "std", "min", "max"]).round(0)
     print(stats)
 
     # Class comparison
-    if 'class_name' in df.columns:
+    if "class_name" in df.columns:
         print("\nPerformance by Class:")
-        class_stats = df.groupby('class_name')['dps'].agg([
-            'count', 'mean', 'std'
-        ]).round(0)
+        class_stats = df.groupby("class_name")["dps"].agg(["count", "mean", "std"]).round(0)
         print(class_stats)
 
     # Export to CSV
-    df.to_csv('performance_data.csv', index=False)
+    df.to_csv("performance_data.csv", index=False)
     print("\nData exported to 'performance_data.csv'")
 
     # Create comparison chart
     if len(characters) > 1:
         plt.figure(figsize=(10, 6))
-        df.boxplot(column='dps', by='character', ax=plt.gca())
-        plt.title('DPS Distribution by Character')
-        plt.suptitle('')  # Remove default title
-        plt.ylabel('DPS')
+        df.boxplot(column="dps", by="character", ax=plt.gca())
+        plt.title("DPS Distribution by Character")
+        plt.suptitle("")  # Remove default title
+        plt.ylabel("DPS")
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig('dps_comparison.png', dpi=300, bbox_inches='tight')
+        plt.savefig("dps_comparison.png", dpi=300, bbox_inches="tight")
         plt.show()
         print("Comparison chart saved as 'dps_comparison.png'")
 
@@ -496,7 +478,7 @@ def main():
 
     try:
         # Test API connection
-        response = api._make_request('GET', '/health')
+        response = api._make_request("GET", "/health")
         print(f"API Status: {response.get('status', 'unknown')}")
         print()
 
@@ -508,6 +490,7 @@ def main():
         # Examples requiring matplotlib/numpy
         try:
             import numpy as np
+
             example_4_performance_trends_visualization(api)
         except ImportError:
             print("Skipping visualization example (matplotlib/numpy not available)")

@@ -67,11 +67,7 @@ class DisplayBuilder:
 
     @staticmethod
     def create_encounters_list(
-        fights: List[Fight],
-        start_index: int,
-        end_index: int,
-        current_page: int,
-        total_pages: int
+        fights: List[Fight], start_index: int, end_index: int, current_page: int, total_pages: int
     ) -> Panel:
         """Create encounters list display."""
         table = Table(show_header=True, header_style="bold magenta")
@@ -93,7 +89,7 @@ class DisplayBuilder:
                 FightType.RAID_BOSS: "green",
                 FightType.MYTHIC_PLUS: "blue",
                 FightType.DUNGEON_BOSS: "yellow",
-                FightType.TRASH: "dim"
+                FightType.TRASH: "dim",
             }.get(fight.fight_type, "white")
 
             # Format result with color
@@ -115,7 +111,7 @@ class DisplayBuilder:
                 name,
                 fight.get_duration_str(),
                 str(fight.get_player_count()),
-                result
+                result,
             )
 
         title = f"Encounters (Page {current_page + 1}/{total_pages + 1})"
@@ -125,7 +121,9 @@ class DisplayBuilder:
         return Panel(content, title=title, border_style="cyan")
 
     @staticmethod
-    def create_encounter_detail(fight: Fight, characters: Optional[Dict[str, CharacterEventStream]] = None) -> Panel:
+    def create_encounter_detail(
+        fight: Fight, characters: Optional[Dict[str, CharacterEventStream]] = None
+    ) -> Panel:
         """Create detailed encounter view."""
         detail_text = Text()
 
@@ -156,16 +154,16 @@ class DisplayBuilder:
 
             # Sort by damage done
             sorted_chars = sorted(
-                characters.values(),
-                key=lambda c: c.total_damage_done,
-                reverse=True
+                characters.values(), key=lambda c: c.total_damage_done, reverse=True
             )
 
             detail_text.append("Top DPS:\n", style="bold yellow")
             for i, char in enumerate(sorted_chars[:5]):
                 if char.total_damage_done > 0:
                     dps = char.get_dps(fight.duration) if fight.duration else 0
-                    detail_text.append(f"  {i+1}. {char.character_name} - {dps:,.0f} DPS\n", style="white")
+                    detail_text.append(
+                        f"  {i+1}. {char.character_name} - {dps:,.0f} DPS\n", style="white"
+                    )
 
             # Sort by healing done
             healing_chars = [c for c in characters.values() if c.total_healing_done > 0]
@@ -174,18 +172,24 @@ class DisplayBuilder:
                 detail_text.append("\nTop HPS:\n", style="bold green")
                 for i, char in enumerate(healing_chars[:3]):
                     hps = char.get_hps(fight.duration) if fight.duration else 0
-                    detail_text.append(f"  {i+1}. {char.character_name} - {hps:,.0f} HPS\n", style="white")
+                    detail_text.append(
+                        f"  {i+1}. {char.character_name} - {hps:,.0f} HPS\n", style="white"
+                    )
 
             # Deaths
             deaths = [c for c in characters.values() if c.death_count > 0]
             if deaths:
                 detail_text.append("\nDeaths:\n", style="bold red")
                 for char in deaths:
-                    detail_text.append(f"  • {char.character_name} ({char.death_count}x)\n", style="red")
+                    detail_text.append(
+                        f"  • {char.character_name} ({char.death_count}x)\n", style="red"
+                    )
         else:
             detail_text.append("\n[dim]Detailed character data not available[/dim]\n", style="dim")
 
-        detail_text.append("\n[D]PS Details | [H]PS Details | [E]vents | [T]imeline | [B]ack", style="dim")
+        detail_text.append(
+            "\n[D]PS Details | [H]PS Details | [E]vents | [T]imeline | [B]ack", style="dim"
+        )
 
         return Panel(detail_text, title="Encounter Details", border_style="cyan")
 

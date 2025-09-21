@@ -302,9 +302,7 @@ class UnifiedParallelProcessor:
                     self.parse_errors.append(f"Encounter {boundary.encounter_name}: {str(e)}")
 
         # Sort encounters by start time
-        all_encounters.sort(
-            key=lambda e: e.start_time if e.start_time else datetime.min
-        )
+        all_encounters.sort(key=lambda e: e.start_time if e.start_time else datetime.min)
 
         # Post-process: Calculate metrics for all encounters
         logger.info("Calculating metrics for all encounters...")

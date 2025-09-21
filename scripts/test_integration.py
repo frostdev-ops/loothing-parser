@@ -33,8 +33,7 @@ from src.api.streaming_server import StreamingServer
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,9 @@ logger = logging.getLogger(__name__)
 class IntegrationTestRunner:
     """Manages integration tests for the combat log streaming system."""
 
-    def __init__(self, server_url: str = "ws://localhost:8000", api_key: str = "test-key"):
+    def __init__(
+        self, server_url: str = "ws://localhost:8000", api_key: str = "test-key"
+    ):
         self.server_url = server_url
         self.api_key = api_key
         self.server_process: Optional[subprocess.Popen] = None
@@ -82,7 +83,7 @@ class IntegrationTestRunner:
             cwd=project_root,
             env=env,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
 
         # Wait for server to start
@@ -127,7 +128,7 @@ class IntegrationTestRunner:
             streamer = CombatLogStreamer(self.server_url, self.api_key)
             lines_streamed = 0
 
-            with open(test_file, 'r', encoding='utf-8') as f:
+            with open(test_file, "r", encoding="utf-8") as f:
                 for i, line in enumerate(f):
                     if i >= 100:  # Limit to 100 lines for test
                         break
@@ -160,7 +161,7 @@ class IntegrationTestRunner:
             logger.info(f"Database stats: {stats}")
 
             # Should have some events stored from previous test
-            if stats.get('total_events', 0) > 0:
+            if stats.get("total_events", 0) > 0:
                 logger.info("✓ Data successfully persisted to database")
                 result = True
             else:
@@ -185,9 +186,7 @@ class IntegrationTestRunner:
             streamers = []
             for i in range(num_clients):
                 streamer = CombatLogStreamer(
-                    self.server_url,
-                    self.api_key,
-                    client_id=f"test-client-{i}"
+                    self.server_url, self.api_key, client_id=f"test-client-{i}"
                 )
                 streamers.append(streamer)
 
@@ -208,7 +207,9 @@ class IntegrationTestRunner:
 
             # Check results
             success_count = sum(1 for r in results if r is True)
-            logger.info(f"Concurrent test results: {success_count}/{num_clients} successful")
+            logger.info(
+                f"Concurrent test results: {success_count}/{num_clients} successful"
+            )
 
             return success_count == num_clients
 
@@ -216,14 +217,16 @@ class IntegrationTestRunner:
             logger.error(f"Concurrent connections test failed: {e}")
             return False
 
-    async def _stream_test_data(self, streamer: CombatLogStreamer, session_id: str) -> bool:
+    async def _stream_test_data(
+        self, streamer: CombatLogStreamer, session_id: str
+    ) -> bool:
         """Helper method to stream test data."""
         try:
             # Stream some test events
             test_events = [
                 "9/18/2025 17:29:04.791-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1,BUILD_VERSION,11.2.0,PROJECT_ID,1",
-                "9/18/2025 17:29:27.343-4  ZONE_CHANGE,2441,\"Tazavesh, the Veiled Market\",23",
-                "9/18/2025 17:29:06.409-4  SPELL_AURA_APPLIED,Player-3723-0AAC293B,\"Test-Player\",0x512,0x80000000,Player-3723-0AAC293B,\"Test-Player\",0x512,0x80000000,408,\"Kidney Shot\",0x1,DEBUFF",
+                '9/18/2025 17:29:27.343-4  ZONE_CHANGE,2441,"Tazavesh, the Veiled Market",23',
+                '9/18/2025 17:29:06.409-4  SPELL_AURA_APPLIED,Player-3723-0AAC293B,"Test-Player",0x512,0x80000000,Player-3723-0AAC293B,"Test-Player",0x512,0x80000000,408,"Kidney Shot",0x1,DEBUFF',
             ]
 
             for event in test_events:
@@ -279,7 +282,9 @@ class IntegrationTestRunner:
             streamer = CombatLogStreamer(self.server_url, self.api_key)
 
             # Stream some initial data
-            await streamer.stream_line("9/18/2025 17:29:04.791-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1")
+            await streamer.stream_line(
+                "9/18/2025 17:29:04.791-4  COMBAT_LOG_VERSION,22,ADVANCED_LOG_ENABLED,1"
+            )
 
             # Simulate connection drop by restarting server
             logger.info("Simulating connection drop...")
@@ -291,7 +296,9 @@ class IntegrationTestRunner:
             time.sleep(3)
 
             # Try to stream more data (should reconnect automatically)
-            await streamer.stream_line("9/18/2025 17:29:05.000-4  ZONE_CHANGE,123,\"Test Zone\",1")
+            await streamer.stream_line(
+                '9/18/2025 17:29:05.000-4  ZONE_CHANGE,123,"Test Zone",1'
+            )
 
             await streamer.close()
 
@@ -332,8 +339,12 @@ class IntegrationTestRunner:
 
         try:
             test_results["basic_streaming"] = await self.test_basic_streaming()
-            test_results["database_persistence"] = await self.test_database_persistence()
-            test_results["concurrent_connections"] = await self.test_concurrent_connections()
+            test_results["database_persistence"] = (
+                await self.test_database_persistence()
+            )
+            test_results["concurrent_connections"] = (
+                await self.test_concurrent_connections()
+            )
             test_results["query_api"] = await self.test_query_api()
             test_results["connection_recovery"] = await self.test_connection_recovery()
 
@@ -346,7 +357,9 @@ class IntegrationTestRunner:
 async def main():
     """Main entry point for integration tests."""
     parser = argparse.ArgumentParser(description="WoW Combat Log Integration Tests")
-    parser.add_argument("--server-url", default="ws://localhost:8000", help="Server URL")
+    parser.add_argument(
+        "--server-url", default="ws://localhost:8000", help="Server URL"
+    )
     parser.add_argument("--api-key", default="test-integration-key", help="API key")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     args = parser.parse_args()
@@ -361,9 +374,9 @@ async def main():
         results = await test_runner.run_all_tests()
 
         # Print results
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("INTEGRATION TEST RESULTS")
-        print("="*60)
+        print("=" * 60)
 
         passed = 0
         total = len(results)
@@ -374,7 +387,7 @@ async def main():
             if success:
                 passed += 1
 
-        print("-"*60)
+        print("-" * 60)
         print(f"TOTAL: {passed}/{total} tests passed")
 
         if passed == total:

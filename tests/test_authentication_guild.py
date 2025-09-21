@@ -175,7 +175,9 @@ class TestGuildAPIKeyGeneration:
 
         auth_response = auth_manager.authenticate_api_key(api_key)
         assert auth_response.authenticated is True, "API key should authenticate"
-        assert set(auth_response.permissions) == custom_permissions, "Permissions should match exactly"
+        assert (
+            set(auth_response.permissions) == custom_permissions
+        ), "Permissions should match exactly"
 
 
 class TestGuildContextExtraction:
@@ -191,12 +193,16 @@ class TestGuildContextExtraction:
 
             auth_response = authenticate_api_key(api_key)
 
-            assert auth_response.authenticated is True, f"Guild {guild_id} API key should authenticate"
+            assert (
+                auth_response.authenticated is True
+            ), f"Guild {guild_id} API key should authenticate"
             assert auth_response.guild_id == guild_id, f"Guild ID should match for guild {guild_id}"
-            assert auth_response.guild_name == expected_config["guild_name"], \
-                f"Guild name should match for guild {guild_id}"
-            assert auth_response.client_id == expected_config["client_id"], \
-                f"Client ID should match for guild {guild_id}"
+            assert (
+                auth_response.guild_name == expected_config["guild_name"]
+            ), f"Guild name should match for guild {guild_id}"
+            assert (
+                auth_response.client_id == expected_config["client_id"]
+            ), f"Client ID should match for guild {guild_id}"
 
     def test_guild_context_validation(self, auth_manager):
         """Test guild context validation and error handling."""
@@ -342,16 +348,20 @@ class TestGuildPermissionChecks:
         )
 
         # Admin guild should have admin permission
-        assert auth_manager.check_permission("admin_guild", "admin") is True, \
-            "Admin guild should have admin permission"
-        assert auth_manager.check_permission("admin_guild", "stream") is True, \
-            "Admin guild should have stream permission"
+        assert (
+            auth_manager.check_permission("admin_guild", "admin") is True
+        ), "Admin guild should have admin permission"
+        assert (
+            auth_manager.check_permission("admin_guild", "stream") is True
+        ), "Admin guild should have stream permission"
 
         # Basic guild should not have admin permission
-        assert auth_manager.check_permission("basic_guild", "admin") is False, \
-            "Basic guild should not have admin permission"
-        assert auth_manager.check_permission("basic_guild", "stream") is True, \
-            "Basic guild should have stream permission"
+        assert (
+            auth_manager.check_permission("basic_guild", "admin") is False
+        ), "Basic guild should not have admin permission"
+        assert (
+            auth_manager.check_permission("basic_guild", "stream") is True
+        ), "Basic guild should have stream permission"
 
     def test_guild_permission_validation(self, auth_manager):
         """Test validation of guild permissions."""
@@ -376,14 +386,17 @@ class TestGuildPermissionChecks:
         client_id = "default_perms_guild"
 
         # Should have default permissions
-        assert auth_manager.check_permission(client_id, "stream") is True, \
-            "Should have default stream permission"
-        assert auth_manager.check_permission(client_id, "query") is True, \
-            "Should have default query permission"
+        assert (
+            auth_manager.check_permission(client_id, "stream") is True
+        ), "Should have default stream permission"
+        assert (
+            auth_manager.check_permission(client_id, "query") is True
+        ), "Should have default query permission"
 
         # Should not have admin permission by default
-        assert auth_manager.check_permission(client_id, "admin") is False, \
-            "Should not have admin permission by default"
+        assert (
+            auth_manager.check_permission(client_id, "admin") is False
+        ), "Should not have admin permission by default"
 
 
 class TestGuildAuthenticationStatistics:
@@ -407,10 +420,13 @@ class TestGuildAuthenticationStatistics:
             # Check guild-specific information
             if guild_id > 1:  # Skip default guild which may not have guild info
                 expected_config = key_info["config"]
-                assert stats["rate_limits"]["events_per_minute"] == expected_config["events_per_minute"], \
-                    f"Rate limits should match for guild {guild_id}"
-                assert stats["rate_limits"]["max_connections"] == expected_config["max_connections"], \
-                    f"Connection limits should match for guild {guild_id}"
+                assert (
+                    stats["rate_limits"]["events_per_minute"]
+                    == expected_config["events_per_minute"]
+                ), f"Rate limits should match for guild {guild_id}"
+                assert (
+                    stats["rate_limits"]["max_connections"] == expected_config["max_connections"]
+                ), f"Connection limits should match for guild {guild_id}"
 
     def test_global_guild_statistics(self, multi_guild_auth_setup):
         """Test global statistics across all guilds."""
@@ -431,7 +447,9 @@ class TestGuildAuthenticationStatistics:
         # Verify each guild is represented
         for guild_id, key_info in api_keys.items():
             client_id = key_info["config"]["client_id"]
-            assert client_id in stats["clients"], f"Guild {guild_id} client should be in global stats"
+            assert (
+                client_id in stats["clients"]
+            ), f"Guild {guild_id} client should be in global stats"
 
     def test_guild_usage_tracking(self, auth_manager):
         """Test usage tracking for guild clients."""
@@ -488,9 +506,7 @@ class TestGuildWebSocketAuthentication:
         websocket.client.host = "127.0.0.1"
 
         # Mock receiving a welcome and then stopping
-        websocket.receive_text.side_effect = [
-            '{"type": "end_session", "timestamp": 1234567890}'
-        ]
+        websocket.receive_text.side_effect = ['{"type": "end_session", "timestamp": 1234567890}']
 
         sent_responses = []
         websocket.send_text.side_effect = lambda x: sent_responses.append(x)
@@ -503,6 +519,7 @@ class TestGuildWebSocketAuthentication:
 
         # Parse welcome message to verify guild context
         import json
+
         welcome_message = json.loads(sent_responses[0])
         assert welcome_message.get("type") == "welcome", "First message should be welcome"
         assert welcome_message.get("guild_id") == 14, "Should include guild ID"
@@ -547,9 +564,7 @@ class TestGuildWebSocketAuthentication:
         websocket.client.host = "127.0.0.1"
 
         # Mock receiving a welcome and then stopping
-        websocket.receive_text.side_effect = [
-            '{"type": "end_session", "timestamp": 1234567890}'
-        ]
+        websocket.receive_text.side_effect = ['{"type": "end_session", "timestamp": 1234567890}']
 
         sent_responses = []
         websocket.send_text.side_effect = lambda x: sent_responses.append(x)
@@ -562,6 +577,7 @@ class TestGuildWebSocketAuthentication:
 
         # Parse welcome message to verify no guild context
         import json
+
         welcome_message = json.loads(sent_responses[0])
         assert welcome_message.get("type") == "welcome", "First message should be welcome"
         assert welcome_message.get("guild_id") == 1, "Should default to guild ID 1"

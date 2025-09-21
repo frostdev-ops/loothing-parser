@@ -48,7 +48,7 @@ class ConfigLoader:
         for path in search_paths:
             if path.exists():
                 try:
-                    with open(path, 'r') as f:
+                    with open(path, "r") as f:
                         config = yaml.safe_load(f) or {}
                         logger.info(f"Loaded configuration from {path}")
                         return config

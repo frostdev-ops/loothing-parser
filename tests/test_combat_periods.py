@@ -113,10 +113,12 @@ class TestCombatPeriodDetector:
 
         # 10 second gap (exceeds threshold)
         # Second combat period
-        events.extend([
-            self.create_mock_event(base_time + timedelta(seconds=12), "SPELL_DAMAGE"),
-            self.create_mock_event(base_time + timedelta(seconds=14), "SPELL_CAST_SUCCESS"),
-        ])
+        events.extend(
+            [
+                self.create_mock_event(base_time + timedelta(seconds=12), "SPELL_DAMAGE"),
+                self.create_mock_event(base_time + timedelta(seconds=14), "SPELL_CAST_SUCCESS"),
+            ]
+        )
 
         periods = detector.detect_periods(events)
         assert len(periods) == 2
@@ -140,8 +142,12 @@ class TestCombatPeriodDetector:
 
         events = [
             self.create_mock_event(base_time, "SPELL_DAMAGE"),
-            self.create_mock_event(base_time + timedelta(seconds=8), "SPELL_DAMAGE"),  # 8s gap < 10s threshold
-            self.create_mock_event(base_time + timedelta(seconds=20), "SPELL_DAMAGE"),  # 12s gap > 10s threshold
+            self.create_mock_event(
+                base_time + timedelta(seconds=8), "SPELL_DAMAGE"
+            ),  # 8s gap < 10s threshold
+            self.create_mock_event(
+                base_time + timedelta(seconds=20), "SPELL_DAMAGE"
+            ),  # 12s gap > 10s threshold
         ]
 
         periods = detector.detect_periods(events)
@@ -161,11 +167,17 @@ class TestCombatPeriodDetector:
 
         # Combat events
         combat_events = [
-            "SPELL_DAMAGE", "SWING_DAMAGE", "SPELL_HEAL",
-            "SPELL_CAST_SUCCESS", "SPELL_CAST_START",
-            "SPELL_INTERRUPT", "SPELL_DISPEL",
-            "SPELL_AURA_APPLIED", "SPELL_AURA_REMOVED",
-            "UNIT_DIED", "SPELL_SUMMON"
+            "SPELL_DAMAGE",
+            "SWING_DAMAGE",
+            "SPELL_HEAL",
+            "SPELL_CAST_SUCCESS",
+            "SPELL_CAST_START",
+            "SPELL_INTERRUPT",
+            "SPELL_DISPEL",
+            "SPELL_AURA_APPLIED",
+            "SPELL_AURA_REMOVED",
+            "UNIT_DIED",
+            "SPELL_SUMMON",
         ]
 
         for event_type in combat_events:
@@ -174,14 +186,19 @@ class TestCombatPeriodDetector:
 
         # Non-combat events
         non_combat_events = [
-            "ENCOUNTER_START", "ENCOUNTER_END",
-            "ZONE_CHANGE", "COMBATANT_INFO",
-            "CHALLENGE_MODE_START", "CHALLENGE_MODE_END"
+            "ENCOUNTER_START",
+            "ENCOUNTER_END",
+            "ZONE_CHANGE",
+            "COMBATANT_INFO",
+            "CHALLENGE_MODE_START",
+            "CHALLENGE_MODE_END",
         ]
 
         for event_type in non_combat_events:
             event = self.create_mock_event(datetime.now(), event_type)
-            assert detector._is_combat_event(event) is False, f"{event_type} should not be combat event"
+            assert (
+                detector._is_combat_event(event) is False
+            ), f"{event_type} should not be combat event"
 
     def test_non_combat_events_filtered(self):
         """Test that non-combat events are filtered out."""
@@ -191,7 +208,9 @@ class TestCombatPeriodDetector:
         events = [
             self.create_mock_event(base_time, "ENCOUNTER_START"),  # Non-combat
             self.create_mock_event(base_time + timedelta(seconds=1), "SPELL_DAMAGE"),  # Combat
-            self.create_mock_event(base_time + timedelta(seconds=2), "COMBATANT_INFO"),  # Non-combat
+            self.create_mock_event(
+                base_time + timedelta(seconds=2), "COMBATANT_INFO"
+            ),  # Non-combat
             self.create_mock_event(base_time + timedelta(seconds=3), "SPELL_HEAL"),  # Combat
             self.create_mock_event(base_time + timedelta(seconds=4), "ENCOUNTER_END"),  # Non-combat
         ]
@@ -209,13 +228,13 @@ class TestCombatPeriodDetector:
             CombatPeriod(
                 start_time=datetime(2024, 1, 1, 10, 0, 0),
                 end_time=datetime(2024, 1, 1, 10, 1, 0),  # 60 seconds
-                event_count=10
+                event_count=10,
             ),
             CombatPeriod(
                 start_time=datetime(2024, 1, 1, 10, 2, 0),
                 end_time=datetime(2024, 1, 1, 10, 2, 30),  # 30 seconds
-                event_count=5
-            )
+                event_count=5,
+            ),
         ]
 
         total_time = detector.calculate_total_combat_time(periods)
@@ -229,7 +248,7 @@ class TestCombatPeriodDetector:
             CombatPeriod(
                 start_time=datetime(2024, 1, 1, 10, 0, 0),
                 end_time=datetime(2024, 1, 1, 10, 1, 0),  # 60 seconds
-                event_count=10
+                event_count=10,
             )
         ]
 
@@ -249,13 +268,13 @@ class TestCombatPeriodDetector:
             CombatPeriod(
                 start_time=datetime(2024, 1, 1, 10, 0, 0),
                 end_time=datetime(2024, 1, 1, 10, 1, 0),
-                event_count=10
+                event_count=10,
             ),
             CombatPeriod(
                 start_time=datetime(2024, 1, 1, 10, 2, 0),
                 end_time=datetime(2024, 1, 1, 10, 3, 0),
-                event_count=5
-            )
+                event_count=5,
+            ),
         ]
 
         # Event during first period
@@ -288,7 +307,7 @@ class TestCombatPeriodDetector:
         periods = detector.detect_periods(events)
         assert len(periods) == 1
         assert periods[0].start_time == base_time + timedelta(seconds=1)  # Earliest event
-        assert periods[0].end_time == base_time + timedelta(seconds=5)    # Latest event
+        assert periods[0].end_time == base_time + timedelta(seconds=5)  # Latest event
         assert periods[0].duration == 4.0
         assert periods[0].event_count == 3
 

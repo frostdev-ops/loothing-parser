@@ -21,7 +21,7 @@ class TestGuildMigration:
     @pytest.fixture
     def temp_db(self) -> Generator[str, None, None]:
         """Create a temporary database file for testing."""
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as f:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as f:
             db_path = f.name
 
         yield db_path
@@ -36,7 +36,8 @@ class TestGuildMigration:
         conn = sqlite3.connect(temp_db)
 
         # Create v1 schema without guilds
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS encounters (
                 encounter_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 instance_name TEXT NOT NULL,
@@ -49,9 +50,11 @@ class TestGuildMigration:
                 wipe_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS characters (
                 character_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 encounter_id INTEGER NOT NULL,
@@ -63,9 +66,11 @@ class TestGuildMigration:
                 realm TEXT,
                 FOREIGN KEY (encounter_id) REFERENCES encounters (encounter_id) ON DELETE CASCADE
             )
-        """)
+        """
+        )
 
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS character_events (
                 event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 character_id INTEGER NOT NULL,
@@ -74,9 +79,11 @@ class TestGuildMigration:
                 event_data TEXT,
                 FOREIGN KEY (character_id) REFERENCES characters (character_id) ON DELETE CASCADE
             )
-        """)
+        """
+        )
 
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS combat_periods (
                 period_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 encounter_id INTEGER NOT NULL,
@@ -85,18 +92,22 @@ class TestGuildMigration:
                 period_type TEXT NOT NULL,
                 FOREIGN KEY (encounter_id) REFERENCES encounters (encounter_id) ON DELETE CASCADE
             )
-        """)
+        """
+        )
 
         # Insert sample v1 data
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO encounters (instance_name, encounter_name, difficulty, start_time, end_time, duration_seconds, success)
             VALUES
                 ('The War Within', 'Ulgrax the Devourer', 'Heroic', '2024-09-20 20:00:00', '2024-09-20 20:05:30', 330, 1),
                 ('Mists of Tirna Scithe', 'Mythic+ Complete', 'Mythic+15', '2024-09-20 21:00:00', '2024-09-20 21:28:45', 1725, 1),
                 ('The War Within', 'The Bloodbound Horror', 'Normal', '2024-09-19 19:30:00', '2024-09-19 19:45:20', 920, 1)
-        """)
+        """
+        )
 
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO characters (encounter_id, character_name, character_class, specialization, level, item_level, realm)
             VALUES
                 (1, 'Testwarrior', 'Warrior', 'Protection', 80, 628, 'Stormrage'),
@@ -104,9 +115,11 @@ class TestGuildMigration:
                 (2, 'Testwarrior', 'Warrior', 'Protection', 80, 628, 'Stormrage'),
                 (2, 'Testhunter', 'Hunter', 'Beast Mastery', 80, 620, 'Stormrage'),
                 (3, 'Testmage', 'Mage', 'Fire', 80, 625, 'Stormrage')
-        """)
+        """
+        )
 
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO character_events (character_id, event_type, timestamp, event_data)
             VALUES
                 (1, 'SPELL_DAMAGE', '2024-09-20 20:01:00', '{"damage": 50000}'),
@@ -114,15 +127,18 @@ class TestGuildMigration:
                 (3, 'SPELL_DAMAGE', '2024-09-20 21:05:00', '{"damage": 45000}'),
                 (4, 'SPELL_CAST_SUCCESS', '2024-09-20 21:05:10', '{"spell": "Bestial Wrath"}'),
                 (5, 'SPELL_DAMAGE', '2024-09-19 19:35:00', '{"damage": 48000}')
-        """)
+        """
+        )
 
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO combat_periods (encounter_id, start_time, end_time, period_type)
             VALUES
                 (1, '2024-09-20 20:00:00', '2024-09-20 20:05:30', 'boss_fight'),
                 (2, '2024-09-20 21:00:00', '2024-09-20 21:28:45', 'dungeon_run'),
                 (3, '2024-09-19 19:30:00', '2024-09-19 19:45:20', 'boss_fight')
-        """)
+        """
+        )
 
         # Set schema version to 1
         conn.execute("PRAGMA user_version = 1")
@@ -148,14 +164,14 @@ class TestGuildMigration:
         columns = {row[1]: row[2] for row in cursor.fetchall()}
 
         expected_columns = {
-            'guild_id': 'INTEGER',
-            'guild_name': 'TEXT',
-            'server': 'TEXT',
-            'region': 'TEXT',
-            'faction': 'TEXT',
-            'created_at': 'TIMESTAMP',
-            'updated_at': 'TIMESTAMP',
-            'is_active': 'BOOLEAN'
+            "guild_id": "INTEGER",
+            "guild_name": "TEXT",
+            "server": "TEXT",
+            "region": "TEXT",
+            "faction": "TEXT",
+            "created_at": "TIMESTAMP",
+            "updated_at": "TIMESTAMP",
+            "is_active": "BOOLEAN",
         }
 
         for col_name, col_type in expected_columns.items():
@@ -193,22 +209,22 @@ class TestGuildMigration:
         # Check encounters table has guild_id
         cursor = conn.execute("PRAGMA table_info(encounters)")
         columns = [row[1] for row in cursor.fetchall()]
-        assert 'guild_id' in columns, "Encounters table should have guild_id column"
+        assert "guild_id" in columns, "Encounters table should have guild_id column"
 
         # Check characters table has guild_id
         cursor = conn.execute("PRAGMA table_info(characters)")
         columns = [row[1] for row in cursor.fetchall()]
-        assert 'guild_id' in columns, "Characters table should have guild_id column"
+        assert "guild_id" in columns, "Characters table should have guild_id column"
 
         # Check character_events table has guild_id
         cursor = conn.execute("PRAGMA table_info(character_events)")
         columns = [row[1] for row in cursor.fetchall()]
-        assert 'guild_id' in columns, "Character_events table should have guild_id column"
+        assert "guild_id" in columns, "Character_events table should have guild_id column"
 
         # Check combat_periods table has guild_id
         cursor = conn.execute("PRAGMA table_info(combat_periods)")
         columns = [row[1] for row in cursor.fetchall()]
-        assert 'guild_id' in columns, "Combat_periods table should have guild_id column"
+        assert "guild_id" in columns, "Combat_periods table should have guild_id column"
 
         conn.close()
 
@@ -259,10 +275,14 @@ class TestGuildMigration:
         pre_period_count = cursor.fetchone()[0]
 
         # Get sample data for verification
-        cursor = conn.execute("SELECT encounter_name, difficulty FROM encounters ORDER BY encounter_id")
+        cursor = conn.execute(
+            "SELECT encounter_name, difficulty FROM encounters ORDER BY encounter_id"
+        )
         pre_encounters = cursor.fetchall()
 
-        cursor = conn.execute("SELECT character_name, character_class FROM characters ORDER BY character_id")
+        cursor = conn.execute(
+            "SELECT character_name, character_class FROM characters ORDER BY character_id"
+        )
         pre_characters = cursor.fetchall()
 
         conn.close()
@@ -290,11 +310,15 @@ class TestGuildMigration:
         assert post_period_count == pre_period_count, "Combat period count should be preserved"
 
         # Verify specific data integrity
-        cursor = conn.execute("SELECT encounter_name, difficulty FROM encounters ORDER BY encounter_id")
+        cursor = conn.execute(
+            "SELECT encounter_name, difficulty FROM encounters ORDER BY encounter_id"
+        )
         post_encounters = cursor.fetchall()
         assert post_encounters == pre_encounters, "Encounter data should be preserved"
 
-        cursor = conn.execute("SELECT character_name, character_class FROM characters ORDER BY character_id")
+        cursor = conn.execute(
+            "SELECT character_name, character_class FROM characters ORDER BY character_id"
+        )
         post_characters = cursor.fetchall()
         assert post_characters == pre_characters, "Character data should be preserved"
 
@@ -308,15 +332,17 @@ class TestGuildMigration:
         conn = sqlite3.connect(v1_schema_db)
 
         # Get all indexes
-        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_guild_%'")
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_guild_%'"
+        )
         indexes = [row[0] for row in cursor.fetchall()]
 
         # Check expected guild indexes exist
         expected_indexes = [
-            'idx_guild_encounters_lookup',
-            'idx_guild_characters_lookup',
-            'idx_guild_character_events_lookup',
-            'idx_guild_combat_periods_lookup'
+            "idx_guild_encounters_lookup",
+            "idx_guild_characters_lookup",
+            "idx_guild_character_events_lookup",
+            "idx_guild_combat_periods_lookup",
         ]
 
         for expected_index in expected_indexes:
@@ -381,7 +407,9 @@ class TestGuildMigration:
 
         # Verify idempotency
         assert guild_count_2 == guild_count_1, "Guild count should not change on second migration"
-        assert encounter_count_2 == encounter_count_1, "Encounter count should not change on second migration"
+        assert (
+            encounter_count_2 == encounter_count_1
+        ), "Encounter count should not change on second migration"
         assert version_2 == version_1, "Schema version should not change on second migration"
 
     def test_migration_foreign_key_constraints(self, v1_schema_db: str):
@@ -394,19 +422,25 @@ class TestGuildMigration:
 
         # Test that we cannot insert encounter with invalid guild_id
         with pytest.raises(sqlite3.IntegrityError):
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO encounters (guild_id, instance_name, encounter_name, difficulty, start_time)
                 VALUES (999, 'Test Instance', 'Test Boss', 'Normal', '2024-09-21 12:00:00')
-            """)
+            """
+            )
 
         # Test that we can insert encounter with valid guild_id
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO encounters (guild_id, instance_name, encounter_name, difficulty, start_time)
             VALUES (1, 'Test Instance', 'Test Boss', 'Normal', '2024-09-21 12:00:00')
-        """)
+        """
+        )
 
         # Verify the insert worked
-        cursor = conn.execute("SELECT COUNT(*) FROM encounters WHERE guild_id = 1 AND encounter_name = 'Test Boss'")
+        cursor = conn.execute(
+            "SELECT COUNT(*) FROM encounters WHERE guild_id = 1 AND encounter_name = 'Test Boss'"
+        )
         count = cursor.fetchone()[0]
         assert count == 1, "Valid guild_id insert should succeed"
 

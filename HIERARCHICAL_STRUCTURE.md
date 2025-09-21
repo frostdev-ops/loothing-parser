@@ -130,6 +130,7 @@ python test_mplus_simple.py
 ```
 
 This will process a combat log and display the M+ hierarchy, confirming that:
+
 - M+ runs are parent encounters
 - Dungeon bosses are child fights within the M+ run
 - Trash segments are properly tracked between bosses

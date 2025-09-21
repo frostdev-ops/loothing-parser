@@ -35,7 +35,7 @@ class DeathAnalyzer:
         self,
         character: EnhancedCharacter,
         death_time: datetime,
-        killing_blow: Optional[DamageEvent] = None
+        killing_blow: Optional[DamageEvent] = None,
     ) -> EnhancedDeathEvent:
         """
         Analyze a character's death and return detailed information.
@@ -59,7 +59,7 @@ class DeathAnalyzer:
             killing_blow=killing_blow,
             overkill=killing_blow.overkill if killing_blow else 0,
             recent_damage_taken=recent_damage,
-            recent_healing_received=recent_healing
+            recent_healing_received=recent_healing,
         )
 
         # Analyze death contributors
@@ -131,21 +131,23 @@ class DeathAnalyzer:
                     death_sources[source]["total_damage"] += damage
 
         # Sort by frequency
-        top_killers = sorted(
-            death_sources.items(),
-            key=lambda x: x[1]["count"],
-            reverse=True
-        )[:10]
+        top_killers = sorted(death_sources.items(), key=lambda x: x[1]["count"], reverse=True)[:10]
 
         # Deaths over time
         death_timeline = []
         for char in characters.values():
             for death in char.enhanced_deaths:
-                death_timeline.append({
-                    "character": char.character_name,
-                    "time": death.timestamp,
-                    "killing_blow": death.killing_blow.spell_name if death.killing_blow and death.killing_blow.spell_name else "Melee"
-                })
+                death_timeline.append(
+                    {
+                        "character": char.character_name,
+                        "time": death.timestamp,
+                        "killing_blow": (
+                            death.killing_blow.spell_name
+                            if death.killing_blow and death.killing_blow.spell_name
+                            else "Melee"
+                        ),
+                    }
+                )
 
         death_timeline.sort(key=lambda x: x["time"])
 
@@ -158,7 +160,7 @@ class DeathAnalyzer:
             },
             "top_death_causes": top_killers,
             "death_timeline": death_timeline,
-            "average_deaths_per_player": total_deaths / len(characters) if characters else 0
+            "average_deaths_per_player": total_deaths / len(characters) if characters else 0,
         }
 
     def identify_wipe_mechanics(self, characters: Dict[str, EnhancedCharacter]) -> List[str]:
@@ -221,12 +223,14 @@ class DeathAnalyzer:
             # Check for repeated death causes
             if death.damage_sources:
                 top_source = max(death.damage_sources.items(), key=lambda x: x[1])
-                issues.append({
-                    "time": death.timestamp,
-                    "cause": top_source[0],
-                    "damage": top_source[1],
-                    "preventable": getattr(death, "preventable", "Unknown")
-                })
+                issues.append(
+                    {
+                        "time": death.timestamp,
+                        "cause": top_source[0],
+                        "damage": top_source[1],
+                        "preventable": getattr(death, "preventable", "Unknown"),
+                    }
+                )
 
         # Calculate survival metrics
         avg_damage_per_death = total_damage_taken / len(character.enhanced_deaths)
@@ -239,5 +243,5 @@ class DeathAnalyzer:
             "avg_damage_per_death": avg_damage_per_death,
             "avg_healing_per_death": avg_healing_per_death,
             "healing_deficit": avg_damage_per_death - avg_healing_per_death,
-            "death_causes": issues
+            "death_causes": issues,
         }

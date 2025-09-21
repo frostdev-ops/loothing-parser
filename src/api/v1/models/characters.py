@@ -46,11 +46,7 @@ class CharacterProfile(BaseModel):
                 "character_id": 12345,
                 "character_guid": "Player-1234-56789ABC",
                 "name": "Playername",
-                "server": {
-                    "name": "Stormrage",
-                    "region": "US",
-                    "locale": "enUS"
-                },
+                "server": {"name": "Stormrage", "region": "US", "locale": "enUS"},
                 "class_info": {
                     "id": 8,
                     "name": "Mage",
@@ -58,8 +54,8 @@ class CharacterProfile(BaseModel):
                     "specs": [
                         {"id": 62, "name": "Arcane", "role": "DPS"},
                         {"id": 63, "name": "Fire", "role": "DPS"},
-                        {"id": 64, "name": "Frost", "role": "DPS"}
-                    ]
+                        {"id": 64, "name": "Frost", "role": "DPS"},
+                    ],
                 },
                 "current_spec": "Fire",
                 "level": 70,
@@ -74,7 +70,7 @@ class CharacterProfile(BaseModel):
                 "average_dps": 125000.5,
                 "average_hps": 500.2,
                 "recent_encounters": [12345, 12346, 12347],
-                "activity_streak": 15
+                "activity_streak": 15,
             }
         }
 
@@ -120,26 +116,21 @@ class CharacterPerformance(BaseModel):
                     "value": 5000000.0,
                     "percentile": 95.3,
                     "rank": 2,
-                    "total_participants": 20
+                    "total_participants": 20,
                 },
-                "dps": {
-                    "value": 125000.5,
-                    "percentile": 95.3,
-                    "rank": 2,
-                    "total_participants": 20
-                },
+                "dps": {"value": 125000.5, "percentile": 95.3, "rank": 2, "total_participants": 20},
                 "healing_done": {
                     "value": 500000.0,
                     "percentile": 75.0,
                     "rank": 5,
-                    "total_participants": 20
+                    "total_participants": 20,
                 },
                 "deaths": 0,
                 "time_alive_percent": 100.0,
                 "activity_percentage": 98.5,
                 "cast_efficiency": 92.3,
                 "interrupts": 3,
-                "dispels": 1
+                "dispels": 1,
             }
         }
 
@@ -168,7 +159,7 @@ class CharacterHistoryEntry(BaseModel):
                 "dps": 125000.5,
                 "hps": 2500.0,
                 "deaths": 0,
-                "duration": 245.7
+                "duration": 245.7,
             }
         }
 
@@ -193,10 +184,7 @@ class CharacterHistory(BaseModel):
         schema_extra = {
             "example": {
                 "character_name": "Playername",
-                "time_range": {
-                    "start": "2023-10-01T00:00:00Z",
-                    "end": "2023-10-31T23:59:59Z"
-                },
+                "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
                 "entries": [
                     {
                         "date": "2023-10-15T20:30:00Z",
@@ -207,7 +195,7 @@ class CharacterHistory(BaseModel):
                         "dps": 125000.5,
                         "hps": 2500.0,
                         "deaths": 0,
-                        "duration": 245.7
+                        "duration": 245.7,
                     }
                 ],
                 "total_encounters": 25,
@@ -216,7 +204,7 @@ class CharacterHistory(BaseModel):
                 "average_hps": 2200.0,
                 "best_hps": 3500.0,
                 "success_rate": 85.5,
-                "total_deaths": 3
+                "total_deaths": 3,
             }
         }
 
@@ -245,7 +233,7 @@ class CharacterRanking(BaseModel):
                 "spec_rank": 8,
                 "percentile": 95.3,
                 "value": 125000.5,
-                "total_parses": 5000
+                "total_parses": 5000,
             }
         }
 
@@ -268,11 +256,11 @@ class CharacterGearItem(BaseModel):
                     "name": "Primal Berserk Faceguard",
                     "quality": "Epic",
                     "item_level": 415,
-                    "slot": "Head"
+                    "slot": "Head",
                 },
                 "enchant_id": 6643,
                 "gem_ids": [192985, 192985],
-                "upgrade_level": 5
+                "upgrade_level": 5,
             }
         }
 
@@ -284,8 +272,12 @@ class CharacterGear(BaseModel):
     snapshot_time: datetime = Field(..., description="When gear was recorded")
     average_item_level: float = Field(..., description="Average item level")
     items: List[CharacterGearItem] = Field(..., description="Equipped items")
-    set_bonuses: List[Dict[str, Any]] = Field(default_factory=list, description="Active set bonuses")
-    optimization_score: Optional[float] = Field(None, description="Gear optimization score", ge=0, le=100)
+    set_bonuses: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Active set bonuses"
+    )
+    optimization_score: Optional[float] = Field(
+        None, description="Gear optimization score", ge=0, le=100
+    )
 
     class Config:
         schema_extra = {
@@ -300,20 +292,20 @@ class CharacterGear(BaseModel):
                             "id": 195480,
                             "name": "Primal Berserk Faceguard",
                             "quality": "Epic",
-                            "item_level": 415
+                            "item_level": 415,
                         },
                         "enchant_id": 6643,
-                        "gem_ids": [192985]
+                        "gem_ids": [192985],
                     }
                 ],
                 "set_bonuses": [
                     {
                         "set_name": "Primal Berserk",
                         "pieces_equipped": 2,
-                        "bonus_description": "2-piece: Increases critical strike by 5%"
+                        "bonus_description": "2-piece: Increases critical strike by 5%",
                     }
                 ],
-                "optimization_score": 92.5
+                "optimization_score": 92.5,
             }
         }
 
@@ -323,7 +315,9 @@ class CharacterTalentRow(BaseModel):
 
     row: int = Field(..., description="Talent row number", ge=1)
     selected_talent: SpellInfo = Field(..., description="Selected talent")
-    alternative_talents: List[SpellInfo] = Field(default_factory=list, description="Other talents in row")
+    alternative_talents: List[SpellInfo] = Field(
+        default_factory=list, description="Other talents in row"
+    )
 
     class Config:
         schema_extra = {
@@ -333,16 +327,16 @@ class CharacterTalentRow(BaseModel):
                     "id": 190411,
                     "name": "Incarnation: Chosen of Elune",
                     "school": "Nature",
-                    "icon": "spell_druid_incarnation"
+                    "icon": "spell_druid_incarnation",
                 },
                 "alternative_talents": [
                     {
                         "id": 102560,
                         "name": "Force of Nature",
                         "school": "Nature",
-                        "icon": "ability_druid_forceofnature"
+                        "icon": "ability_druid_forceofnature",
                     }
-                ]
+                ],
             }
         }
 
@@ -355,7 +349,9 @@ class CharacterTalents(BaseModel):
     talent_loadout: str = Field(..., description="Talent loadout string")
     snapshot_time: datetime = Field(..., description="When talents were recorded")
     talent_rows: List[CharacterTalentRow] = Field(..., description="Talent selections by row")
-    optimization_notes: List[str] = Field(default_factory=list, description="Talent optimization suggestions")
+    optimization_notes: List[str] = Field(
+        default_factory=list, description="Talent optimization suggestions"
+    )
 
     class Config:
         schema_extra = {
@@ -370,13 +366,13 @@ class CharacterTalents(BaseModel):
                         "selected_talent": {
                             "id": 190411,
                             "name": "Combustion",
-                            "icon": "spell_fire_sealoffire"
-                        }
+                            "icon": "spell_fire_sealoffire",
+                        },
                     }
                 ],
                 "optimization_notes": [
                     "Consider taking Phoenix Flames for better mobility",
-                    "Flamestrike might be better for AoE encounters"
-                ]
+                    "Flamestrike might be better for AoE encounters",
+                ],
             }
         }

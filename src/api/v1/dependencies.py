@@ -26,15 +26,17 @@ class DatabaseDependency:
     @property
     def dependency(self):
         """Return the dependency function."""
+
         def get_database():
             return self.db_manager
+
         return Depends(get_database)
 
 
 async def get_api_key(
     authorization: Optional[HTTPAuthorizationCredentials] = Depends(security),
     api_key: Optional[str] = Query(None, description="API key for authentication"),
-    x_api_key: Optional[str] = Header(None, description="API key via header")
+    x_api_key: Optional[str] = Header(None, description="API key via header"),
 ) -> str:
     """
     Extract API key from various sources (Bearer token, query param, or header).
@@ -60,7 +62,7 @@ async def get_api_key(
     else:
         raise HTTPException(
             status_code=401,
-            detail="API key required. Provide via Authorization header, api_key query param, or X-API-Key header"
+            detail="API key required. Provide via Authorization header, api_key query param, or X-API-Key header",
         )
 
 
@@ -81,16 +83,14 @@ async def get_authenticated_user(api_key: str = Depends(get_api_key)) -> AuthRes
 
     if not auth_response.authenticated:
         raise HTTPException(
-            status_code=401,
-            detail=auth_response.message or "Authentication failed"
+            status_code=401, detail=auth_response.message or "Authentication failed"
         )
 
     return auth_response
 
 
 async def require_permission(
-    required_permission: str,
-    auth: AuthResponse = Depends(get_authenticated_user)
+    required_permission: str, auth: AuthResponse = Depends(get_authenticated_user)
 ) -> AuthResponse:
     """
     Check if authenticated user has required permission.
@@ -106,33 +106,36 @@ async def require_permission(
         HTTPException: If user lacks required permission
     """
     if required_permission not in auth.permissions:
-        raise HTTPException(
-            status_code=403,
-            detail=f"Permission '{required_permission}' required"
-        )
+        raise HTTPException(status_code=403, detail=f"Permission '{required_permission}' required")
 
     return auth
 
 
 # Common permission dependencies
-async def require_read_permission(auth: AuthResponse = Depends(get_authenticated_user)) -> AuthResponse:
+async def require_read_permission(
+    auth: AuthResponse = Depends(get_authenticated_user),
+) -> AuthResponse:
     """Require read permission."""
     return await require_permission("read", auth)
 
 
-async def require_write_permission(auth: AuthResponse = Depends(get_authenticated_user)) -> AuthResponse:
+async def require_write_permission(
+    auth: AuthResponse = Depends(get_authenticated_user),
+) -> AuthResponse:
     """Require write permission."""
     return await require_permission("write", auth)
 
 
-async def require_admin_permission(auth: AuthResponse = Depends(get_authenticated_user)) -> AuthResponse:
+async def require_admin_permission(
+    auth: AuthResponse = Depends(get_authenticated_user),
+) -> AuthResponse:
     """Require admin permission."""
     return await require_permission("admin", auth)
 
 
 # Optional dependencies for endpoints that support both authenticated and unauthenticated access
 async def get_optional_authenticated_user(
-    api_key: Optional[str] = Depends(get_api_key)
+    api_key: Optional[str] = Depends(get_api_key),
 ) -> Optional[AuthResponse]:
     """
     Optionally authenticate user if API key is provided.
@@ -162,9 +165,10 @@ def create_pagination_dependency(max_limit: int = 100):
     Returns:
         Dependency function for pagination parameters
     """
+
     def get_pagination_params(
         limit: int = Query(20, ge=1, le=max_limit, description="Number of items per page"),
-        offset: int = Query(0, ge=0, description="Offset for pagination")
+        offset: int = Query(0, ge=0, description="Offset for pagination"),
     ) -> dict:
         return {"limit": limit, "offset": offset}
 
@@ -181,15 +185,12 @@ def create_date_range_dependency(max_days: int = 365):
     Returns:
         Dependency function for date range parameters
     """
+
     def get_date_range_params(
         days: int = Query(30, ge=1, le=max_days, description="Number of days"),
         start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
-        end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)")
+        end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     ) -> dict:
-        return {
-            "days": days,
-            "start_date": start_date,
-            "end_date": end_date
-        }
+        return {"days": days, "start_date": start_date, "end_date": end_date}
 
     return Depends(get_date_range_params)

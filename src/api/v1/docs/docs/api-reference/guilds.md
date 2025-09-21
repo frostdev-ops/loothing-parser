@@ -71,12 +71,12 @@ GET /guilds
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `page` | integer | 1 | Page number for pagination |
-| `limit` | integer | 20 | Number of guilds per page (max 100) |
-| `region` | string | - | Filter by region (US, EU, etc.) |
-| `faction` | string | - | Filter by faction (Alliance, Horde) |
+| Parameter | Type    | Default | Description                         |
+| --------- | ------- | ------- | ----------------------------------- |
+| `page`    | integer | 1       | Page number for pagination          |
+| `limit`   | integer | 20      | Number of guilds per page (max 100) |
+| `region`  | string  | -       | Filter by region (US, EU, etc.)     |
+| `faction` | string  | -       | Filter by faction (Alliance, Horde) |
 
 **Response:**
 
@@ -112,11 +112,11 @@ GET /guilds/current/statistics
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `days` | integer | 30 | Number of days to include in statistics |
-| `encounter_type` | string | "all" | Filter by encounter type (raid, dungeon, all) |
-| `difficulty` | string | "all" | Filter by difficulty (Normal, Heroic, Mythic, all) |
+| Parameter        | Type    | Default | Description                                        |
+| ---------------- | ------- | ------- | -------------------------------------------------- |
+| `days`           | integer | 30      | Number of days to include in statistics            |
+| `encounter_type` | string  | "all"   | Filter by encounter type (raid, dungeon, all)      |
+| `difficulty`     | string  | "all"   | Filter by difficulty (Normal, Heroic, Mythic, all) |
 
 **Response:**
 
@@ -133,9 +133,9 @@ GET /guilds/current/statistics
     "successful": 142,
     "success_rate": 91.0,
     "by_difficulty": {
-      "Normal": {"total": 45, "successful": 45},
-      "Heroic": {"total": 89, "successful": 82},
-      "Mythic": {"total": 22, "successful": 15}
+      "Normal": { "total": 45, "successful": 45 },
+      "Heroic": { "total": 89, "successful": 82 },
+      "Mythic": { "total": 22, "successful": 15 }
     }
   },
   "characters": {
@@ -165,14 +165,14 @@ GET /guilds/current/members
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `page` | integer | 1 | Page number for pagination |
-| `limit` | integer | 50 | Number of members per page (max 100) |
-| `class` | string | - | Filter by character class |
-| `active_days` | integer | 30 | Only include members active in last N days |
-| `sort` | string | "name" | Sort by: name, last_seen, encounters, performance |
-| `order` | string | "asc" | Sort order: asc, desc |
+| Parameter     | Type    | Default | Description                                       |
+| ------------- | ------- | ------- | ------------------------------------------------- |
+| `page`        | integer | 1       | Page number for pagination                        |
+| `limit`       | integer | 50      | Number of members per page (max 100)              |
+| `class`       | string  | -       | Filter by character class                         |
+| `active_days` | integer | 30      | Only include members active in last N days        |
+| `sort`        | string  | "name"  | Sort by: name, last_seen, encounters, performance |
+| `order`       | string  | "asc"   | Sort order: asc, desc                             |
 
 **Response:**
 
@@ -213,21 +213,21 @@ GET /encounters
 ```
 
 !!! note "Guild Context"
-    This endpoint automatically filters encounters to your guild. The guild_id parameter is optional and only works if you have multi-guild access.
+This endpoint automatically filters encounters to your guild. The guild_id parameter is optional and only works if you have multi-guild access.
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `guild_id` | integer | - | Specific guild ID (multi-guild users only) |
-| `page` | integer | 1 | Page number for pagination |
-| `limit` | integer | 20 | Number of encounters per page (max 100) |
-| `days` | integer | - | Filter to encounters in last N days |
-| `encounter_name` | string | - | Filter by encounter name |
-| `difficulty` | string | - | Filter by difficulty |
-| `success` | boolean | - | Filter by success status |
-| `sort` | string | "start_time" | Sort by: start_time, duration, success |
-| `order` | string | "desc" | Sort order: asc, desc |
+| Parameter        | Type    | Default      | Description                                |
+| ---------------- | ------- | ------------ | ------------------------------------------ |
+| `guild_id`       | integer | -            | Specific guild ID (multi-guild users only) |
+| `page`           | integer | 1            | Page number for pagination                 |
+| `limit`          | integer | 20           | Number of encounters per page (max 100)    |
+| `days`           | integer | -            | Filter to encounters in last N days        |
+| `encounter_name` | string  | -            | Filter by encounter name                   |
+| `difficulty`     | string  | -            | Filter by difficulty                       |
+| `success`        | boolean | -            | Filter by success status                   |
+| `sort`           | string  | "start_time" | Sort by: start_time, duration, success     |
+| `order`          | string  | "desc"       | Sort order: asc, desc                      |
 
 **Response:**
 
@@ -267,15 +267,15 @@ GET /characters
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `guild_id` | integer | - | Specific guild ID (multi-guild users only) |
-| `page` | integer | 1 | Page number for pagination |
-| `limit` | integer | 50 | Number of characters per page (max 100) |
-| `class` | string | - | Filter by character class |
-| `encounter_id` | integer | - | Filter to characters in specific encounter |
-| `min_item_level` | integer | - | Minimum item level filter |
-| `active_days` | integer | 30 | Only include characters active in last N days |
+| Parameter        | Type    | Default | Description                                   |
+| ---------------- | ------- | ------- | --------------------------------------------- |
+| `guild_id`       | integer | -       | Specific guild ID (multi-guild users only)    |
+| `page`           | integer | 1       | Page number for pagination                    |
+| `limit`          | integer | 50      | Number of characters per page (max 100)       |
+| `class`          | string  | -       | Filter by character class                     |
+| `encounter_id`   | integer | -       | Filter to characters in specific encounter    |
+| `min_item_level` | integer | -       | Minimum item level filter                     |
+| `active_days`    | integer | 30      | Only include characters active in last N days |
 
 ### Guild Analytics
 
@@ -289,12 +289,12 @@ GET /analytics/guild/trends
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `metric` | string | "dps" | Metric to analyze (dps, hps, encounter_success) |
-| `period` | string | "daily" | Aggregation period (daily, weekly, monthly) |
-| `days` | integer | 30 | Number of days to analyze |
-| `encounter_type` | string | "all" | Filter by encounter type |
+| Parameter        | Type    | Default | Description                                     |
+| ---------------- | ------- | ------- | ----------------------------------------------- |
+| `metric`         | string  | "dps"   | Metric to analyze (dps, hps, encounter_success) |
+| `period`         | string  | "daily" | Aggregation period (daily, weekly, monthly)     |
+| `days`           | integer | 30      | Number of days to analyze                       |
+| `encounter_type` | string  | "all"   | Filter by encounter type                        |
 
 **Response:**
 
@@ -335,13 +335,13 @@ GET /analytics/guild/class-balance
   "guild_id": 123,
   "analysis_period": "30_days",
   "class_distribution": {
-    "Warrior": {"count": 4, "percentage": 14.3},
-    "Mage": {"count": 3, "percentage": 10.7},
-    "Hunter": {"count": 5, "percentage": 17.9}
+    "Warrior": { "count": 4, "percentage": 14.3 },
+    "Mage": { "count": 3, "percentage": 10.7 },
+    "Hunter": { "count": 5, "percentage": 17.9 }
   },
   "performance_by_class": {
-    "Warrior": {"avg_dps": 380000, "avg_hps": 45000},
-    "Mage": {"avg_dps": 520000, "avg_hps": 12000}
+    "Warrior": { "avg_dps": 380000, "avg_hps": 45000 },
+    "Mage": { "avg_dps": 520000, "avg_hps": 12000 }
   },
   "recommendations": [
     "Consider recruiting more healers for raid balance",

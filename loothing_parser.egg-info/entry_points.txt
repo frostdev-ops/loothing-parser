@@ -1,0 +1,2 @@
+[console_scripts]
+loothing-parser = src.cli:main

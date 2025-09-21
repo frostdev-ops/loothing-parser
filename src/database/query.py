@@ -419,7 +419,10 @@ class QueryAPI:
         return encounters
 
     def get_character_metrics(
-        self, encounter_id: int, character_name: Optional[str] = None, guild_id: Optional[int] = None
+        self,
+        encounter_id: int,
+        character_name: Optional[str] = None,
+        guild_id: Optional[int] = None,
     ) -> List[CharacterMetrics]:
         """
         Get character performance metrics for an encounter.

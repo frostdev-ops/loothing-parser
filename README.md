@@ -5,24 +5,28 @@ A high-performance, multi-tenant combat log parser for World of Warcraft designe
 ## 🌟 Key Features
 
 ### 🏰 **Multi-Tenant Guild System**
+
 - **Complete Guild Isolation**: Each guild's data is fully separated and secure
 - **Guild-Scoped API Keys**: Authentication tied to specific guilds
 - **Scalable Architecture**: Supports 100+ concurrent guilds efficiently
 - **Row-Level Security**: Guild-first indexing prevents data leakage
 
 ### ⚡ **High Performance**
+
 - **Fast Parsing**: ~27,000 events/second on average
 - **Large File Support**: Handles 600MB+ log files efficiently
 - **Optimized Queries**: Sub-100ms response times with guild filtering
 - **Intelligent Caching**: Guild-aware caching for maximum performance
 
 ### 🎯 **Advanced Analytics**
+
 - **Encounter Detection**: Automatically segments raids and Mythic+ runs
 - **Performance Metrics**: Calculates DPS, HPS, and combat statistics
 - **Real-time Streaming**: WebSocket support for live encounter tracking
 - **Historical Trending**: Track guild and character performance over time
 
 ### 🔧 **Developer-Friendly**
+
 - **REST API**: Complete v1 API with OpenAPI documentation
 - **Rich CLI**: Beautiful terminal output with progress tracking
 - **Docker Ready**: Production-ready containerized deployment

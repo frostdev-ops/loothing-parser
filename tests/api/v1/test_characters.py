@@ -22,7 +22,7 @@ class TestCharacterEndpoints:
         mock_db: DatabaseManager,
         sample_character_data: Dict[str, Any],
         valid_headers: Dict[str, str],
-        pagination_params: Dict[str, Any]
+        pagination_params: Dict[str, Any],
     ):
         """Test successful character listing with pagination."""
         # Setup mock
@@ -30,14 +30,12 @@ class TestCharacterEndpoints:
             "data": [sample_character_data],
             "total": 1,
             "has_next": False,
-            "has_previous": False
+            "has_previous": False,
         }
 
         # Make request
         response = api_test_client.client.get(
-            "/characters",
-            headers=valid_headers,
-            params=pagination_params
+            "/characters", headers=valid_headers, params=pagination_params
         )
 
         # Assertions
@@ -61,7 +59,7 @@ class TestCharacterEndpoints:
         mock_db: DatabaseManager,
         sample_character_data: Dict[str, Any],
         valid_headers: Dict[str, str],
-        filter_params: Dict[str, Any]
+        filter_params: Dict[str, Any],
     ):
         """Test character listing with various filters."""
         # Setup mock
@@ -69,7 +67,7 @@ class TestCharacterEndpoints:
             "data": [sample_character_data],
             "total": 1,
             "has_next": False,
-            "has_previous": False
+            "has_previous": False,
         }
 
         # Test each filter parameter
@@ -78,7 +76,7 @@ class TestCharacterEndpoints:
                 response = api_test_client.client.get(
                     "/characters",
                     headers=valid_headers,
-                    params={filter_key: filter_value, "limit": 5}
+                    params={filter_key: filter_value, "limit": 5},
                 )
 
                 data = api_test_client.assert_paginated_response(response)
@@ -92,7 +90,7 @@ class TestCharacterEndpoints:
         self,
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test character listing with no results."""
         # Setup mock for empty result
@@ -100,13 +98,11 @@ class TestCharacterEndpoints:
             "data": [],
             "total": 0,
             "has_next": False,
-            "has_previous": False
+            "has_previous": False,
         }
 
         response = api_test_client.client.get(
-            "/characters",
-            headers=valid_headers,
-            params={"limit": 20}
+            "/characters", headers=valid_headers, params={"limit": 20}
         )
 
         data = api_test_client.assert_paginated_response(response)
@@ -118,16 +114,14 @@ class TestCharacterEndpoints:
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
         sample_character_data: Dict[str, Any],
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test successful character retrieval."""
         # Setup mock
         mock_db.get_character_profile.return_value = sample_character_data
 
         response = api_test_client.client.get(
-            "/characters/Thrall",
-            headers=valid_headers,
-            params={"server": "Stormrage"}
+            "/characters/Thrall", headers=valid_headers, params={"server": "Stormrage"}
         )
 
         data = api_test_client.assert_success_response(response)
@@ -138,23 +132,21 @@ class TestCharacterEndpoints:
 
         # Verify database call
         mock_db.get_character_profile.assert_called_once_with(
-            character_name="Thrall",
-            server="Stormrage"
+            character_name="Thrall", server="Stormrage"
         )
 
     def test_get_character_not_found(
         self,
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test character not found scenario."""
         # Setup mock to return None
         mock_db.get_character_profile.return_value = None
 
         response = api_test_client.client.get(
-            "/characters/NonExistentCharacter",
-            headers=valid_headers
+            "/characters/NonExistentCharacter", headers=valid_headers
         )
 
         api_test_client.assert_error_response(response, 404)
@@ -165,7 +157,7 @@ class TestCharacterEndpoints:
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
         sample_performance_data: Dict[str, Any],
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test successful character performance retrieval."""
         # Setup mock
@@ -175,11 +167,7 @@ class TestCharacterEndpoints:
         response = api_test_client.client.get(
             "/characters/Thrall/performance",
             headers=valid_headers,
-            params={
-                "days": 30,
-                "encounter_type": "raid",
-                "difficulty": "heroic"
-            }
+            params={"days": 30, "encounter_type": "raid", "difficulty": "heroic"},
         )
 
         data = api_test_client.assert_success_response(response)
@@ -203,7 +191,7 @@ class TestCharacterEndpoints:
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
         sample_performance_data: Dict[str, Any],
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test character performance with trend analysis."""
         # Setup mock with multiple data points for trends
@@ -217,7 +205,7 @@ class TestCharacterEndpoints:
         response = api_test_client.client.get(
             "/characters/Thrall/performance",
             headers=valid_headers,
-            params={"days": 7, "include_trends": True}
+            params={"days": 7, "include_trends": True},
         )
 
         data = api_test_client.assert_success_response(response)
@@ -231,7 +219,7 @@ class TestCharacterEndpoints:
         self,
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test character rankings endpoint."""
         # Setup mock ranking data
@@ -242,7 +230,7 @@ class TestCharacterEndpoints:
                 "percentile": 95.5,
                 "metric_value": 150000.0,
                 "class_name": "Shaman",
-                "guild_name": "Earthen Ring"
+                "guild_name": "Earthen Ring",
             },
             {
                 "character_name": "Jaina",
@@ -250,19 +238,15 @@ class TestCharacterEndpoints:
                 "percentile": 92.1,
                 "metric_value": 145000.0,
                 "class_name": "Mage",
-                "guild_name": "Kirin Tor"
-            }
+                "guild_name": "Kirin Tor",
+            },
         ]
         mock_db.get_character_rankings.return_value = mock_rankings
 
         response = api_test_client.client.get(
             "/characters/rankings",
             headers=valid_headers,
-            params={
-                "metric": "dps",
-                "encounter_type": "raid",
-                "limit": 10
-            }
+            params={"metric": "dps", "encounter_type": "raid", "limit": 10},
         )
 
         data = api_test_client.assert_success_response(response)
@@ -275,7 +259,7 @@ class TestCharacterEndpoints:
         self,
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test character gear analysis endpoint."""
         # Setup mock gear data
@@ -285,7 +269,7 @@ class TestCharacterEndpoints:
             "gear_progression": [
                 {"date": "2024-01-15", "item_level": 489.5},
                 {"date": "2024-01-10", "item_level": 485.0},
-                {"date": "2024-01-05", "item_level": 480.0}
+                {"date": "2024-01-05", "item_level": 480.0},
             ],
             "tier_set_pieces": 4,
             "legendary_items": 2,
@@ -294,16 +278,13 @@ class TestCharacterEndpoints:
                     "slot": "trinket",
                     "current_item": "Old Trinket",
                     "suggested_item": "Better Trinket",
-                    "estimated_improvement": 5.2
+                    "estimated_improvement": 5.2,
                 }
-            ]
+            ],
         }
         mock_db.get_character_gear_analysis.return_value = mock_gear
 
-        response = api_test_client.client.get(
-            "/characters/Thrall/gear",
-            headers=valid_headers
-        )
+        response = api_test_client.client.get("/characters/Thrall/gear", headers=valid_headers)
 
         data = api_test_client.assert_success_response(response)
         assert data["character_name"] == "Thrall"
@@ -312,35 +293,22 @@ class TestCharacterEndpoints:
         assert data["tier_set_pieces"] == 4
 
     def test_character_authentication_required(
-        self,
-        api_test_client: APITestClient,
-        invalid_headers: Dict[str, str]
+        self, api_test_client: APITestClient, invalid_headers: Dict[str, str]
     ):
         """Test that character endpoints require authentication."""
-        endpoints = [
-            "/characters",
-            "/characters/Thrall",
-            "/characters/Thrall/performance"
-        ]
+        endpoints = ["/characters", "/characters/Thrall", "/characters/Thrall/performance"]
 
         for endpoint in endpoints:
-            response = api_test_client.client.get(
-                endpoint,
-                headers=invalid_headers
-            )
+            response = api_test_client.client.get(endpoint, headers=invalid_headers)
             api_test_client.assert_error_response(response, 401)
 
     def test_character_validation_errors(
-        self,
-        api_test_client: APITestClient,
-        valid_headers: Dict[str, str]
+        self, api_test_client: APITestClient, valid_headers: Dict[str, str]
     ):
         """Test validation errors for character endpoints."""
         # Test invalid limit parameter
         response = api_test_client.client.get(
-            "/characters",
-            headers=valid_headers,
-            params={"limit": 1000}  # Exceeds maximum
+            "/characters", headers=valid_headers, params={"limit": 1000}  # Exceeds maximum
         )
         api_test_client.assert_error_response(response, 400)
 
@@ -348,7 +316,7 @@ class TestCharacterEndpoints:
         response = api_test_client.client.get(
             "/characters/Thrall/performance",
             headers=valid_headers,
-            params={"days": 500}  # Exceeds maximum
+            params={"days": 500},  # Exceeds maximum
         )
         api_test_client.assert_error_response(response, 400)
 
@@ -356,7 +324,7 @@ class TestCharacterEndpoints:
         response = api_test_client.client.get(
             "/characters/Thrall/performance",
             headers=valid_headers,
-            params={"difficulty": "invalid_difficulty"}
+            params={"difficulty": "invalid_difficulty"},
         )
         api_test_client.assert_error_response(response, 400)
 
@@ -365,7 +333,7 @@ class TestCharacterEndpoints:
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
         sample_character_data: Dict[str, Any],
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test character search functionality."""
         # Setup mock for search
@@ -373,9 +341,7 @@ class TestCharacterEndpoints:
         mock_db.search_characters.return_value = mock_search_results
 
         response = api_test_client.client.get(
-            "/characters",
-            headers=valid_headers,
-            params={"search": "thrall shaman"}
+            "/characters", headers=valid_headers, params={"search": "thrall shaman"}
         )
 
         data = api_test_client.assert_paginated_response(response)
@@ -386,21 +352,21 @@ class TestCharacterEndpoints:
         self,
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test that performance metrics are calculated correctly."""
         # Setup mock with raw performance data
         raw_performances = [
             {"character_name": "Thrall", "dps": 150000, "duration": 300},
             {"character_name": "Thrall", "dps": 140000, "duration": 400},
-            {"character_name": "Thrall", "dps": 160000, "duration": 250}
+            {"character_name": "Thrall", "dps": 160000, "duration": 250},
         ]
         mock_db.get_character_performance.return_value = raw_performances
 
         response = api_test_client.client.get(
             "/characters/Thrall/performance",
             headers=valid_headers,
-            params={"calculate_summary": True}
+            params={"calculate_summary": True},
         )
 
         data = api_test_client.assert_success_response(response)
@@ -418,7 +384,7 @@ class TestCharacterEndpoints:
         api_test_client: APITestClient,
         mock_db: DatabaseManager,
         sample_character_data: Dict[str, Any],
-        valid_headers: Dict[str, str]
+        valid_headers: Dict[str, str],
     ):
         """Test handling of concurrent character requests."""
         import asyncio
@@ -429,11 +395,10 @@ class TestCharacterEndpoints:
 
         # Simulate concurrent requests
         async def make_request():
-            async with AsyncClient(app=api_test_client.client.app, base_url="http://test") as client:
-                response = await client.get(
-                    "/characters/Thrall",
-                    headers=valid_headers
-                )
+            async with AsyncClient(
+                app=api_test_client.client.app, base_url="http://test"
+            ) as client:
+                response = await client.get("/characters/Thrall", headers=valid_headers)
                 return response.status_code
 
         # Run multiple concurrent requests

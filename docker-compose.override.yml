@@ -8,3 +8,5 @@ services:
     command: ["python", "-m", "src.api.streaming_server"]
 
   nginx:
+    volumes:
+      - ./static:/usr/share/nginx/html/static:ro

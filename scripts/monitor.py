@@ -40,9 +40,13 @@ console = Console()
 class ServerMonitor:
     """Real-time monitoring dashboard for the streaming server."""
 
-    def __init__(self, server_url: str = "http://localhost:8000", update_interval: float = 2.0):
-        self.server_url = server_url.rstrip('/')
-        self.ws_url = server_url.replace('http://', 'ws://').replace('https://', 'wss://')
+    def __init__(
+        self, server_url: str = "http://localhost:8000", update_interval: float = 2.0
+    ):
+        self.server_url = server_url.rstrip("/")
+        self.ws_url = server_url.replace("http://", "ws://").replace(
+            "https://", "wss://"
+        )
         self.update_interval = update_interval
         self.stats_history = []
         self.max_history = 50  # Keep last 50 data points
@@ -65,14 +69,10 @@ class ServerMonitor:
             return {
                 "status": "healthy" if response.status_code == 200 else "unhealthy",
                 "response_time": response.elapsed.total_seconds(),
-                "status_code": response.status_code
+                "status_code": response.status_code,
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "response_time": None
-            }
+            return {"status": "error", "error": str(e), "response_time": None}
 
     def create_header_panel(self) -> Panel:
         """Create the header panel with server info."""
@@ -81,12 +81,12 @@ class ServerMonitor:
         header_text.append("🎮 WoW Combat Log Streaming Monitor\n", style="bold blue")
         header_text.append(f"Server: {self.server_url}\n", style="dim")
         header_text.append(f"Uptime: {str(uptime).split('.')[0]}\n", style="dim")
-        header_text.append(f"Updated: {datetime.now().strftime('%H:%M:%S')}", style="dim")
+        header_text.append(
+            f"Updated: {datetime.now().strftime('%H:%M:%S')}", style="dim"
+        )
 
         return Panel(
-            Align.center(header_text),
-            title="System Monitor",
-            border_style="blue"
+            Align.center(header_text), title="System Monitor", border_style="blue"
         )
 
     def create_health_panel(self, health: Dict[str, Any]) -> Panel:
@@ -111,7 +111,11 @@ class ServerMonitor:
         if health.get("error"):
             content.append(f"Error: {health['error']}\n", style="red")
 
-        return Panel(content, title="Health", border_style="green" if status == "healthy" else "red")
+        return Panel(
+            content,
+            title="Health",
+            border_style="green" if status == "healthy" else "red",
+        )
 
     def create_connections_panel(self, stats: Dict[str, Any]) -> Panel:
         """Create WebSocket connections panel."""
@@ -125,7 +129,9 @@ class ServerMonitor:
         table.add_row("Total Sessions", str(connections.get("total_sessions", 0)))
         table.add_row("Messages Received", str(connections.get("messages_received", 0)))
         table.add_row("Messages Sent", str(connections.get("messages_sent", 0)))
-        table.add_row("Bytes Received", self.format_bytes(connections.get("bytes_received", 0)))
+        table.add_row(
+            "Bytes Received", self.format_bytes(connections.get("bytes_received", 0))
+        )
         table.add_row("Bytes Sent", self.format_bytes(connections.get("bytes_sent", 0)))
 
         return Panel(table, title="WebSocket Connections", border_style="cyan")
@@ -142,7 +148,9 @@ class ServerMonitor:
         table.add_row("Events/Second", f"{processing.get('events_per_second', 0):.1f}")
         table.add_row("Parse Errors", str(processing.get("parse_errors", 0)))
         table.add_row("Success Rate", f"{processing.get('success_rate', 0):.1%}")
-        table.add_row("Avg Processing Time", f"{processing.get('avg_processing_time', 0):.3f}s")
+        table.add_row(
+            "Avg Processing Time", f"{processing.get('avg_processing_time', 0):.3f}s"
+        )
         table.add_row("Queue Size", str(processing.get("queue_size", 0)))
 
         return Panel(table, title="Processing Stats", border_style="yellow")
@@ -157,7 +165,9 @@ class ServerMonitor:
 
         table.add_row("Total Events", str(database.get("total_events", 0)))
         table.add_row("Database Size", self.format_bytes(database.get("db_size", 0)))
-        table.add_row("Compression Ratio", f"{database.get('compression_ratio', 0):.1%}")
+        table.add_row(
+            "Compression Ratio", f"{database.get('compression_ratio', 0):.1%}"
+        )
         table.add_row("Recent Encounters", str(database.get("recent_encounters", 0)))
         table.add_row("Active Characters", str(database.get("active_characters", 0)))
         table.add_row("Queries/Minute", str(database.get("queries_per_minute", 0)))
@@ -174,7 +184,9 @@ class ServerMonitor:
 
         # CPU and Memory
         table.add_row("CPU Usage", f"{performance.get('cpu_percent', 0):.1f}%")
-        table.add_row("Memory Usage", self.format_bytes(performance.get("memory_usage", 0)))
+        table.add_row(
+            "Memory Usage", self.format_bytes(performance.get("memory_usage", 0))
+        )
         table.add_row("Memory Percent", f"{performance.get('memory_percent', 0):.1f}%")
 
         # Disk I/O
@@ -217,15 +229,14 @@ class ServerMonitor:
 
         return f"{size:.1f} {units[unit_index]}"
 
-    def create_dashboard_layout(self, stats: Dict[str, Any], health: Dict[str, Any]) -> Layout:
+    def create_dashboard_layout(
+        self, stats: Dict[str, Any], health: Dict[str, Any]
+    ) -> Layout:
         """Create the complete dashboard layout."""
         layout = Layout()
 
         # Split into header and body
-        layout.split_column(
-            Layout(name="header", size=6),
-            Layout(name="body")
-        )
+        layout.split_column(Layout(name="header", size=6), Layout(name="body"))
 
         # Header
         layout["header"].update(self.create_header_panel())
@@ -234,13 +245,12 @@ class ServerMonitor:
         layout["body"].split_column(
             Layout(name="status_row", size=8),
             Layout(name="metrics_row", size=12),
-            Layout(name="activity_row")
+            Layout(name="activity_row"),
         )
 
         # Status row - health and connections
         layout["status_row"].split_row(
-            Layout(name="health"),
-            Layout(name="connections")
+            Layout(name="health"), Layout(name="connections")
         )
 
         layout["health"].update(self.create_health_panel(health))
@@ -250,7 +260,7 @@ class ServerMonitor:
         layout["metrics_row"].split_row(
             Layout(name="processing"),
             Layout(name="database"),
-            Layout(name="performance")
+            Layout(name="performance"),
         )
 
         layout["processing"].update(self.create_processing_panel(stats))
@@ -264,7 +274,9 @@ class ServerMonitor:
 
     async def monitor_loop(self):
         """Main monitoring loop."""
-        with Live(self.create_dashboard_layout({}, {}), refresh_per_second=1, screen=True) as live:
+        with Live(
+            self.create_dashboard_layout({}, {}), refresh_per_second=1, screen=True
+        ) as live:
             while True:
                 try:
                     # Fetch data
@@ -272,15 +284,13 @@ class ServerMonitor:
                     stats = self.get_server_stats() or {}
 
                     # Store in history
-                    self.stats_history.append({
-                        "timestamp": datetime.now(),
-                        "stats": stats,
-                        "health": health
-                    })
+                    self.stats_history.append(
+                        {"timestamp": datetime.now(), "stats": stats, "health": health}
+                    )
 
                     # Keep only recent history
                     if len(self.stats_history) > self.max_history:
-                        self.stats_history = self.stats_history[-self.max_history:]
+                        self.stats_history = self.stats_history[-self.max_history :]
 
                     # Update display
                     layout = self.create_dashboard_layout(stats, health)
@@ -302,7 +312,9 @@ async def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="WoW Combat Log Server Monitor")
     parser.add_argument("--server", default="http://localhost:8000", help="Server URL")
-    parser.add_argument("--interval", type=float, default=2.0, help="Update interval in seconds")
+    parser.add_argument(
+        "--interval", type=float, default=2.0, help="Update interval in seconds"
+    )
     args = parser.parse_args()
 
     console.print("🎮 Starting WoW Combat Log Server Monitor...", style="bold blue")

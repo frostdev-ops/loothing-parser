@@ -434,7 +434,9 @@ class ParallelLogProcessor:
                 logger.error(f"Error calculating raid metrics for {raid_encounter.boss_name}: {e}")
                 self.parse_errors.append(f"Raid metrics calculation failed: {str(e)}")
 
-        logger.info(f"Character metrics calculated for {len(mythic_plus_runs)} M+ runs and {len(raid_encounters)} raid encounters")
+        logger.info(
+            f"Character metrics calculated for {len(mythic_plus_runs)} M+ runs and {len(raid_encounters)} raid encounters"
+        )
 
         enhanced_data = {"raid_encounters": raid_encounters, "mythic_plus_runs": mythic_plus_runs}
 

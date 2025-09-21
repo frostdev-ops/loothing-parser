@@ -137,14 +137,14 @@ Real-time streaming also respects guild context:
 
 ```javascript
 const ws = new WebSocket("wss://api.example.com/api/v1/stream", {
-    headers: {
-        'Authorization': 'Bearer YOUR_API_KEY'
-    }
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+  },
 });
 
 // You'll only receive updates for your guild
-ws.on('encounter_update', (data) => {
-    console.log(`Guild ${data.guild_id} encounter update:`, data);
+ws.on("encounter_update", (data) => {
+  console.log(`Guild ${data.guild_id} encounter update:`, data);
 });
 ```
 
@@ -326,6 +326,7 @@ class GuildAPI:
 ### Common Issues
 
 **Issue**: "Guild ID is required" error
+
 ```
 HTTP 400: Guild ID is required. Please ensure your API key is associated with a guild.
 ```
@@ -333,6 +334,7 @@ HTTP 400: Guild ID is required. Please ensure your API key is associated with a 
 **Solution**: Your API key is not properly associated with a guild. Contact your administrator to assign your key to a guild.
 
 **Issue**: "Access denied" when accessing encounters
+
 ```
 HTTP 403: Access denied for guild data
 ```
@@ -340,6 +342,7 @@ HTTP 403: Access denied for guild data
 **Solution**: Your API key doesn't have permission to access the requested guild's data. Verify you're using the correct API key.
 
 **Issue**: Empty results for known data
+
 ```json
 {
   "data": [],

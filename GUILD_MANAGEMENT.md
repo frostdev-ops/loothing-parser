@@ -506,6 +506,7 @@ LIMIT 50;
 **Problem**: API key authentication fails with "Guild not found"
 
 **Solution**:
+
 ```sql
 -- Check if guild exists
 SELECT * FROM guilds WHERE guild_id = ?;
@@ -522,6 +523,7 @@ WHERE ak.key_id = ?;
 **Problem**: User sees data from other guilds
 
 **Solution**:
+
 - Verify API key guild_id assignment
 - Check query filtering logic
 - Review cache key generation
@@ -531,6 +533,7 @@ WHERE ak.key_id = ?;
 **Problem**: Queries become slow after adding guild_id
 
 **Solution**:
+
 ```sql
 -- Rebuild indexes
 REINDEX idx_encounters_guild_start;

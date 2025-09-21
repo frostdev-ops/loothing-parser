@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.database.schema import DatabaseManager, create_tables
@@ -57,24 +58,12 @@ def sample_log_lines():
 # Pytest configuration
 def pytest_configure(config):
     """Configure pytest with custom markers."""
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
-    config.addinivalue_line(
-        "markers", "auth: mark test as authentication related"
-    )
-    config.addinivalue_line(
-        "markers", "websocket: mark test as WebSocket related"
-    )
-    config.addinivalue_line(
-        "markers", "compression: mark test as compression related"
-    )
-    config.addinivalue_line(
-        "markers", "query: mark test as query API related"
-    )
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
+    config.addinivalue_line("markers", "auth: mark test as authentication related")
+    config.addinivalue_line("markers", "websocket: mark test as WebSocket related")
+    config.addinivalue_line("markers", "compression: mark test as compression related")
+    config.addinivalue_line("markers", "query: mark test as query API related")
 
 
 # Pytest collection configuration

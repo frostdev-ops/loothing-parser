@@ -27,13 +27,13 @@ The v2 migration introduces:
 
 ### Migration Impact
 
-| Component | Changes | Downtime Required |
-|-----------|---------|-------------------|
-| Database Schema | ⚠️ Major | Yes (15-30 minutes) |
-| API Endpoints | ⚠️ Breaking | Yes |
-| WebSocket Streaming | ⚠️ Breaking | Yes |
-| CLI Commands | ⚠️ Optional Parameters | No |
-| Data Storage | ✅ Preserved | No |
+| Component           | Changes                | Downtime Required   |
+| ------------------- | ---------------------- | ------------------- |
+| Database Schema     | ⚠️ Major               | Yes (15-30 minutes) |
+| API Endpoints       | ⚠️ Breaking            | Yes                 |
+| WebSocket Streaming | ⚠️ Breaking            | Yes                 |
+| CLI Commands        | ⚠️ Optional Parameters | No                  |
+| Data Storage        | ✅ Preserved           | No                  |
 
 ### Compatibility
 
@@ -844,6 +844,7 @@ conn.close()
 **Problem**: ALTER TABLE fails because guild_id column already exists
 
 **Solution**:
+
 ```sql
 -- Check if column exists before adding
 SELECT name FROM pragma_table_info('encounters') WHERE name = 'guild_id';
@@ -856,6 +857,7 @@ SELECT name FROM pragma_table_info('encounters') WHERE name = 'guild_id';
 **Problem**: Cannot add foreign key constraints to existing data
 
 **Solution**:
+
 ```sql
 -- Disable foreign keys during migration
 PRAGMA foreign_keys = OFF;
@@ -875,6 +877,7 @@ PRAGMA foreign_key_check;
 **Problem**: Index creation fails due to existing indexes
 
 **Solution**:
+
 ```sql
 -- Drop existing conflicting indexes
 DROP INDEX IF EXISTS idx_encounters_start_time;
@@ -890,6 +893,7 @@ CREATE INDEX idx_encounters_guild_start ON encounters(guild_id, start_time DESC)
 **Problem**: Queries slower than expected after adding guild_id
 
 **Diagnostic**:
+
 ```sql
 -- Check query execution plan
 EXPLAIN QUERY PLAN
@@ -901,6 +905,7 @@ ORDER BY start_time DESC;
 ```
 
 **Solution**:
+
 ```sql
 -- Rebuild indexes
 REINDEX idx_encounters_guild_start;
@@ -915,6 +920,7 @@ ANALYZE characters;
 **Problem**: Migration process uses excessive memory
 
 **Solution**:
+
 ```python
 # Process migration in batches
 batch_size = 10000
@@ -949,6 +955,7 @@ while True:
 **Problem**: API keys don't work after migration
 
 **Diagnostic**:
+
 ```python
 from src.api.auth import auth_manager
 stats = auth_manager.get_all_stats()
@@ -960,6 +967,7 @@ print(f"Auth result: {auth_response}")
 ```
 
 **Solution**:
+
 ```python
 # Regenerate API keys with guild context
 key_id, new_key = auth_manager.generate_api_key(
@@ -975,6 +983,7 @@ key_id, new_key = auth_manager.generate_api_key(
 **Problem**: API responses missing guild information
 
 **Solution**:
+
 ```python
 # Verify authentication dependency
 from src.api.v1.dependencies import get_authenticated_user
@@ -990,6 +999,7 @@ from src.api.v1.dependencies import get_authenticated_user
 **Problem**: Records exist without valid guild_id
 
 **Diagnostic**:
+
 ```sql
 -- Find orphaned encounters
 SELECT COUNT(*) FROM encounters e
@@ -1001,6 +1011,7 @@ SELECT COUNT(*) FROM encounters WHERE guild_id IS NULL;
 ```
 
 **Solution**:
+
 ```sql
 -- Assign orphaned records to default guild
 UPDATE encounters SET guild_id = 1 WHERE guild_id IS NULL;
@@ -1108,6 +1119,7 @@ WHERE e.guild_id = ?;
 - **Performance Tuning**: See [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md)
 
 For migration support, contact the development team with:
+
 - Backup verification results
 - Migration error logs
 - Database size and record counts

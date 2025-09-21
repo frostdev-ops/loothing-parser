@@ -340,9 +340,9 @@ class EventCompressor:
                 return msgpack.unpackb(data, raw=False, strict_map_key=False)
             except Exception:
                 logger.warning("Failed to deserialize with msgpack, trying JSON")
-                return json.loads(data.decode('utf-8'))
+                return json.loads(data.decode("utf-8"))
         else:
-            return json.loads(data.decode('utf-8'))
+            return json.loads(data.decode("utf-8"))
 
     def _intern_string(self, s: Optional[str]) -> int:
         """

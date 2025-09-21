@@ -25,7 +25,7 @@ class TestGuildPerformance:
     @pytest.fixture
     def performance_db(self) -> Generator[str, None, None]:
         """Create a database with large dataset for performance testing."""
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as f:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as f:
             db_path = f.name
 
         # Initialize schema
@@ -44,31 +44,39 @@ class TestGuildPerformance:
         ]
 
         for guild_data in guilds_data:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO guilds (guild_id, guild_name, server, region, faction)
                 VALUES (?, ?, ?, ?, ?)
-            """, guild_data)
+            """,
+                guild_data,
+            )
 
         # Create large dataset of encounters (1000 per guild)
         encounters_data = []
         for guild_id in range(1, 6):
             for i in range(1000):
-                encounters_data.append((
-                    guild_id,
-                    f"Test Instance {i % 10}",
-                    f"Boss {i % 20}",
-                    random.choice(['Normal', 'Heroic', 'Mythic']),
-                    f"2024-{random.randint(1, 12):02d}-{random.randint(1, 28):02d} {random.randint(0, 23):02d}:{random.randint(0, 59):02d}:00",
-                    f"2024-{random.randint(1, 12):02d}-{random.randint(1, 28):02d} {random.randint(0, 23):02d}:{random.randint(0, 59):02d}:00",
-                    random.randint(60, 1800),
-                    random.choice([True, False]),
-                    random.randint(0, 10)
-                ))
+                encounters_data.append(
+                    (
+                        guild_id,
+                        f"Test Instance {i % 10}",
+                        f"Boss {i % 20}",
+                        random.choice(["Normal", "Heroic", "Mythic"]),
+                        f"2024-{random.randint(1, 12):02d}-{random.randint(1, 28):02d} {random.randint(0, 23):02d}:{random.randint(0, 59):02d}:00",
+                        f"2024-{random.randint(1, 12):02d}-{random.randint(1, 28):02d} {random.randint(0, 23):02d}:{random.randint(0, 59):02d}:00",
+                        random.randint(60, 1800),
+                        random.choice([True, False]),
+                        random.randint(0, 10),
+                    )
+                )
 
-        conn.executemany("""
+        conn.executemany(
+            """
             INSERT INTO encounters (guild_id, instance_name, encounter_name, difficulty, start_time, end_time, duration_seconds, success, wipe_count)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, encounters_data)
+        """,
+            encounters_data,
+        )
 
         # Create characters for each encounter (5 per encounter avg)
         characters_data = []
@@ -76,40 +84,50 @@ class TestGuildPerformance:
         for guild_id in range(1, 6):
             for encounter_id in range((guild_id - 1) * 1000 + 1, guild_id * 1000 + 1):
                 for i in range(random.randint(3, 8)):  # 3-8 characters per encounter
-                    characters_data.append((
-                        guild_id,
-                        encounter_id,
-                        f"Player{character_id}",
-                        random.choice(['Warrior', 'Mage', 'Hunter', 'Priest', 'Rogue']),
-                        random.choice(['Tank', 'Healer', 'DPS']),
-                        80,
-                        random.randint(600, 700),
-                        random.choice(['Stormrage', 'Tichondrius', 'Mal\'Ganis'])
-                    ))
+                    characters_data.append(
+                        (
+                            guild_id,
+                            encounter_id,
+                            f"Player{character_id}",
+                            random.choice(["Warrior", "Mage", "Hunter", "Priest", "Rogue"]),
+                            random.choice(["Tank", "Healer", "DPS"]),
+                            80,
+                            random.randint(600, 700),
+                            random.choice(["Stormrage", "Tichondrius", "Mal'Ganis"]),
+                        )
+                    )
                     character_id += 1
 
-        conn.executemany("""
+        conn.executemany(
+            """
             INSERT INTO characters (guild_id, encounter_id, character_name, character_class, specialization, level, item_level, realm)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, characters_data)
+        """,
+            characters_data,
+        )
 
         # Create character events (10 per character avg)
         events_data = []
         for character_id in range(1, len(characters_data) + 1):
             guild_id = ((character_id - 1) // 5000) + 1  # Approximate guild assignment
             for i in range(random.randint(5, 15)):  # 5-15 events per character
-                events_data.append((
-                    guild_id,
-                    character_id,
-                    random.choice(['SPELL_DAMAGE', 'SPELL_HEAL', 'SPELL_CAST_SUCCESS']),
-                    f"2024-{random.randint(1, 12):02d}-{random.randint(1, 28):02d} {random.randint(0, 23):02d}:{random.randint(0, 59):02d}:00",
-                    f'{{"damage": {random.randint(10000, 100000)}}}'
-                ))
+                events_data.append(
+                    (
+                        guild_id,
+                        character_id,
+                        random.choice(["SPELL_DAMAGE", "SPELL_HEAL", "SPELL_CAST_SUCCESS"]),
+                        f"2024-{random.randint(1, 12):02d}-{random.randint(1, 28):02d} {random.randint(0, 23):02d}:{random.randint(0, 59):02d}:00",
+                        f'{{"damage": {random.randint(10000, 100000)}}}',
+                    )
+                )
 
-        conn.executemany("""
+        conn.executemany(
+            """
             INSERT INTO character_events (guild_id, character_id, event_type, timestamp, event_data)
             VALUES (?, ?, ?, ?, ?)
-        """, events_data)
+        """,
+            events_data,
+        )
 
         conn.commit()
         conn.close()
@@ -138,15 +156,15 @@ class TestGuildPerformance:
         )
 
         # Unfiltered query (should be slower due to larger dataset)
-        unfiltered_time = self.benchmark_query_time(
-            lambda: query_manager.get_encounters(limit=100)
-        )
+        unfiltered_time = self.benchmark_query_time(lambda: query_manager.get_encounters(limit=100))
 
         print(f"Guild-filtered encounter query: {guild_filtered_time:.2f}ms")
         print(f"Unfiltered encounter query: {unfiltered_time:.2f}ms")
 
         # Guild filtering should be reasonably fast
-        assert guild_filtered_time < 100, f"Guild-filtered queries should be fast (<100ms), got {guild_filtered_time:.2f}ms"
+        assert (
+            guild_filtered_time < 100
+        ), f"Guild-filtered queries should be fast (<100ms), got {guild_filtered_time:.2f}ms"
 
         # Test character queries
         guild_character_time = self.benchmark_query_time(
@@ -160,7 +178,9 @@ class TestGuildPerformance:
         print(f"Guild-filtered character query: {guild_character_time:.2f}ms")
         print(f"Unfiltered character query: {unfiltered_character_time:.2f}ms")
 
-        assert guild_character_time < 50, f"Guild-filtered character queries should be fast (<50ms), got {guild_character_time:.2f}ms"
+        assert (
+            guild_character_time < 50
+        ), f"Guild-filtered character queries should be fast (<50ms), got {guild_character_time:.2f}ms"
 
     def test_index_effectiveness(self, performance_db: str):
         """Test that guild indexes are effective for query performance."""
@@ -168,39 +188,48 @@ class TestGuildPerformance:
 
         # Test encounter lookup with guild index
         start_time = time.perf_counter()
-        cursor = conn.execute("""
+        cursor = conn.execute(
+            """
             SELECT * FROM encounters
             WHERE guild_id = 1 AND difficulty = 'Mythic'
             ORDER BY start_time DESC
             LIMIT 50
-        """)
+        """
+        )
         results = cursor.fetchall()
         indexed_time = (time.perf_counter() - start_time) * 1000
 
         print(f"Indexed guild query: {indexed_time:.2f}ms ({len(results)} results)")
 
         # Test query explain plan to verify index usage
-        cursor = conn.execute("""
+        cursor = conn.execute(
+            """
             EXPLAIN QUERY PLAN
             SELECT * FROM encounters
             WHERE guild_id = 1 AND difficulty = 'Mythic'
             ORDER BY start_time DESC
             LIMIT 50
-        """)
+        """
+        )
         query_plan = cursor.fetchall()
         print(f"Query plan: {query_plan}")
 
         # Verify index is being used (should mention idx_guild_encounters_lookup)
-        plan_text = ' '.join([str(row) for row in query_plan])
-        assert 'idx_guild_encounters_lookup' in plan_text or 'USING INDEX' in plan_text.upper(), "Guild index should be used in query plan"
+        plan_text = " ".join([str(row) for row in query_plan])
+        assert (
+            "idx_guild_encounters_lookup" in plan_text or "USING INDEX" in plan_text.upper()
+        ), "Guild index should be used in query plan"
 
         # Index-based queries should be fast
-        assert indexed_time < 50, f"Indexed queries should be fast (<50ms), got {indexed_time:.2f}ms"
+        assert (
+            indexed_time < 50
+        ), f"Indexed queries should be fast (<50ms), got {indexed_time:.2f}ms"
 
         conn.close()
 
     def test_concurrent_guild_access(self, performance_db: str):
         """Test performance under concurrent access from multiple guilds."""
+
         def guild_worker(guild_id: int, query_count: int) -> List[float]:
             """Worker function for concurrent testing."""
             query_manager = QueryManager(performance_db)
@@ -243,8 +272,12 @@ class TestGuildPerformance:
         print(f"Overall average query time: {overall_avg:.2f}ms")
         print(f"Maximum query time: {max_time:.2f}ms")
 
-        assert overall_avg < 100, f"Average concurrent query time should be reasonable (<100ms), got {overall_avg:.2f}ms"
-        assert max_time < 500, f"No single query should be extremely slow (<500ms), got {max_time:.2f}ms"
+        assert (
+            overall_avg < 100
+        ), f"Average concurrent query time should be reasonable (<100ms), got {overall_avg:.2f}ms"
+        assert (
+            max_time < 500
+        ), f"No single query should be extremely slow (<500ms), got {max_time:.2f}ms"
 
     def test_bulk_operations_performance(self, performance_db: str):
         """Test performance of bulk operations with guild isolation."""
@@ -253,23 +286,28 @@ class TestGuildPerformance:
         # Test bulk insert with guild context
         bulk_data = []
         for i in range(1000):
-            bulk_data.append((
-                1,  # guild_id
-                f"Bulk Instance {i}",
-                f"Bulk Boss {i}",
-                'Normal',
-                '2024-09-21 12:00:00',
-                '2024-09-21 12:05:00',
-                300,
-                True,
-                0
-            ))
+            bulk_data.append(
+                (
+                    1,  # guild_id
+                    f"Bulk Instance {i}",
+                    f"Bulk Boss {i}",
+                    "Normal",
+                    "2024-09-21 12:00:00",
+                    "2024-09-21 12:05:00",
+                    300,
+                    True,
+                    0,
+                )
+            )
 
         start_time = time.perf_counter()
-        conn.executemany("""
+        conn.executemany(
+            """
             INSERT INTO encounters (guild_id, instance_name, encounter_name, difficulty, start_time, end_time, duration_seconds, success, wipe_count)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, bulk_data)
+        """,
+            bulk_data,
+        )
         conn.commit()
         bulk_insert_time = (time.perf_counter() - start_time) * 1000
 
@@ -277,11 +315,13 @@ class TestGuildPerformance:
 
         # Test bulk update with guild filtering
         start_time = time.perf_counter()
-        conn.execute("""
+        conn.execute(
+            """
             UPDATE encounters
             SET success = 0
             WHERE guild_id = 1 AND instance_name LIKE 'Bulk Instance%'
-        """)
+        """
+        )
         conn.commit()
         bulk_update_time = (time.perf_counter() - start_time) * 1000
 
@@ -289,19 +329,27 @@ class TestGuildPerformance:
 
         # Test bulk delete with guild filtering
         start_time = time.perf_counter()
-        conn.execute("""
+        conn.execute(
+            """
             DELETE FROM encounters
             WHERE guild_id = 1 AND instance_name LIKE 'Bulk Instance%'
-        """)
+        """
+        )
         conn.commit()
         bulk_delete_time = (time.perf_counter() - start_time) * 1000
 
         print(f"Bulk delete with guild filter: {bulk_delete_time:.2f}ms")
 
         # Bulk operations should be reasonably fast
-        assert bulk_insert_time < 2000, f"Bulk insert should be fast (<2s), got {bulk_insert_time:.2f}ms"
-        assert bulk_update_time < 500, f"Bulk update should be fast (<500ms), got {bulk_update_time:.2f}ms"
-        assert bulk_delete_time < 500, f"Bulk delete should be fast (<500ms), got {bulk_delete_time:.2f}ms"
+        assert (
+            bulk_insert_time < 2000
+        ), f"Bulk insert should be fast (<2s), got {bulk_insert_time:.2f}ms"
+        assert (
+            bulk_update_time < 500
+        ), f"Bulk update should be fast (<500ms), got {bulk_update_time:.2f}ms"
+        assert (
+            bulk_delete_time < 500
+        ), f"Bulk delete should be fast (<500ms), got {bulk_delete_time:.2f}ms"
 
         conn.close()
 
@@ -335,7 +383,9 @@ class TestGuildPerformance:
         print(f"Complex join query: {complex_join_time:.2f}ms ({len(results)} results)")
 
         # Complex joins should still be reasonable with proper indexing
-        assert complex_join_time < 1000, f"Complex joins should be reasonable (<1s), got {complex_join_time:.2f}ms"
+        assert (
+            complex_join_time < 1000
+        ), f"Complex joins should be reasonable (<1s), got {complex_join_time:.2f}ms"
         assert len(results) > 0, "Complex join should return results"
 
         # Test query plan for complex join
@@ -374,26 +424,22 @@ class TestGuildPerformance:
         print(f"Memory increase: {memory_increase:.2f}MB")
 
         # Memory increase should be reasonable
-        assert memory_increase < 100, f"Memory increase should be reasonable (<100MB), got {memory_increase:.2f}MB"
+        assert (
+            memory_increase < 100
+        ), f"Memory increase should be reasonable (<100MB), got {memory_increase:.2f}MB"
 
     def test_cache_effectiveness_guild_context(self, performance_db: str):
         """Test that caching works effectively with guild context."""
         query_manager = QueryManager(performance_db)
 
         # First query (cold cache)
-        first_time = self.benchmark_query_time(
-            lambda: query_manager.get_encounter(1, guild_id=1)
-        )
+        first_time = self.benchmark_query_time(lambda: query_manager.get_encounter(1, guild_id=1))
 
         # Second query (warm cache) - should be significantly faster
-        second_time = self.benchmark_query_time(
-            lambda: query_manager.get_encounter(1, guild_id=1)
-        )
+        second_time = self.benchmark_query_time(lambda: query_manager.get_encounter(1, guild_id=1))
 
         # Third query with different guild (should not use cache)
-        third_time = self.benchmark_query_time(
-            lambda: query_manager.get_encounter(1, guild_id=2)
-        )
+        third_time = self.benchmark_query_time(lambda: query_manager.get_encounter(1, guild_id=2))
 
         print(f"First query (cold cache): {first_time:.2f}ms")
         print(f"Second query (warm cache): {second_time:.2f}ms")
@@ -402,10 +448,14 @@ class TestGuildPerformance:
         # Cache should provide significant speedup
         if first_time > 1:  # Only test if first query takes measurable time
             cache_speedup = first_time / second_time
-            assert cache_speedup > 1.5, f"Cache should provide speedup (>1.5x), got {cache_speedup:.2f}x"
+            assert (
+                cache_speedup > 1.5
+            ), f"Cache should provide speedup (>1.5x), got {cache_speedup:.2f}x"
 
         # Different guild should not benefit from cache
-        assert abs(third_time - first_time) < first_time * 0.5, "Different guild queries should have similar performance"
+        assert (
+            abs(third_time - first_time) < first_time * 0.5
+        ), "Different guild queries should have similar performance"
 
     def test_database_size_impact(self, performance_db: str):
         """Test how database size affects guild query performance."""
@@ -418,7 +468,7 @@ class TestGuildPerformance:
         conn = sqlite3.connect(performance_db)
 
         # Test table sizes
-        for table in ['encounters', 'characters', 'character_events', 'combat_periods']:
+        for table in ["encounters", "characters", "character_events", "combat_periods"]:
             cursor = conn.execute(f"SELECT COUNT(*) FROM {table}")
             count = cursor.fetchone()[0]
             print(f"{table}: {count:,} records")
@@ -430,7 +480,10 @@ class TestGuildPerformance:
         queries = [
             ("Recent encounters", lambda: query_manager.get_encounters(guild_id=1, limit=50)),
             ("Specific encounter", lambda: query_manager.get_encounter(1, guild_id=1)),
-            ("Characters for encounter", lambda: query_manager.get_characters_for_encounter(1, guild_id=1)),
+            (
+                "Characters for encounter",
+                lambda: query_manager.get_characters_for_encounter(1, guild_id=1),
+            ),
         ]
 
         for query_name, query_func in queries:
@@ -438,12 +491,15 @@ class TestGuildPerformance:
             print(f"{query_name}: {query_time:.2f}ms")
 
             # Even with large dataset, guild queries should remain fast
-            assert query_time < 200, f"{query_name} should be fast even with large dataset (<200ms), got {query_time:.2f}ms"
+            assert (
+                query_time < 200
+            ), f"{query_name} should be fast even with large dataset (<200ms), got {query_time:.2f}ms"
 
         conn.close()
 
     def test_scalability_stress_test(self, performance_db: str):
         """Stress test to verify system can handle high load."""
+
         def stress_worker(worker_id: int, iterations: int) -> Tuple[int, List[float]]:
             """Worker for stress testing."""
             query_manager = QueryManager(performance_db)
@@ -461,11 +517,15 @@ class TestGuildPerformance:
                         times.append((time.perf_counter() - start_time) * 1000)
                     elif i % 3 == 1:
                         start_time = time.perf_counter()
-                        query_manager.get_encounter(((worker_id * iterations + i) % 1000) + 1, guild_id=guild_id)
+                        query_manager.get_encounter(
+                            ((worker_id * iterations + i) % 1000) + 1, guild_id=guild_id
+                        )
                         times.append((time.perf_counter() - start_time) * 1000)
                     else:
                         start_time = time.perf_counter()
-                        query_manager.get_characters_for_encounter(((worker_id * iterations + i) % 1000) + 1, guild_id=guild_id)
+                        query_manager.get_characters_for_encounter(
+                            ((worker_id * iterations + i) % 1000) + 1, guild_id=guild_id
+                        )
                         times.append((time.perf_counter() - start_time) * 1000)
 
                 except Exception as e:
@@ -511,5 +571,9 @@ class TestGuildPerformance:
             # Verify system handles stress well
             error_rate = total_errors / (num_workers * iterations_per_worker)
             assert error_rate < 0.01, f"Error rate should be low (<1%), got {error_rate:.2%}"
-            assert avg_time < 150, f"Average response time under stress should be reasonable (<150ms), got {avg_time:.2f}ms"
-            assert max_time < 1000, f"Maximum response time should be acceptable (<1s), got {max_time:.2f}ms"
+            assert (
+                avg_time < 150
+            ), f"Average response time under stress should be reasonable (<150ms), got {avg_time:.2f}ms"
+            assert (
+                max_time < 1000
+            ), f"Maximum response time should be acceptable (<1s), got {max_time:.2f}ms"

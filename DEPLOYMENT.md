@@ -57,13 +57,13 @@ The combat log parser implements a complete multi-tenant system where:
 
 ### Guild Features
 
-| Feature | Single-Tenant (v1) | Multi-Tenant (v2) |
-|---------|--------------------|-----------------|
-| Data Isolation | ❌ None | ✅ Complete |
-| API Authentication | 🔑 Global | 🔑 Guild-Scoped |
-| Performance | ⚡ Good | ⚡ Optimized |
-| Scalability | 👥 Single Guild | 👥 100+ Guilds |
-| Security | 🛡️ Basic | 🛡️ Row-Level |
+| Feature            | Single-Tenant (v1) | Multi-Tenant (v2) |
+| ------------------ | ------------------ | ----------------- |
+| Data Isolation     | ❌ None            | ✅ Complete       |
+| API Authentication | 🔑 Global          | 🔑 Guild-Scoped   |
+| Performance        | ⚡ Good            | ⚡ Optimized      |
+| Scalability        | 👥 Single Guild    | 👥 100+ Guilds    |
+| Security           | 🛡️ Basic           | 🛡️ Row-Level      |
 
 ### Guild Hierarchy
 
@@ -276,6 +276,7 @@ GRAFANA_PASSWORD=secure-password
 #### Guild Configuration Files
 
 **guild_config.json** (Optional):
+
 ```json
 {
   "default_guild": {
@@ -334,12 +335,12 @@ CREATE INDEX idx_characters_guild_name ON characters(guild_id, name);
 
 #### Performance Optimizations
 
-| Optimization | Impact | Implementation |
-|-------------|--------|----------------|
-| Guild-First Indexing | 95% faster queries | `guild_id` as first index column |
-| Row-Level Security | 100% data isolation | Automatic guild filtering |
-| Guild-Aware Caching | 80% cache hit rate | Guild-scoped cache keys |
-| Parallel Processing | 50% faster uploads | Guild-isolated processing |
+| Optimization         | Impact              | Implementation                   |
+| -------------------- | ------------------- | -------------------------------- |
+| Guild-First Indexing | 95% faster queries  | `guild_id` as first index column |
+| Row-Level Security   | 100% data isolation | Automatic guild filtering        |
+| Guild-Aware Caching  | 80% cache hit rate  | Guild-scoped cache keys          |
+| Parallel Processing  | 50% faster uploads  | Guild-isolated processing        |
 
 ### Authentication Architecture
 
@@ -393,6 +394,7 @@ CREATE INDEX idx_characters_guild_name ON characters(guild_id, name);
 ### Pre-Deployment Checklist
 
 #### Core Infrastructure
+
 - [ ] Generate secure API key
 - [ ] Configure SSL certificates
 - [ ] Set up domain name
@@ -402,6 +404,7 @@ CREATE INDEX idx_characters_guild_name ON characters(guild_id, name);
 - [ ] Review security settings
 
 #### Guild System Setup
+
 - [ ] **Plan guild structure** (how many guilds, naming convention)
 - [ ] **Configure default guild** (server, region, faction)
 - [ ] **Generate guild-specific API keys** for each guild
@@ -645,6 +648,7 @@ def transfer_encounters(encounter_ids: List[int], target_guild_id: int):
 #### Pre-Migration Steps
 
 1. **Backup Everything**:
+
    ```bash
    # Create complete backup
    cp ./data/combat_logs.db ./backups/pre_migration_$(date +%Y%m%d).db
@@ -655,6 +659,7 @@ def transfer_encounters(encounter_ids: List[int], target_guild_id: int):
    ```
 
 2. **Stop All Services**:
+
    ```bash
    docker-compose down
    pkill -f "python -m src.api.app"
@@ -668,6 +673,7 @@ def transfer_encounters(encounter_ids: List[int], target_guild_id: int):
 #### Migration Process
 
 1. **Execute Database Migration**:
+
    ```python
    from src.database.schema import DatabaseManager
 
@@ -681,6 +687,7 @@ def transfer_encounters(encounter_ids: List[int], target_guild_id: int):
    ```
 
 2. **Verify Migration**:
+
    ```sql
    -- Check schema version
    SELECT value FROM metadata WHERE key = 'schema_version';
@@ -696,6 +703,7 @@ def transfer_encounters(encounter_ids: List[int], target_guild_id: int):
    ```
 
 3. **Update Configuration**:
+
    ```bash
    # Add guild settings to .env
    cat >> .env << EOF
@@ -709,6 +717,7 @@ def transfer_encounters(encounter_ids: List[int], target_guild_id: int):
    ```
 
 4. **Restart Services**:
+
    ```bash
    docker-compose up -d
 
@@ -771,18 +780,21 @@ Access at `http://your-domain:3000`
 #### Guild-Specific Monitoring
 
 **Guild Activity Dashboard**:
+
 - Encounters processed per guild per day
 - Active characters by guild
 - API usage by guild
 - Storage consumption per guild
 
 **Performance by Guild**:
+
 - Query response times per guild
 - Cache hit rates by guild
 - Rate limit utilization
 - Connection pool usage
 
 **Guild Growth Metrics**:
+
 - New guilds added over time
 - Guild activity trends
 - Storage growth projections
@@ -1094,22 +1106,22 @@ curl "http://localhost:8000/api/v1/encounters/{encounter_id}/export" \
 // WebSocket with guild authentication
 const ws = new WebSocket("ws://localhost:8000/ws", {
   headers: {
-    'Authorization': 'Bearer your-guild-api-key'
-  }
+    Authorization: "Bearer your-guild-api-key",
+  },
 });
 
 ws.onopen = () => {
-  console.log('Connected to guild-specific stream');
+  console.log("Connected to guild-specific stream");
 };
 
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
 
-  if (data.type === 'welcome') {
+  if (data.type === "welcome") {
     console.log(`Connected to ${data.guild_name} (${data.guild_id})`);
-  } else if (data.type === 'progress') {
+  } else if (data.type === "progress") {
     console.log(`Parse progress for ${data.guild_name}: ${data.progress}%`);
-  } else if (data.type === 'encounter_complete') {
+  } else if (data.type === "encounter_complete") {
     console.log(`New encounter for ${data.guild_name}: ${data.boss_name}`);
   }
 };

@@ -21,7 +21,6 @@ __all__ = [
     "RankingResponse",
     "ErrorResponse",
     "StatusResponse",
-
     # Character models
     "CharacterProfile",
     "CharacterPerformance",
@@ -29,7 +28,6 @@ __all__ = [
     "CharacterRanking",
     "CharacterGear",
     "CharacterTalents",
-
     # Encounter models
     "EncounterDetail",
     "EncounterReplay",
@@ -37,23 +35,20 @@ __all__ = [
     "EncounterComparison",
     "DeathAnalysis",
     "ResourceUsage",
-
     # Analytics models
     "PerformanceTrend",
     "ProgressionTracking",
     "ClassBalance",
     "SpellUsageStats",
     "DamageBreakdown",
-
     # Guild models
     "GuildRoster",
     "AttendanceTracking",
     "GuildPerformance",
     "RaidComposition",
-
     # Common types
     "PaginationMeta",
     "SortOrder",
     "TimeRange",
-    "FilterCriteria"
+    "FilterCriteria",
 ]

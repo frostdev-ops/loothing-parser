@@ -35,11 +35,7 @@ class GuildMember(BaseModel):
         schema_extra = {
             "example": {
                 "character_name": "Playername",
-                "class_info": {
-                    "id": 8,
-                    "name": "Mage",
-                    "color": "#69CCF0"
-                },
+                "class_info": {"id": 8, "name": "Mage", "color": "#69CCF0"},
                 "current_spec": "Fire",
                 "rank": "Raider",
                 "join_date": "2023-08-15T00:00:00Z",
@@ -48,7 +44,7 @@ class GuildMember(BaseModel):
                 "average_hps": 2500.0,
                 "attendance_rate": 85.5,
                 "total_encounters": 150,
-                "active_status": "active"
+                "active_status": "active",
             }
         }
 
@@ -71,31 +67,22 @@ class GuildRoster(BaseModel):
     average_attendance: float = Field(0.0, description="Guild average attendance", ge=0, le=100)
     recruitment_needs: List[str] = Field(default_factory=list, description="Classes/specs needed")
 
-    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Last roster update")
+    last_updated: datetime = Field(
+        default_factory=datetime.utcnow, description="Last roster update"
+    )
 
     class Config:
         schema_extra = {
             "example": {
                 "guild_name": "Example Guild",
-                "server": {
-                    "name": "Stormrage",
-                    "region": "US"
-                },
+                "server": {"name": "Stormrage", "region": "US"},
                 "total_members": 50,
                 "active_members": 35,
                 "members": [],
-                "class_distribution": {
-                    "Mage": 3,
-                    "Warrior": 4,
-                    "Priest": 3
-                },
-                "spec_distribution": {
-                    "Fire": 2,
-                    "Frost": 1,
-                    "Protection": 2
-                },
+                "class_distribution": {"Mage": 3, "Warrior": 4, "Priest": 3},
+                "spec_distribution": {"Fire": 2, "Frost": 1, "Protection": 2},
                 "average_attendance": 82.5,
-                "recruitment_needs": ["Holy Priest", "Restoration Shaman"]
+                "recruitment_needs": ["Holy Priest", "Restoration Shaman"],
             }
         }
 
@@ -121,7 +108,7 @@ class AttendanceRecord(BaseModel):
                 "event_name": "Vault of the Incarnates - Heroic",
                 "attended": True,
                 "late_arrival": False,
-                "early_departure": False
+                "early_departure": False,
             }
         }
 
@@ -132,38 +119,43 @@ class AttendanceTracking(BaseModel):
     guild_name: str = Field(..., description="Guild name")
     time_range: TimeRange = Field(..., description="Time range for attendance analysis")
     total_events: int = Field(..., description="Total number of events", ge=0)
-    attendance_records: List[AttendanceRecord] = Field(..., description="Individual attendance records")
+    attendance_records: List[AttendanceRecord] = Field(
+        ..., description="Individual attendance records"
+    )
 
     # Summary statistics
     overall_attendance_rate: float = Field(..., description="Overall attendance rate", ge=0, le=100)
-    member_attendance_summary: Dict[str, Dict[str, Any]] = Field(..., description="Per-member attendance summary")
-    event_attendance_summary: Dict[str, Dict[str, Any]] = Field(..., description="Per-event attendance summary")
+    member_attendance_summary: Dict[str, Dict[str, Any]] = Field(
+        ..., description="Per-member attendance summary"
+    )
+    event_attendance_summary: Dict[str, Dict[str, Any]] = Field(
+        ..., description="Per-event attendance summary"
+    )
 
     # Trends and analysis
-    attendance_trends: List[Dict[str, Any]] = Field(default_factory=list, description="Attendance trends over time")
-    consistent_attendees: List[str] = Field(default_factory=list, description="Members with high consistent attendance")
-    attendance_concerns: List[str] = Field(default_factory=list, description="Members with attendance issues")
+    attendance_trends: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Attendance trends over time"
+    )
+    consistent_attendees: List[str] = Field(
+        default_factory=list, description="Members with high consistent attendance"
+    )
+    attendance_concerns: List[str] = Field(
+        default_factory=list, description="Members with attendance issues"
+    )
 
     class Config:
         schema_extra = {
             "example": {
                 "guild_name": "Example Guild",
-                "time_range": {
-                    "start": "2023-10-01T00:00:00Z",
-                    "end": "2023-10-31T23:59:59Z"
-                },
+                "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
                 "total_events": 12,
                 "attendance_records": [],
                 "overall_attendance_rate": 85.5,
                 "member_attendance_summary": {
-                    "Playername": {
-                        "attended": 10,
-                        "total": 12,
-                        "rate": 83.3
-                    }
+                    "Playername": {"attended": 10, "total": 12, "rate": 83.3}
                 },
                 "consistent_attendees": ["Playername", "AnotherPlayer"],
-                "attendance_concerns": ["InconsistentPlayer"]
+                "attendance_concerns": ["InconsistentPlayer"],
             }
         }
 
@@ -183,17 +175,20 @@ class GuildPerformanceMetrics(BaseModel):
     average_encounter_duration: float = Field(..., description="Average encounter duration", ge=0)
 
     # Performance trends
-    performance_trends: Dict[str, List[Dict[str, Any]]] = Field(..., description="Performance trends over time")
-    top_performers: Dict[str, List[Dict[str, Any]]] = Field(..., description="Top performers by metric")
-    improvement_areas: List[str] = Field(default_factory=list, description="Areas needing improvement")
+    performance_trends: Dict[str, List[Dict[str, Any]]] = Field(
+        ..., description="Performance trends over time"
+    )
+    top_performers: Dict[str, List[Dict[str, Any]]] = Field(
+        ..., description="Top performers by metric"
+    )
+    improvement_areas: List[str] = Field(
+        default_factory=list, description="Areas needing improvement"
+    )
 
     class Config:
         schema_extra = {
             "example": {
-                "time_range": {
-                    "start": "2023-10-01T00:00:00Z",
-                    "end": "2023-10-31T23:59:59Z"
-                },
+                "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
                 "encounter_type": "raid",
                 "difficulty": "HEROIC",
                 "total_encounters": 150,
@@ -201,12 +196,8 @@ class GuildPerformanceMetrics(BaseModel):
                 "average_raid_dps": 2500000.0,
                 "average_raid_hps": 800000.0,
                 "average_encounter_duration": 245.7,
-                "top_performers": {
-                    "dps": [
-                        {"character": "Playername", "value": 125000.5}
-                    ]
-                },
-                "improvement_areas": ["Survivability", "Cooldown coordination"]
+                "top_performers": {"dps": [{"character": "Playername", "value": 125000.5}]},
+                "improvement_areas": ["Survivability", "Cooldown coordination"],
             }
         }
 
@@ -218,37 +209,44 @@ class GuildPerformance(BaseModel):
     analysis_period: TimeRange = Field(..., description="Analysis time period")
 
     # Performance by content type
-    raid_performance: Optional[GuildPerformanceMetrics] = Field(None, description="Raid performance metrics")
-    mythic_plus_performance: Optional[GuildPerformanceMetrics] = Field(None, description="Mythic+ performance metrics")
+    raid_performance: Optional[GuildPerformanceMetrics] = Field(
+        None, description="Raid performance metrics"
+    )
+    mythic_plus_performance: Optional[GuildPerformanceMetrics] = Field(
+        None, description="Mythic+ performance metrics"
+    )
 
     # Progression tracking
     progression_status: Dict[str, Any] = Field(..., description="Current progression status")
-    recent_achievements: List[Dict[str, Any]] = Field(default_factory=list, description="Recent achievements")
+    recent_achievements: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Recent achievements"
+    )
     progression_goals: List[str] = Field(default_factory=list, description="Progression goals")
 
     # Overall assessment
-    performance_score: float = Field(..., description="Overall performance score (0-100)", ge=0, le=100)
+    performance_score: float = Field(
+        ..., description="Overall performance score (0-100)", ge=0, le=100
+    )
     strengths: List[str] = Field(default_factory=list, description="Guild strengths")
     weaknesses: List[str] = Field(default_factory=list, description="Areas for improvement")
-    recommendations: List[str] = Field(default_factory=list, description="Improvement recommendations")
+    recommendations: List[str] = Field(
+        default_factory=list, description="Improvement recommendations"
+    )
 
     class Config:
         schema_extra = {
             "example": {
                 "guild_name": "Example Guild",
-                "analysis_period": {
-                    "start": "2023-10-01T00:00:00Z",
-                    "end": "2023-10-31T23:59:59Z"
-                },
+                "analysis_period": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
                 "progression_status": {
                     "current_tier": "Vault of the Incarnates",
                     "heroic_progress": "8/8",
-                    "mythic_progress": "3/8"
+                    "mythic_progress": "3/8",
                 },
                 "performance_score": 85.5,
                 "strengths": ["High DPS output", "Good attendance"],
                 "weaknesses": ["Survivability issues", "Cooldown coordination"],
-                "recommendations": ["Focus on defensive cooldown usage", "Improve positioning"]
+                "recommendations": ["Focus on defensive cooldown usage", "Improve positioning"],
             }
         }
 
@@ -271,7 +269,7 @@ class RaidCompositionSlot(BaseModel):
                 "spec_name": "Protection",
                 "character_name": "Tankname",
                 "priority": 1,
-                "notes": "Main tank for all encounters"
+                "notes": "Main tank for all encounters",
             }
         }
 
@@ -290,12 +288,20 @@ class RaidComposition(BaseModel):
     dps: List[RaidCompositionSlot] = Field(..., description="DPS assignments")
 
     # Analysis
-    composition_score: float = Field(..., description="Composition effectiveness score (0-100)", ge=0, le=100)
+    composition_score: float = Field(
+        ..., description="Composition effectiveness score (0-100)", ge=0, le=100
+    )
     synergies: List[str] = Field(default_factory=list, description="Class/spec synergies")
-    potential_issues: List[str] = Field(default_factory=list, description="Potential composition issues")
-    alternative_options: List[str] = Field(default_factory=list, description="Alternative composition options")
+    potential_issues: List[str] = Field(
+        default_factory=list, description="Potential composition issues"
+    )
+    alternative_options: List[str] = Field(
+        default_factory=list, description="Alternative composition options"
+    )
 
-    created_date: datetime = Field(default_factory=datetime.utcnow, description="When composition was created")
+    created_date: datetime = Field(
+        default_factory=datetime.utcnow, description="When composition was created"
+    )
     last_used: Optional[datetime] = Field(None, description="When composition was last used")
 
     class Config:
@@ -311,13 +317,13 @@ class RaidComposition(BaseModel):
                         "class_name": "Warrior",
                         "spec_name": "Protection",
                         "character_name": "Tankname",
-                        "priority": 1
+                        "priority": 1,
                     }
                 ],
                 "healers": [],
                 "dps": [],
                 "composition_score": 92.5,
                 "synergies": ["Warrior + Death Knight tank synergy", "Mage + Priest DPS buffs"],
-                "potential_issues": ["Limited ranged DPS for air phase"]
+                "potential_issues": ["Limited ranged DPS for air phase"],
             }
         }

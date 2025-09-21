@@ -70,7 +70,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
 
             # Calculate response size if available
             response_size = 0
-            if hasattr(response, 'body') and response.body:
+            if hasattr(response, "body") and response.body:
                 response_size = len(response.body)
                 response.headers["X-Response-Size"] = str(response_size)
 

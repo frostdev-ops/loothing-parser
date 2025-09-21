@@ -216,18 +216,14 @@ class TestStreamingPipeline:
                     line="test line",
                     sequence=1,
                 ).model_dump_json(),
-                StreamMessage(
-                    type="end_session", timestamp=time.time()
-                ).model_dump_json(),
+                StreamMessage(type="end_session", timestamp=time.time()).model_dump_json(),
             ]
 
             message_iter = iter(messages)
             websocket.receive_text.side_effect = message_iter
 
             sent_responses = []
-            websocket.send_text.side_effect = lambda x: sent_responses.append(
-                json.loads(x)
-            )
+            websocket.send_text.side_effect = lambda x: sent_responses.append(json.loads(x))
 
             try:
                 await streaming_server.handle_websocket_connection(websocket, api_key)
@@ -276,9 +272,7 @@ class TestStreamingPipeline:
                 ).model_dump_json()
             )
 
-        messages.append(
-            StreamMessage(type="end_session", timestamp=time.time()).model_dump_json()
-        )
+        messages.append(StreamMessage(type="end_session", timestamp=time.time()).model_dump_json())
 
         message_iter = iter(messages)
         websocket.receive_text.side_effect = message_iter
@@ -308,9 +302,7 @@ class TestStreamingPipeline:
             assert compression_ratio < 0.8  # Should achieve reasonable compression
 
     @pytest.mark.asyncio
-    async def test_encounter_segmentation(
-        self, streaming_server, sample_combat_log_lines
-    ):
+    async def test_encounter_segmentation(self, streaming_server, sample_combat_log_lines):
         """Test that encounters are properly segmented and stored."""
         websocket = AsyncMock()
         api_key = "dev_key_12345"
@@ -334,9 +326,7 @@ class TestStreamingPipeline:
                 ).model_dump_json()
             )
 
-        messages.append(
-            StreamMessage(type="end_session", timestamp=time.time()).model_dump_json()
-        )
+        messages.append(StreamMessage(type="end_session", timestamp=time.time()).model_dump_json())
 
         message_iter = iter(messages)
         websocket.receive_text.side_effect = message_iter

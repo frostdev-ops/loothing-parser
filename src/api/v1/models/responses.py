@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Generic, TypeVar, Union
 from pydantic import BaseModel, Field
 from .common import PaginationMeta, TimeRange, SortOrder
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BaseResponse(BaseModel, Generic[T]):
@@ -44,10 +44,10 @@ class PaginatedResponse(BaseModel, Generic[T]):
                     "has_next": True,
                     "has_previous": True,
                     "page": 3,
-                    "total_pages": 13
+                    "total_pages": 13,
                 },
                 "filters": {"difficulty": ["HEROIC", "MYTHIC"]},
-                "sort": {"timestamp": "desc"}
+                "sort": {"timestamp": "desc"},
             }
         }
 
@@ -64,7 +64,7 @@ class TimeSeriesPoint(BaseModel):
             "example": {
                 "timestamp": "2023-10-15T14:30:00Z",
                 "value": 125000.5,
-                "metadata": {"encounter_id": 12345, "difficulty": "HEROIC"}
+                "metadata": {"encounter_id": 12345, "difficulty": "HEROIC"},
             }
         }
 
@@ -83,20 +83,17 @@ class TimeSeriesResponse(BaseModel):
         schema_extra = {
             "example": {
                 "series_name": "DPS Over Time",
-                "time_range": {
-                    "start": "2023-10-01T00:00:00Z",
-                    "end": "2023-10-31T23:59:59Z"
-                },
+                "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
                 "interval": "1d",
                 "data_points": [
                     {
                         "timestamp": "2023-10-15T14:30:00Z",
                         "value": 125000.5,
-                        "metadata": {"encounter_id": 12345}
+                        "metadata": {"encounter_id": 12345},
                     }
                 ],
                 "aggregation": "average",
-                "total_points": 31
+                "total_points": 31,
             }
         }
 
@@ -112,12 +109,8 @@ class AggregationResult(BaseModel):
         schema_extra = {
             "example": {
                 "group_by": {"class_name": "Mage", "difficulty": "HEROIC"},
-                "metrics": {
-                    "avg_dps": 125000.5,
-                    "max_dps": 150000.0,
-                    "min_dps": 100000.0
-                },
-                "count": 25
+                "metrics": {"avg_dps": 125000.5, "max_dps": 150000.0, "min_dps": 100000.0},
+                "count": 25,
             }
         }
 
@@ -138,18 +131,15 @@ class AggregationResponse(BaseModel):
                 "query": "Average DPS by class and difficulty",
                 "group_by_fields": ["class_name", "difficulty"],
                 "metrics": ["avg_dps", "max_dps", "min_dps"],
-                "time_range": {
-                    "start": "2023-10-01T00:00:00Z",
-                    "end": "2023-10-31T23:59:59Z"
-                },
+                "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
                 "results": [
                     {
                         "group_by": {"class_name": "Mage", "difficulty": "HEROIC"},
                         "metrics": {"avg_dps": 125000.5, "max_dps": 150000.0, "min_dps": 100000.0},
-                        "count": 25
+                        "count": 25,
                     }
                 ],
-                "total_groups": 10
+                "total_groups": 10,
             }
         }
 
@@ -167,15 +157,8 @@ class ComparisonItem(BaseModel):
             "example": {
                 "identifier": "encounter_12345",
                 "name": "Heroic Raszageth - Pull #3",
-                "metrics": {
-                    "raid_dps": 2500000.0,
-                    "combat_length": 245.7,
-                    "deaths": 2
-                },
-                "metadata": {
-                    "timestamp": "2023-10-15T20:30:00Z",
-                    "success": False
-                }
+                "metrics": {"raid_dps": 2500000.0, "combat_length": 245.7, "deaths": 2},
+                "metadata": {"timestamp": "2023-10-15T20:30:00Z", "success": False},
             }
         }
 
@@ -196,17 +179,17 @@ class ComparisonResponse(BaseModel):
                 "baseline": {
                     "identifier": "encounter_12345",
                     "name": "Heroic Raszageth - Best Pull",
-                    "metrics": {"raid_dps": 2500000.0, "combat_length": 245.7, "deaths": 0}
+                    "metrics": {"raid_dps": 2500000.0, "combat_length": 245.7, "deaths": 0},
                 },
                 "comparisons": [
                     {
                         "identifier": "encounter_12346",
                         "name": "Heroic Raszageth - Pull #2",
-                        "metrics": {"raid_dps": 2300000.0, "combat_length": 180.5, "deaths": 3}
+                        "metrics": {"raid_dps": 2300000.0, "combat_length": 180.5, "deaths": 3},
                     }
                 ],
                 "metrics_analyzed": ["raid_dps", "combat_length", "deaths"],
-                "insights": ["DPS improved by 8.7% from previous attempt", "Survived 36% longer"]
+                "insights": ["DPS improved by 8.7% from previous attempt", "Survived 36% longer"],
             }
         }
 
@@ -229,11 +212,7 @@ class RankingEntry(BaseModel):
                 "name": "Playername",
                 "value": 125000.5,
                 "percentile": 95.3,
-                "metadata": {
-                    "class_name": "Mage",
-                    "spec_name": "Fire",
-                    "item_level": 415
-                }
+                "metadata": {"class_name": "Mage", "spec_name": "Fire", "item_level": 415},
             }
         }
 
@@ -253,10 +232,7 @@ class RankingResponse(BaseModel):
             "example": {
                 "ranking_type": "character_dps",
                 "metric": "average_dps",
-                "time_range": {
-                    "start": "2023-10-01T00:00:00Z",
-                    "end": "2023-10-31T23:59:59Z"
-                },
+                "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
                 "filters": {"difficulty": "HEROIC", "class_name": "Mage"},
                 "entries": [
                     {
@@ -265,10 +241,10 @@ class RankingResponse(BaseModel):
                         "name": "Playername",
                         "value": 125000.5,
                         "percentile": 95.3,
-                        "metadata": {"spec_name": "Fire", "item_level": 415}
+                        "metadata": {"spec_name": "Fire", "item_level": 415},
                     }
                 ],
-                "total_entries": 150
+                "total_entries": 150,
             }
         }
 
@@ -292,10 +268,10 @@ class ErrorResponse(BaseModel):
                 "details": {
                     "field": "character_name",
                     "provided": "invalid@name",
-                    "expected": "Valid character name without special characters"
+                    "expected": "Valid character name without special characters",
                 },
                 "timestamp": "2023-10-15T14:30:00Z",
-                "request_id": "req_123456789"
+                "request_id": "req_123456789",
             }
         }
 
@@ -315,15 +291,11 @@ class StatusResponse(BaseModel):
                 "status": "operational",
                 "version": "1.0.0",
                 "timestamp": "2023-10-15T14:30:00Z",
-                "components": {
-                    "database": "healthy",
-                    "cache": "healthy",
-                    "processing": "healthy"
-                },
+                "components": {"database": "healthy", "cache": "healthy", "processing": "healthy"},
                 "performance": {
                     "avg_response_time_ms": 45.3,
                     "requests_per_second": 125.7,
-                    "error_rate_percent": 0.02
-                }
+                    "error_rate_percent": 0.02,
+                },
             }
         }

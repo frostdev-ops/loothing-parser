@@ -25,7 +25,14 @@
     "difficulty": {
       "type": "string",
       "description": "Encounter difficulty",
-      "enum": ["lfr", "normal", "heroic", "mythic", "mythic_plus", "timewalking"]
+      "enum": [
+        "lfr",
+        "normal",
+        "heroic",
+        "mythic",
+        "mythic_plus",
+        "timewalking"
+      ]
     },
     "start_time": {
       "type": "string",
@@ -68,7 +75,10 @@
       "type": "string",
       "description": "Zone or instance name",
       "maxLength": 100,
-      "examples": ["Aberrus, the Shadowed Crucible", "Amirdrassil, the Dream's Hope"]
+      "examples": [
+        "Aberrus, the Shadowed Crucible",
+        "Amirdrassil, the Dream's Hope"
+      ]
     },
     "keystone_level": {
       "type": "integer",
@@ -149,9 +159,19 @@
           "type": "string",
           "description": "Character class",
           "enum": [
-            "Death Knight", "Demon Hunter", "Druid", "Evoker", "Hunter",
-            "Mage", "Monk", "Paladin", "Priest", "Rogue", "Shaman",
-            "Warlock", "Warrior"
+            "Death Knight",
+            "Demon Hunter",
+            "Druid",
+            "Evoker",
+            "Hunter",
+            "Mage",
+            "Monk",
+            "Paladin",
+            "Priest",
+            "Rogue",
+            "Shaman",
+            "Warlock",
+            "Warrior"
           ]
         },
         "spec_name": {
@@ -404,8 +424,14 @@
           "type": "string",
           "description": "Type of event",
           "enum": [
-            "phase_change", "death", "ability_cast", "damage_spike",
-            "healing_cd", "interrupt", "dispel", "mechanic_failure"
+            "phase_change",
+            "death",
+            "ability_cast",
+            "damage_spike",
+            "healing_cd",
+            "interrupt",
+            "dispel",
+            "mechanic_failure"
           ]
         },
         "character": {

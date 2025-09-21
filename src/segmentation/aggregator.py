@@ -12,6 +12,7 @@ from src.parser.events import BaseEvent, DamageEvent, HealEvent
 @dataclass
 class CombatantMetrics:
     """Metrics for a single combatant in a fight."""
+
     guid: str
     name: str
     damage_done: int = 0
@@ -31,13 +32,9 @@ class EventAggregator:
 
     def __init__(self):
         self.combatants: Dict[str, CombatantMetrics] = {}
-        self.spell_usage: Dict[int, Dict[str, Any]] = defaultdict(lambda: {
-            'name': '',
-            'casts': 0,
-            'damage': 0,
-            'healing': 0,
-            'hits': 0
-        })
+        self.spell_usage: Dict[int, Dict[str, Any]] = defaultdict(
+            lambda: {"name": "", "casts": 0, "damage": 0, "healing": 0, "hits": 0}
+        )
 
     def process_events(self, events: List[BaseEvent]):
         """
@@ -75,10 +72,7 @@ class EventAggregator:
     def _ensure_combatant(self, guid: str, name: Optional[str]):
         """Ensure a combatant exists in our tracking."""
         if guid not in self.combatants:
-            self.combatants[guid] = CombatantMetrics(
-                guid=guid,
-                name=name or "Unknown"
-            )
+            self.combatants[guid] = CombatantMetrics(guid=guid, name=name or "Unknown")
 
     def _process_damage(self, event: DamageEvent):
         """Process damage event."""
@@ -89,11 +83,11 @@ class EventAggregator:
             self.combatants[event.dest_guid].damage_taken += event.amount
 
         # Track spell usage
-        if hasattr(event, 'spell_id') and event.spell_id:
+        if hasattr(event, "spell_id") and event.spell_id:
             spell = self.spell_usage[event.spell_id]
-            spell['name'] = event.spell_name or f"Spell {event.spell_id}"
-            spell['damage'] += event.amount
-            spell['hits'] += 1
+            spell["name"] = event.spell_name or f"Spell {event.spell_id}"
+            spell["damage"] += event.amount
+            spell["hits"] += 1
 
     def _process_heal(self, event: HealEvent):
         """Process healing event."""
@@ -106,11 +100,11 @@ class EventAggregator:
             self.combatants[event.dest_guid].healing_taken += effective
 
         # Track spell usage
-        if hasattr(event, 'spell_id') and event.spell_id:
+        if hasattr(event, "spell_id") and event.spell_id:
             spell = self.spell_usage[event.spell_id]
-            spell['name'] = event.spell_name or f"Spell {event.spell_id}"
-            spell['healing'] += effective
-            spell['hits'] += 1
+            spell["name"] = event.spell_name or f"Spell {event.spell_id}"
+            spell["healing"] += effective
+            spell["hits"] += 1
 
     def _process_cast(self, event: BaseEvent):
         """Process spell cast."""
@@ -118,10 +112,10 @@ class EventAggregator:
             self.combatants[event.source_guid].casts += 1
 
         # Track spell usage
-        if hasattr(event, 'spell_id') and event.spell_id:
+        if hasattr(event, "spell_id") and event.spell_id:
             spell = self.spell_usage[event.spell_id]
-            spell['name'] = event.spell_name or f"Spell {event.spell_id}"
-            spell['casts'] += 1
+            spell["name"] = event.spell_name or f"Spell {event.spell_id}"
+            spell["casts"] += 1
 
     def _process_interrupt(self, event: BaseEvent):
         """Process interrupt."""
@@ -141,18 +135,14 @@ class EventAggregator:
     def get_top_damage_dealers(self, limit: int = 10) -> List[CombatantMetrics]:
         """Get top damage dealers."""
         sorted_combatants = sorted(
-            self.combatants.values(),
-            key=lambda c: c.damage_done,
-            reverse=True
+            self.combatants.values(), key=lambda c: c.damage_done, reverse=True
         )
         return sorted_combatants[:limit]
 
     def get_top_healers(self, limit: int = 10) -> List[CombatantMetrics]:
         """Get top healers."""
         sorted_combatants = sorted(
-            self.combatants.values(),
-            key=lambda c: c.healing_done,
-            reverse=True
+            self.combatants.values(), key=lambda c: c.healing_done, reverse=True
         )
         return sorted_combatants[:limit]
 
@@ -160,8 +150,8 @@ class EventAggregator:
         """Get most used/damaging spells."""
         sorted_spells = sorted(
             self.spell_usage.values(),
-            key=lambda s: s['damage'] + s['healing'],
-            reverse=True
+            key=lambda s: s["damage"] + s["healing"],
+            reverse=True,
         )
         return sorted_spells[:limit]
 
@@ -172,11 +162,11 @@ class EventAggregator:
         total_deaths = sum(c.deaths for c in self.combatants.values())
 
         return {
-            'total_damage': total_damage,
-            'total_healing': total_healing,
-            'total_deaths': total_deaths,
-            'combatant_count': len(self.combatants),
-            'unique_spells': len(self.spell_usage),
-            'top_dps': self.get_top_damage_dealers(5),
-            'top_hps': self.get_top_healers(5)
+            "total_damage": total_damage,
+            "total_healing": total_healing,
+            "total_deaths": total_deaths,
+            "combatant_count": len(self.combatants),
+            "unique_spells": len(self.spell_usage),
+            "top_dps": self.get_top_damage_dealers(5),
+            "top_hps": self.get_top_healers(5),
         }

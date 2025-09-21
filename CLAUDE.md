@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a World of Warcraft combat log parser project designed to extract loot distribution data and provide analysis for the Loothing guild tracking system. The project focuses on parsing WoWCombatLog.txt files to track item drops, player statistics, and raid encounter data.
+This is a World of Warcraft combat log parser project designed solely to track combat data from WoWCombatLog.txt files, including player statistics and raid encounter data. Loot data, Discord bots, and other integrations are handled upstream.
 
 ## Architecture
 
@@ -27,10 +27,10 @@ The parser must implement these key architectural elements:
    - Mythic+ dungeons via CHALLENGE_MODE_START/CHALLENGE_MODE_END
    - Hierarchical segmentation for trash pulls between bosses
 
-4. **Loot Tracking**: Focus on loot-related events
-   - Track LOOT events for item distribution
-   - Map items to players and encounters
-   - Maintain item metadata and statistics
+4. **Combat Data Tracking**: Focus on combat-related events
+   - Track damage, healing, and other combat metrics
+   - Map actions to players and encounters
+   - Maintain combat statistics and metadata
 
 ## Key Data Structures
 
@@ -40,8 +40,8 @@ The parser must implement these key architectural elements:
 - Dynamic parameter count based on event type
 - Advanced Combat Logging must be enabled for full data
 
-### Critical Event Types for Loot Tracking
-- LOOT events for item acquisition
+### Critical Event Types for Combat Tracking
+- DAMAGE and HEAL events for combat metrics
 - ENCOUNTER_START/END for fight boundaries
 - COMBATANT_INFO for player/pet metadata
 - SPELL_SUMMON for pet ownership mapping
@@ -70,20 +70,20 @@ The `examples/` directory contains 8 WoWCombatLog files for testing:
 When developing, use these logs to:
 - Test parser resilience with different formats
 - Verify state machine accuracy
-- Validate loot tracking across encounters
+- Validate combat tracking across encounters
 - Ensure performance with large files
 
 ## Integration Points
 
-### Discord Bot Integration
-The parser output should be structured for integration with the Discord bot described in the global instructions:
-- Loot entries should be queryable by player, item, and encounter
+### Upstream Integration
+The parser output should be structured for upstream systems:
+- Combat data should be queryable by player, encounter, and metrics
 - Player statistics should aggregate across multiple logs
-- Memory system should store notable loot events
+- Upstream systems handle loot data, Discord bots, and other features
 
 ### Database Schema
 Design output format compatible with:
 - Player tracking (name, class, spec, realm)
-- Item tracking (ID, name, ilvl, source)
 - Encounter tracking (boss, difficulty, date)
-- Distribution records (who got what, when, where)
+- Combat records (damage, healing, actions)
+- Metric aggregations (eDPS, eHPS, etc.)

@@ -379,14 +379,22 @@ class EnhancedSegmenter:
                         if char_stream.all_events:
                             # Find the last damage/healing event
                             for ts_event in reversed(char_stream.all_events):
-                                if ts_event.category in ["damage_done", "healing_done", "damage_taken"]:
+                                if ts_event.category in [
+                                    "damage_done",
+                                    "healing_done",
+                                    "damage_taken",
+                                ]:
                                     event_time = datetime.fromtimestamp(ts_event.timestamp)
                                     if not last_combat_time or event_time > last_combat_time:
                                         last_combat_time = event_time
                                     break  # Found last combat event for this character
 
                 # Use last combat time if reasonable, otherwise use segment end
-                if last_combat_time and (last_combat_time - self.current_mythic_plus.start_time).total_seconds() < 7200:  # < 2 hours
+                if (
+                    last_combat_time
+                    and (last_combat_time - self.current_mythic_plus.start_time).total_seconds()
+                    < 7200
+                ):  # < 2 hours
                     self.current_mythic_plus.end_time = last_combat_time
                     logger.debug(f"Set M+ run end_time to last combat: {last_combat_time}")
                 else:

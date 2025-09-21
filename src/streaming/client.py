@@ -339,9 +339,7 @@ class CombatLogStreamer:
                 else:
                     # Connection failed
                     reconnect_count += 1
-                    logger.warning(
-                        f"Connection failed, attempt {reconnect_count}/{max_reconnects}"
-                    )
+                    logger.warning(f"Connection failed, attempt {reconnect_count}/{max_reconnects}")
 
             except Exception as e:
                 logger.error(f"Unexpected error: {e}")

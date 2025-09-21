@@ -1,0 +1,15 @@
+#!/bin/bash
+# WoW Combat Log Parser CLI Wrapper
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+if [[ -f "venv/bin/activate" ]]; then
+    source venv/bin/activate
+    python -m src.cli "$@"
+    deactivate
+else
+    echo "Error: Virtual environment not found"
+    echo "Please run the install.sh script first"
+    exit 1
+fi

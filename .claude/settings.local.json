@@ -1,7 +1,29 @@
 {
   "permissions": {
     "allow": [
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(tree:*)",
+      "Bash(pytest:*)",
+      "Bash(docker ps:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "WebSearch",
+      "mcp__perplexity-ask__perplexity_ask",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:forums.combatlogforums.com)",
+      "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(docker exec:*)",
+      "Bash(sed:*)",
+      "Read(//tmp/**)",
+      "Bash(find:*)",
+      "Bash(docker logs:*)",
+      "Bash(cat:*)",
+      "Bash(docker inspect:*)",
+      "Bash(getenforce)",
+      "Bash(aa-status:*)",
+      "Bash(docker run:*)",
+      "Bash(docker:*)"
     ],
     "deny": [],
     "ask": []

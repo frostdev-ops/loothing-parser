@@ -72,49 +72,34 @@ def parse_character_name(full_name: str) -> dict:
         {'name': 'Felica', 'server': 'Duskwood', 'region': 'US', 'full_name': 'Felica-Duskwood-US'}
     """
     if not full_name:
-        return {'name': '', 'server': None, 'region': None, 'full_name': full_name}
+        return {"name": "", "server": None, "region": None, "full_name": full_name}
 
     # Clean the name (remove quotes if present)
     clean_name = full_name.strip('"')
 
     # Split by hyphens
-    parts = clean_name.split('-')
+    parts = clean_name.split("-")
 
     # Handle different cases
     if len(parts) == 1:
         # Just a name (same server)
-        return {
-            'name': parts[0],
-            'server': None,
-            'region': None,
-            'full_name': clean_name
-        }
+        return {"name": parts[0], "server": None, "region": None, "full_name": clean_name}
     elif len(parts) == 2:
         # Name-Server (cross-realm, same region)
-        return {
-            'name': parts[0],
-            'server': parts[1],
-            'region': None,
-            'full_name': clean_name
-        }
+        return {"name": parts[0], "server": parts[1], "region": None, "full_name": clean_name}
     elif len(parts) >= 3:
         # Name-Server-Region (cross-realm, cross-region)
         # Handle names with multiple hyphens by treating last part as region
         # and second-to-last as server
         return {
-            'name': '-'.join(parts[:-2]) if len(parts) > 3 else parts[0],
-            'server': parts[-2],
-            'region': parts[-1],
-            'full_name': clean_name
+            "name": "-".join(parts[:-2]) if len(parts) > 3 else parts[0],
+            "server": parts[-2],
+            "region": parts[-1],
+            "full_name": clean_name,
         }
 
     # Fallback (shouldn't happen)
-    return {
-        'name': clean_name,
-        'server': None,
-        'region': None,
-        'full_name': clean_name
-    }
+    return {"name": clean_name, "server": None, "region": None, "full_name": clean_name}
 
 
 def is_valid_region(region: str) -> bool:
@@ -127,7 +112,7 @@ def is_valid_region(region: str) -> bool:
     Returns:
         True if valid region code
     """
-    valid_regions = {'US', 'EU', 'KR', 'CN', 'TW'}
+    valid_regions = {"US", "EU", "KR", "CN", "TW"}
     return region.upper() in valid_regions
 
 
