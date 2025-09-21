@@ -556,14 +556,27 @@ def create_app(db_path: str = "combat_logs.db") -> FastAPI:
 
         # Database metrics
         db_stats = stats["database"]
-        metrics.append(f"loothing_database_encounters_total {db_stats['total_encounters']}")
-        metrics.append(f"loothing_database_characters_total {db_stats['total_characters']}")
-        metrics.append(f"loothing_database_blocks_total {db_stats['total_blocks']}")
-        metrics.append(f"loothing_database_events_total {db_stats['total_events']}")
-        metrics.append(f"loothing_database_compressed_bytes {db_stats['total_compressed_bytes']}")
-        metrics.append(
-            f"loothing_database_uncompressed_bytes {db_stats['total_uncompressed_bytes']}"
-        )
+        if "database" in db_stats:
+            # Handle nested database stats
+            db_info = db_stats["database"]
+            metrics.append(f"loothing_database_encounters_total {db_info.get('total_encounters', 0)}")
+            metrics.append(f"loothing_database_characters_total {db_info.get('total_characters', 0)}")
+            metrics.append(f"loothing_database_blocks_total {db_info.get('total_blocks', 0)}")
+            metrics.append(f"loothing_database_events_total {db_info.get('total_events', 0)}")
+            metrics.append(f"loothing_database_compressed_bytes {db_info.get('total_compressed_bytes', 0)}")
+            metrics.append(
+                f"loothing_database_uncompressed_bytes {db_info.get('total_uncompressed_bytes', 0)}"
+            )
+        else:
+            # Fallback for flat structure
+            metrics.append(f"loothing_database_encounters_total {db_stats.get('total_encounters', 0)}")
+            metrics.append(f"loothing_database_characters_total {db_stats.get('total_characters', 0)}")
+            metrics.append(f"loothing_database_blocks_total {db_stats.get('total_blocks', 0)}")
+            metrics.append(f"loothing_database_events_total {db_stats.get('total_events', 0)}")
+            metrics.append(f"loothing_database_compressed_bytes {db_stats.get('total_compressed_bytes', 0)}")
+            metrics.append(
+                f"loothing_database_uncompressed_bytes {db_stats.get('total_uncompressed_bytes', 0)}"
+            )
 
         # Authentication metrics
         auth_stats = stats["authentication"]
