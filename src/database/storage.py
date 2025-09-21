@@ -473,7 +473,7 @@ class EventStorage:
                 ]
 
                 if character_events:
-                    events_stored = self._store_character_events(
+                    events_stored = self.store_character_events(
                         encounter_id, character_id, character_events
                     )
                     total_events += events_stored
