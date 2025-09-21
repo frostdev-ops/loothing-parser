@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 class StreamMessage(BaseModel):
     """Message sent from client to streaming endpoint."""
 
-    type: Literal["log_line", "start_session", "end_session", "heartbeat", "checkpoint"]
+    type: Literal["log_line", "start_session", "end_session", "heartbeat", "checkpoint", "subscribe_upload", "unsubscribe_upload"]
     timestamp: float = Field(..., description="Unix timestamp with microseconds")
     line: Optional[str] = Field(None, description="Combat log line")
     sequence: Optional[int] = Field(None, description="Sequence number for ordering")
