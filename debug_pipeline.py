@@ -130,6 +130,9 @@ def create_sample_heal_event():
             1500,  # overhealing
             0,  # absorbed
             True,  # critical
+            # Add extra padding to reach 25+ parameters for ACL detection
+            0,
+            0,
         ],
         advanced_params={},  # Empty for this test
     )
