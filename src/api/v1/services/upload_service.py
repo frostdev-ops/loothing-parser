@@ -298,9 +298,8 @@ class UploadService:
             encounters = self.processor.process_file(file_path)
 
             # Store encounters in database
-            storage_result = self.storage.store_encounters(
-                raids=[enc for enc in encounters if enc.encounter_type.name == "RAID"],
-                mythic_plus=[enc for enc in encounters if enc.encounter_type.name == "MYTHIC_PLUS"],
+            storage_result = self.storage.store_unified_encounters(
+                encounters=encounters,
                 log_file_path=str(file_path),
             )
 
