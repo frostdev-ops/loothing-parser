@@ -181,7 +181,9 @@ class QueryAPI:
             "events_decompressed": 0,
         }
 
-    def get_encounter(self, encounter_id: int, guild_id: Optional[int] = None) -> Optional[EncounterSummary]:
+    def get_encounter(
+        self, encounter_id: int, guild_id: Optional[int] = None
+    ) -> Optional[EncounterSummary]:
         """
         Get encounter summary by ID.
 
@@ -242,17 +244,18 @@ class QueryAPI:
         self.cache.put(cache_key, encounter)
         return encounter
 
-    def get_recent_encounters(self, limit: int = 10) -> List[EncounterSummary]:
+    def get_recent_encounters(self, limit: int = 10, guild_id: Optional[int] = None) -> List[EncounterSummary]:
         """
         Get recent encounters ordered by creation time.
 
         Args:
             limit: Maximum number of encounters to return
+            guild_id: Guild ID for multi-tenant filtering (optional for backward compatibility)
 
         Returns:
             List of EncounterSummary objects
         """
-        cache_key = f"recent_encounters:{limit}"
+        cache_key = f"recent_encounters:{limit}:guild:{guild_id}"
         cached = self.cache.get(cache_key)
         if cached:
             self.stats["cache_hits"] += 1
@@ -261,18 +264,24 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        cursor = self.db.execute(
-            """
+        # Build query with optional guild filtering
+        query = """
             SELECT
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
             FROM encounters e
-            ORDER BY created_at DESC
-            LIMIT ?
-        """,
-            (limit,),
-        )
+        """
+        params = []
+
+        if guild_id is not None:
+            query += " WHERE guild_id = ?"
+            params.append(guild_id)
+
+        query += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+
+        cursor = self.db.execute(query, params)
 
         encounters = []
         for row in cursor:
