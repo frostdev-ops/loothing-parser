@@ -28,7 +28,7 @@ The WoW Combat Log Analysis API enables developers to:
 
 - Character profiles with complete performance history
 - Detailed encounter analysis with timeline reconstruction
-- Guild management and progression tracking
+- Guild management and progression tracking with multi-tenant isolation
 - Spell usage statistics and optimization insights
 
 ### 🚀 **High Performance**
