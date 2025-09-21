@@ -16,12 +16,12 @@ from ..models.characters import (
     CharacterHistory,
     CharacterRanking,
     CharacterGear,
-    CharacterTalents
+    CharacterTalents,
 )
 from ..models.responses import PaginatedResponse, TimeSeriesResponse, RankingResponse
 from ..models.common import TimeRange, SortOrder
-from ...database.schema import DatabaseManager
-from ...database.query import QueryAPI
+from src.database.schema import DatabaseManager
+from src.database.query import QueryAPI
 
 router = APIRouter()
 
@@ -35,9 +35,11 @@ async def list_characters(
     class_name: Optional[str] = Query(None, description="Filter by class name"),
     min_encounters: Optional[int] = Query(None, ge=0, description="Minimum encounter count"),
     active_since: Optional[datetime] = Query(None, description="Active since date"),
-    sort_by: str = Query("last_seen", description="Sort field (last_seen, total_encounters, average_dps)"),
+    sort_by: str = Query(
+        "last_seen", description="Sort field (last_seen, total_encounters, average_dps)"
+    ),
     sort_order: SortOrder = Query(SortOrder.DESC, description="Sort order"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     List all characters with optional filtering and pagination.
@@ -51,15 +53,15 @@ async def list_characters(
         # Build filters
         filters = {}
         if server:
-            filters['server'] = server
+            filters["server"] = server
         if region:
-            filters['region'] = region
+            filters["region"] = region
         if class_name:
-            filters['class_name'] = class_name
+            filters["class_name"] = class_name
         if min_encounters:
-            filters['min_encounters'] = min_encounters
+            filters["min_encounters"] = min_encounters
         if active_since:
-            filters['active_since'] = active_since.timestamp()
+            filters["active_since"] = active_since.timestamp()
 
         # Get characters with pagination
         characters = query_api.get_characters(
@@ -67,7 +69,7 @@ async def list_characters(
             offset=offset,
             filters=filters,
             sort_by=sort_by,
-            sort_order=sort_order.value
+            sort_order=sort_order.value,
         )
 
         # Get total count for pagination
@@ -88,10 +90,10 @@ async def list_characters(
                 "has_next": has_next,
                 "has_previous": has_previous,
                 "page": page,
-                "total_pages": total_pages
+                "total_pages": total_pages,
             },
             filters=filters,
-            sort={sort_by: sort_order.value}
+            sort={sort_by: sort_order.value},
         )
 
     except Exception as e:
@@ -102,7 +104,7 @@ async def list_characters(
 async def get_character_profile(
     character_name: str = Path(..., description="Character name"),
     server: Optional[str] = Query(None, description="Server name for disambiguation"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     Get detailed character profile information.
@@ -113,23 +115,19 @@ async def get_character_profile(
     try:
         query_api = QueryAPI(db)
 
-        character = query_api.get_character_profile(
-            character_name=character_name,
-            server=server
-        )
+        character = query_api.get_character_profile(character_name=character_name, server=server)
 
         if not character:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Character '{character_name}' not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Character '{character_name}' not found")
 
         return character
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve character profile: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve character profile: {str(e)}"
+        )
 
 
 @router.get("/characters/{character_name}/performance", response_model=CharacterPerformance)
@@ -140,7 +138,7 @@ async def get_character_performance(
     end_date: Optional[datetime] = Query(None, description="End date for time range"),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty"),
     encounter_type: Optional[str] = Query(None, description="Filter by encounter type"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     Get character performance metrics for specific encounter or time period.
@@ -166,13 +164,13 @@ async def get_character_performance(
             encounter_id=encounter_id,
             time_range=time_range,
             difficulty=difficulty,
-            encounter_type=encounter_type
+            encounter_type=encounter_type,
         )
 
         if not performance:
             raise HTTPException(
                 status_code=404,
-                detail=f"No performance data found for character '{character_name}'"
+                detail=f"No performance data found for character '{character_name}'",
             )
 
         return performance
@@ -180,7 +178,9 @@ async def get_character_performance(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve character performance: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve character performance: {str(e)}"
+        )
 
 
 @router.get("/characters/{character_name}/history", response_model=CharacterHistory)
@@ -190,7 +190,7 @@ async def get_character_history(
     encounter_type: Optional[str] = Query(None, description="Filter by encounter type"),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of history entries"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     Get character performance history over time.
@@ -211,13 +211,12 @@ async def get_character_history(
             time_range=time_range,
             encounter_type=encounter_type,
             difficulty=difficulty,
-            limit=limit
+            limit=limit,
         )
 
         if not history:
             raise HTTPException(
-                status_code=404,
-                detail=f"No history data found for character '{character_name}'"
+                status_code=404, detail=f"No history data found for character '{character_name}'"
             )
 
         return history
@@ -225,17 +224,21 @@ async def get_character_history(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve character history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve character history: {str(e)}"
+        )
 
 
 @router.get("/characters/{character_name}/rankings", response_model=List[CharacterRanking])
 async def get_character_rankings(
     character_name: str = Path(..., description="Character name"),
-    metrics: List[str] = Query(["dps", "hps"], description="Metrics to rank (dps, hps, damage_done, etc.)"),
+    metrics: List[str] = Query(
+        ["dps", "hps"], description="Metrics to rank (dps, hps, damage_done, etc.)"
+    ),
     encounter_type: Optional[str] = Query(None, description="Filter by encounter type"),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty"),
     days: int = Query(30, ge=1, le=365, description="Number of days to consider"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     Get character rankings across different metrics.
@@ -258,7 +261,7 @@ async def get_character_rankings(
                 metric=metric,
                 time_range=time_range,
                 encounter_type=encounter_type,
-                difficulty=difficulty
+                difficulty=difficulty,
             )
             if ranking:
                 rankings.append(ranking)
@@ -266,14 +269,18 @@ async def get_character_rankings(
         return rankings
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve character rankings: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve character rankings: {str(e)}"
+        )
 
 
 @router.get("/characters/{character_name}/gear", response_model=CharacterGear)
 async def get_character_gear(
     character_name: str = Path(..., description="Character name"),
-    encounter_id: Optional[int] = Query(None, description="Specific encounter ID for gear snapshot"),
-    db: DatabaseManager = Depends()
+    encounter_id: Optional[int] = Query(
+        None, description="Specific encounter ID for gear snapshot"
+    ),
+    db: DatabaseManager = Depends(),
 ):
     """
     Get character gear analysis and optimization suggestions.
@@ -285,14 +292,12 @@ async def get_character_gear(
         query_api = QueryAPI(db)
 
         gear = query_api.get_character_gear(
-            character_name=character_name,
-            encounter_id=encounter_id
+            character_name=character_name, encounter_id=encounter_id
         )
 
         if not gear:
             raise HTTPException(
-                status_code=404,
-                detail=f"No gear data found for character '{character_name}'"
+                status_code=404, detail=f"No gear data found for character '{character_name}'"
             )
 
         return gear
@@ -306,8 +311,10 @@ async def get_character_gear(
 @router.get("/characters/{character_name}/talents", response_model=CharacterTalents)
 async def get_character_talents(
     character_name: str = Path(..., description="Character name"),
-    encounter_id: Optional[int] = Query(None, description="Specific encounter ID for talent snapshot"),
-    db: DatabaseManager = Depends()
+    encounter_id: Optional[int] = Query(
+        None, description="Specific encounter ID for talent snapshot"
+    ),
+    db: DatabaseManager = Depends(),
 ):
     """
     Get character talent analysis and optimization suggestions.
@@ -319,14 +326,12 @@ async def get_character_talents(
         query_api = QueryAPI(db)
 
         talents = query_api.get_character_talents(
-            character_name=character_name,
-            encounter_id=encounter_id
+            character_name=character_name, encounter_id=encounter_id
         )
 
         if not talents:
             raise HTTPException(
-                status_code=404,
-                detail=f"No talent data found for character '{character_name}'"
+                status_code=404, detail=f"No talent data found for character '{character_name}'"
             )
 
         return talents
@@ -334,7 +339,9 @@ async def get_character_talents(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve character talents: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve character talents: {str(e)}"
+        )
 
 
 @router.get("/characters/{character_name}/trends", response_model=TimeSeriesResponse)
@@ -345,7 +352,7 @@ async def get_character_trends(
     interval: str = Query("1d", description="Data point interval (1h, 1d, 1w)"),
     encounter_type: Optional[str] = Query(None, description="Filter by encounter type"),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     Get character performance trends over time.
@@ -367,13 +374,12 @@ async def get_character_trends(
             time_range=time_range,
             interval=interval,
             encounter_type=encounter_type,
-            difficulty=difficulty
+            difficulty=difficulty,
         )
 
         if not trends:
             raise HTTPException(
-                status_code=404,
-                detail=f"No trend data found for character '{character_name}'"
+                status_code=404, detail=f"No trend data found for character '{character_name}'"
             )
 
         return trends
@@ -381,7 +387,9 @@ async def get_character_trends(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve character trends: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve character trends: {str(e)}"
+        )
 
 
 @router.post("/characters/{character_name}/compare")
@@ -391,7 +399,7 @@ async def compare_characters(
     metric: str = Query("dps", description="Primary metric for comparison"),
     encounter_id: Optional[int] = Query(None, description="Specific encounter for comparison"),
     days: int = Query(30, ge=1, le=365, description="Time period for comparison"),
-    db: DatabaseManager = Depends()
+    db: DatabaseManager = Depends(),
 ):
     """
     Compare character performance with other characters.
@@ -414,7 +422,7 @@ async def compare_characters(
             compare_characters=compare_with,
             metric=metric,
             encounter_id=encounter_id,
-            time_range=time_range
+            time_range=time_range,
         )
 
         return comparison
