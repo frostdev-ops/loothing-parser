@@ -22,12 +22,13 @@ from src.parser.events import EventFactory, DamageEvent, HealEvent
 from src.parser.tokenizer import ParsedLine
 from src.models.character_events import CharacterEventStream
 from src.database.schema import DatabaseManager, create_tables
-from src.database.storage import store_encounter_data
+from src.database.storage import EventStorage
 from src.models.encounters import Encounter
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(name)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s - %(name)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 def create_sample_damage_event():
     """Create a sample damage event for testing."""
@@ -37,29 +38,52 @@ def create_sample_damage_event():
         event_type="SPELL_DAMAGE",
         raw_line="test line",
         base_params=[
-            "Player-1234-56789ABC", "TestPlayer", "0x511", "0",
-            "Creature-0-5678-DEFG", "TestBoss", "0xa48", "0"
+            "Player-1234-56789ABC",
+            "TestPlayer",
+            "0x511",
+            "0",
+            "Creature-0-5678-DEFG",
+            "TestBoss",
+            "0xa48",
+            "0",
         ],
         prefix_params=[12345, "Test Spell", 4],  # spell_id, spell_name, spell_school
         suffix_params=[
             # Advanced Combat Logging unit info (19 fields)
-            "Player-1234-56789ABC", "info_guid", 85000, 100000, 5000,  # 0-4: target, info, hp, max_hp, ap
-            3000, 2500, "resource_array", 15.5, 20.0, 25.0,  # 5-10: sp, armor, resources, x, y, z
-            0, 0, 0, 0, 0, 0, 0, 0,  # 11-18: more fields
+            "Player-1234-56789ABC",
+            "info_guid",
+            85000,
+            100000,
+            5000,  # 0-4: target, info, hp, max_hp, ap
+            3000,
+            2500,
+            "resource_array",
+            15.5,
+            20.0,
+            25.0,  # 5-10: sp, armor, resources, x, y, z
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,  # 11-18: more fields
             # Damage parameters start at index 19
             12500,  # amount (actual damage)
-            1200,   # overkill
-            4,      # school
-            0,      # resisted
-            500,    # blocked
-            300,    # absorbed
-            True,   # critical
+            1200,  # overkill
+            4,  # school
+            0,  # resisted
+            500,  # blocked
+            300,  # absorbed
+            True,  # critical
             False,  # glancing
-            False   # crushing
-        ]
+            False,  # crushing
+        ],
     )
 
     return EventFactory.create_event(parsed_line)
+
 
 def create_sample_heal_event():
     """Create a sample heal event for testing."""
@@ -68,24 +92,47 @@ def create_sample_heal_event():
         event_type="SPELL_HEAL",
         raw_line="test heal line",
         base_params=[
-            "Player-1234-HEALER123", "TestHealer", "0x511", "0",
-            "Player-1234-56789ABC", "TestPlayer", "0x511", "0"
+            "Player-1234-HEALER123",
+            "TestHealer",
+            "0x511",
+            "0",
+            "Player-1234-56789ABC",
+            "TestPlayer",
+            "0x511",
+            "0",
         ],
         prefix_params=[54321, "Test Heal", 2],  # spell_id, spell_name, spell_school
         suffix_params=[
             # Advanced Combat Logging unit info (19 fields)
-            "Player-1234-56789ABC", "info_guid", 85000, 100000, 5000,
-            3000, 2500, "resource_array", 15.5, 20.0, 25.0,
-            0, 0, 0, 0, 0, 0, 0, 0,
+            "Player-1234-56789ABC",
+            "info_guid",
+            85000,
+            100000,
+            5000,
+            3000,
+            2500,
+            "resource_array",
+            15.5,
+            20.0,
+            25.0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             # Healing parameters start at index 19
-            8500,   # amount (total healing)
-            1500,   # overhealing
-            0,      # absorbed
-            True    # critical
-        ]
+            8500,  # amount (total healing)
+            1500,  # overhealing
+            0,  # absorbed
+            True,  # critical
+        ],
     )
 
     return EventFactory.create_event(parsed_line)
+
 
 def test_event_parsing():
     """Test that events are parsed correctly with proper amounts."""
@@ -106,16 +153,25 @@ def test_event_parsing():
     heal_event = create_sample_heal_event()
     logger.info(f"Heal event type: {type(heal_event)}")
     logger.info(f"Heal event amount: {getattr(heal_event, 'amount', 'NO AMOUNT ATTR')}")
-    logger.info(f"Heal event overhealing: {getattr(heal_event, 'overhealing', 'NO OVERHEALING ATTR')}")
-    logger.info(f"Heal event effective: {getattr(heal_event, 'effective_healing', 'NO EFFECTIVE ATTR')}")
+    logger.info(
+        f"Heal event overhealing: {getattr(heal_event, 'overhealing', 'NO OVERHEALING ATTR')}"
+    )
+    logger.info(
+        f"Heal event effective: {getattr(heal_event, 'effective_healing', 'NO EFFECTIVE ATTR')}"
+    )
 
     assert isinstance(heal_event, HealEvent), f"Expected HealEvent, got {type(heal_event)}"
     assert heal_event.amount == 8500, f"Expected healing 8500, got {heal_event.amount}"
-    assert heal_event.overhealing == 1500, f"Expected overhealing 1500, got {heal_event.overhealing}"
-    assert heal_event.effective_healing == 7000, f"Expected effective healing 7000, got {heal_event.effective_healing}"
+    assert (
+        heal_event.overhealing == 1500
+    ), f"Expected overhealing 1500, got {heal_event.overhealing}"
+    assert (
+        heal_event.effective_healing == 7000
+    ), f"Expected effective healing 7000, got {heal_event.effective_healing}"
 
     logger.info("✓ Event parsing tests passed")
     return damage_event, heal_event
+
 
 def test_character_stream_accumulation():
     """Test that character streams accumulate damage/healing correctly."""
@@ -123,8 +179,7 @@ def test_character_stream_accumulation():
 
     # Create character stream
     character = CharacterEventStream(
-        character_guid="Player-1234-56789ABC",
-        character_name="TestPlayer"
+        character_guid="Player-1234-56789ABC", character_name="TestPlayer"
     )
 
     # Create test events
@@ -139,13 +194,22 @@ def test_character_stream_accumulation():
     logger.info(f"Character damage events count: {len(character.damage_done)}")
     logger.info(f"Character healing events count: {len(character.healing_done)}")
 
-    assert character.total_damage_done == 12500, f"Expected total damage 12500, got {character.total_damage_done}"
-    assert character.total_healing_done == 7000, f"Expected total healing 7000, got {character.total_healing_done}"
-    assert len(character.damage_done) == 1, f"Expected 1 damage event, got {len(character.damage_done)}"
-    assert len(character.healing_done) == 1, f"Expected 1 healing event, got {len(character.healing_done)}"
+    assert (
+        character.total_damage_done == 12500
+    ), f"Expected total damage 12500, got {character.total_damage_done}"
+    assert (
+        character.total_healing_done == 7000
+    ), f"Expected total healing 7000, got {character.total_healing_done}"
+    assert (
+        len(character.damage_done) == 1
+    ), f"Expected 1 damage event, got {len(character.damage_done)}"
+    assert (
+        len(character.healing_done) == 1
+    ), f"Expected 1 healing event, got {len(character.healing_done)}"
 
     logger.info("✓ Character stream accumulation tests passed")
     return character
+
 
 def test_dps_hps_calculation():
     """Test DPS/HPS calculation."""
@@ -162,13 +226,14 @@ def test_dps_hps_calculation():
     logger.info(f"HPS over {duration}s: {hps}")
 
     expected_dps = 12500 / 10.0  # 1250.0
-    expected_hps = 7000 / 10.0   # 700.0
+    expected_hps = 7000 / 10.0  # 700.0
 
     assert abs(dps - expected_dps) < 0.01, f"Expected DPS {expected_dps}, got {dps}"
     assert abs(hps - expected_hps) < 0.01, f"Expected HPS {expected_hps}, got {hps}"
 
     logger.info("✓ DPS/HPS calculation tests passed")
     return character
+
 
 def test_database_storage():
     """Test database storage with correct field mappings."""
@@ -187,7 +252,7 @@ def test_database_storage():
         difficulty=16,  # Mythic
         start_time=datetime.now(),
         duration=300.0,  # 5 minutes
-        success=True
+        success=True,
     )
 
     encounter.add_character(character)
@@ -198,22 +263,29 @@ def test_database_storage():
         logger.info("✓ Database storage successful")
 
         # Verify stored data
-        cursor = db.execute("""
+        cursor = db.execute(
+            """
             SELECT character_name, total_damage_done, total_healing_done,
                    dps, hps, combat_dps, combat_hps
             FROM character_metrics
             WHERE character_name = ?
-        """, ("TestPlayer",))
+        """,
+            ("TestPlayer",),
+        )
 
         row = cursor.fetchone()
         if row:
             logger.info(f"Stored character data: {dict(row)}")
 
             # Check that values are not zero
-            assert row['total_damage_done'] > 0, f"total_damage_done is {row['total_damage_done']}, expected > 0"
-            assert row['total_healing_done'] > 0, f"total_healing_done is {row['total_healing_done']}, expected > 0"
-            assert row['dps'] > 0, f"dps is {row['dps']}, expected > 0"
-            assert row['hps'] > 0, f"hps is {row['hps']}, expected > 0"
+            assert (
+                row["total_damage_done"] > 0
+            ), f"total_damage_done is {row['total_damage_done']}, expected > 0"
+            assert (
+                row["total_healing_done"] > 0
+            ), f"total_healing_done is {row['total_healing_done']}, expected > 0"
+            assert row["dps"] > 0, f"dps is {row['dps']}, expected > 0"
+            assert row["hps"] > 0, f"hps is {row['hps']}, expected > 0"
 
             logger.info("✓ Database field mapping tests passed")
         else:
@@ -225,19 +297,21 @@ def test_database_storage():
     finally:
         db.close()
 
+
 def test_field_name_consistency():
     """Test that field names are consistent between models and storage."""
     logger.info("=== Testing Field Name Consistency ===")
 
     character = CharacterEventStream(
-        character_guid="Player-1234-56789ABC",
-        character_name="TestPlayer"
+        character_guid="Player-1234-56789ABC", character_name="TestPlayer"
     )
 
     # Check that character has expected field names
     expected_fields = [
-        'total_damage_done', 'total_healing_done',
-        'total_damage_taken', 'total_healing_received'
+        "total_damage_done",
+        "total_healing_done",
+        "total_damage_taken",
+        "total_healing_received",
     ]
 
     for field in expected_fields:
@@ -245,7 +319,7 @@ def test_field_name_consistency():
         logger.info(f"✓ Character has field: {field}")
 
     # Check that methods exist
-    expected_methods = ['get_dps', 'get_hps', 'get_combat_dps', 'get_combat_hps']
+    expected_methods = ["get_dps", "get_hps", "get_combat_dps", "get_combat_hps"]
 
     for method in expected_methods:
         assert hasattr(character, method), f"Character missing method: {method}"
@@ -253,6 +327,7 @@ def test_field_name_consistency():
         logger.info(f"✓ Character has callable method: {method}")
 
     logger.info("✓ Field name consistency tests passed")
+
 
 def main():
     """Run all debugging tests."""
@@ -271,10 +346,12 @@ def main():
     except Exception as e:
         logger.error(f"❌ TEST FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
