@@ -244,7 +244,9 @@ class QueryAPI:
         self.cache.put(cache_key, encounter)
         return encounter
 
-    def get_recent_encounters(self, limit: int = 10, guild_id: Optional[int] = None) -> List[EncounterSummary]:
+    def get_recent_encounters(
+        self, limit: int = 10, guild_id: Optional[int] = None
+    ) -> List[EncounterSummary]:
         """
         Get recent encounters ordered by creation time.
 
@@ -315,6 +317,7 @@ class QueryAPI:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: int = 50,
+        guild_id: Optional[int] = None,
     ) -> List[EncounterSummary]:
         """
         Search encounters with filters.
@@ -327,12 +330,13 @@ class QueryAPI:
             start_date: Filter by start date range
             end_date: Filter by end date range
             limit: Maximum results
+            guild_id: Guild ID for multi-tenant filtering (optional for backward compatibility)
 
         Returns:
             List of matching encounters
         """
         # Build cache key from parameters
-        cache_key = f"search:{boss_name}:{difficulty}:{encounter_type}:{success}:{start_date}:{end_date}:{limit}"
+        cache_key = f"search:{boss_name}:{difficulty}:{encounter_type}:{success}:{start_date}:{end_date}:{limit}:guild:{guild_id}"
         cached = self.cache.get(cache_key)
         if cached:
             self.stats["cache_hits"] += 1
@@ -344,6 +348,11 @@ class QueryAPI:
         # Build dynamic query
         conditions = []
         params = []
+
+        # Add guild filtering first for optimal index usage
+        if guild_id is not None:
+            conditions.append("guild_id = ?")
+            params.append(guild_id)
 
         if boss_name:
             conditions.append("boss_name LIKE ?")
