@@ -181,17 +181,18 @@ class QueryAPI:
             "events_decompressed": 0,
         }
 
-    def get_encounter(self, encounter_id: int) -> Optional[EncounterSummary]:
+    def get_encounter(self, encounter_id: int, guild_id: Optional[int] = None) -> Optional[EncounterSummary]:
         """
         Get encounter summary by ID.
 
         Args:
             encounter_id: Database encounter ID
+            guild_id: Guild ID for multi-tenant filtering (optional for backward compatibility)
 
         Returns:
             EncounterSummary or None if not found
         """
-        cache_key = f"encounter:{encounter_id}"
+        cache_key = f"encounter:{encounter_id}:guild:{guild_id}"
         cached = self.cache.get(cache_key)
         if cached:
             self.stats["cache_hits"] += 1
@@ -200,17 +201,22 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        cursor = self.db.execute(
-            """
+        # Build query with optional guild filtering
+        query = """
             SELECT
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
             FROM encounters e
             WHERE encounter_id = ?
-        """,
-            (encounter_id,),
-        )
+        """
+        params = [encounter_id]
+
+        if guild_id is not None:
+            query += " AND guild_id = ?"
+            params.append(guild_id)
+
+        cursor = self.db.execute(query, params)
 
         row = cursor.fetchone()
         if not row:
@@ -655,9 +661,7 @@ class QueryAPI:
             ]
 
         if event_types:
-            filtered_events = [
-                e for e in filtered_events if e.event.event_type in event_types
-            ]
+            filtered_events = [e for e in filtered_events if e.event.event_type in event_types]
 
         # Sort by timestamp
         filtered_events.sort(key=lambda e: e.timestamp)
