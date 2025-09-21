@@ -543,11 +543,11 @@ class EventStorage:
             (
                 safe_param(encounter_id),
                 safe_param(character_id),
-                safe_param(getattr(character, "total_damage", 0)),
-                safe_param(getattr(character, "total_healing", 0)),
-                safe_param(getattr(character, "damage_taken", 0)),
-                safe_param(getattr(character, "healing_received", 0)),
-                safe_param(getattr(character, "overhealing", 0)),
+                safe_param(getattr(character, "total_damage_done", 0)),
+                safe_param(getattr(character, "total_healing_done", 0)),
+                safe_param(getattr(character, "total_damage_taken", 0)),
+                safe_param(getattr(character, "total_healing_received", 0)),
+                safe_param(getattr(character, "total_overhealing", 0)),
                 safe_param(getattr(character, "death_count", 0)),
                 safe_param(getattr(character, "activity_percentage", 0.0)),
                 safe_param(getattr(character, "time_alive", encounter.duration)),
@@ -610,10 +610,10 @@ class EventStorage:
         # Wrap raw events in TimestampedEvent objects
         timestamped_events = []
         for event in events:
-            if hasattr(event, 'timestamp'):
+            if hasattr(event, "timestamp"):
                 # Determine basic category based on event type
                 category = "other"
-                if hasattr(event, 'event_type'):
+                if hasattr(event, "event_type"):
                     if "_DAMAGE" in event.event_type:
                         category = "damage"
                     elif "_HEAL" in event.event_type:
