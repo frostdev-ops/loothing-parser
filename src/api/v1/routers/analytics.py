@@ -60,10 +60,12 @@ async def get_performance_trends(
             WHERE DATE(e.start_time) BETWEEN ? AND ?
             GROUP BY DATE(e.start_time)
             ORDER BY date ASC
-        """.format(db_column)
+        """.format(
+            db_column
+        )
 
         cursor = db.execute(
-            query, (db_column, start_date.date().isoformat(), end_date.date().isoformat())
+            query, (start_date.date().isoformat(), end_date.date().isoformat())
         )
         results = cursor.fetchall()
 
