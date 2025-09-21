@@ -71,6 +71,7 @@ Get started with the API in minutes:
 === "JavaScript"
 
     ```javascript
+    // API key must be associated with a guild
     const apiKey = 'YOUR_API_KEY';
 
     const response = await fetch(
