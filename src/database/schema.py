@@ -390,16 +390,26 @@ def create_tables(db: DatabaseManager) -> None:
 
     logger.info("Creating database indices for fast queries...")
 
-    # Log files indices
+    # Guild indices for multi-tenancy
+    db.execute("CREATE INDEX IF NOT EXISTS idx_guild_lookup ON guilds(guild_name, server, region)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_guild_active ON guilds(is_active, created_at)")
+
+    # Log files indices (multi-tenant aware)
     db.execute("CREATE INDEX IF NOT EXISTS idx_log_hash ON log_files(file_hash)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_log_processed ON log_files(processed_at)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_log_guild ON log_files(guild_id, processed_at DESC)")
 
-    # Encounters indices
+    # Encounters indices (multi-tenant aware - guild_id first for row-level security)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id, start_time DESC)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id, boss_name, difficulty, start_time DESC)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id, encounter_type, success, start_time DESC)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id, instance_name, difficulty)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_guild_progression ON encounters(guild_id, difficulty, success, start_time DESC)")
+
+    # Legacy single-tenant indexes (for backward compatibility during migration)
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name, difficulty)")
-    db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type, success)"
-    )
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type, success)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)")
 
     # Characters indices
