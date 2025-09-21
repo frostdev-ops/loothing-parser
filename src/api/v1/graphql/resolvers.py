@@ -528,7 +528,7 @@ class AnalyticsResolver(BaseResolver):
                 ORDER BY avg_value DESC
             """.format(
                 f"AND e.difficulty = ?" if difficulty else "",
-                f"AND e.type = ?" if encounter_type else ""
+                f"AND e.type = ?" if encounter_type else "",
             )
 
             params = [metric_column, start_date.isoformat(), end_date.isoformat()]
@@ -547,13 +547,15 @@ class AnalyticsResolver(BaseResolver):
                 if row["avg_value"]:
                     all_values.append(row["avg_value"])
 
-                class_data.append({
-                    "class_name": row["class_name"],
-                    "spec": row["spec"],
-                    "average_performance": row["avg_value"] or 0,
-                    "sample_size": row["sample_size"],
-                    "encounter_count": row["encounter_count"]
-                })
+                class_data.append(
+                    {
+                        "class_name": row["class_name"],
+                        "spec": row["spec"],
+                        "average_performance": row["avg_value"] or 0,
+                        "sample_size": row["sample_size"],
+                        "encounter_count": row["encounter_count"],
+                    }
+                )
 
             # Add relative performance
             avg_overall = statistics.mean(all_values) if all_values else 0
@@ -582,8 +584,53 @@ class AnalyticsResolver(BaseResolver):
             if server:
                 filters["server"] = server
 
-            # Implementation would track guild progression through raid tiers
-            return await self.query_api.get_progression_tracking(**filters)
+            # Get progression tracking from database
+            from datetime import datetime, timedelta
+
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+
+            # Get encounter progression data
+            query = """
+                SELECT
+                    e.id,
+                    e.name as boss_name,
+                    e.difficulty,
+                    e.start_time,
+                    e.kill as is_kill,
+                    e.duration,
+                    e.elapsed_time,
+                    COUNT(DISTINCT cm.character_id) as player_count
+                FROM encounters e
+                LEFT JOIN character_metrics cm ON e.id = cm.encounter_id
+                WHERE e.start_time BETWEEN ? AND ?
+                {}
+                GROUP BY e.id
+                ORDER BY e.start_time DESC
+                LIMIT 200
+            """.format("AND e.guild_name = ?" if guild_name else "")
+
+            params = [start_date.isoformat(), end_date.isoformat()]
+            if guild_name:
+                params.append(guild_name)
+
+            cursor = self.db.execute(query, tuple(params))
+            results = cursor.fetchall()
+
+            progression_data = []
+            for row in results:
+                encounter = {
+                    "encounter_id": row["id"],
+                    "boss_name": row["boss_name"],
+                    "difficulty": row["difficulty"],
+                    "kill_time": row["start_time"] if row["is_kill"] else None,
+                    "is_kill": bool(row["is_kill"]),
+                    "duration_seconds": row["duration"],
+                    "player_count": row["player_count"]
+                }
+                progression_data.append(encounter)
+
+            return progression_data
 
         except Exception as e:
             self._handle_error(e, "get_progression_tracking")
