@@ -286,13 +286,14 @@ def test_database_storage():
         storage.store_unified_encounters([encounter], tmp_file_path)
         logger.info("✓ Database storage successful")
 
-        # Verify stored data
+        # Verify stored data - join character_metrics with characters table
         cursor = db.execute(
             """
-            SELECT character_name, total_damage_done, total_healing_done,
-                   dps, hps, combat_dps, combat_hps
-            FROM character_metrics
-            WHERE character_name = ?
+            SELECT c.character_name, cm.damage_done, cm.healing_done,
+                   cm.dps, cm.hps, cm.combat_dps, cm.combat_hps
+            FROM character_metrics cm
+            JOIN characters c ON cm.character_id = c.character_id
+            WHERE c.character_name = ?
         """,
             ("TestPlayer",),
         )
