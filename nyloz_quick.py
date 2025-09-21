@@ -17,6 +17,7 @@ from src.config.loader import load_and_apply_config
 # Load custom configuration
 load_and_apply_config()
 
+
 def quick_nyloz_analysis():
     """Quick analysis of Nyloz's damage in Ara-Kara."""
 
@@ -33,6 +34,7 @@ def quick_nyloz_analysis():
     encounter_end_str = "2025-09-20 17:59:29.668000"
 
     from datetime import datetime
+
     encounter_start = datetime.fromisoformat(encounter_start_str)
     encounter_end = datetime.fromisoformat(encounter_end_str)
 
@@ -65,7 +67,10 @@ def quick_nyloz_analysis():
                                     nyloz_pets.add(pet_name)
 
                         # Track damage events within encounter window
-                        if isinstance(event, DamageEvent) and encounter_start <= event.timestamp <= encounter_end:
+                        if (
+                            isinstance(event, DamageEvent)
+                            and encounter_start <= event.timestamp <= encounter_end
+                        ):
                             source_name = getattr(event, "source_name", "")
 
                             # Check if it's Nyloz or Nyloz's pet
@@ -73,20 +78,24 @@ def quick_nyloz_analysis():
                                 # Check for swing duplicates
                                 is_duplicate = False
                                 if event.event_type in ["SWING_DAMAGE", "SWING_DAMAGE_LANDED"]:
-                                    swing_sig = f"{event.timestamp}_{event.source_guid}_{event.dest_guid}"
+                                    swing_sig = (
+                                        f"{event.timestamp}_{event.source_guid}_{event.dest_guid}"
+                                    )
                                     if swing_sig in seen_swings:
                                         is_duplicate = True
                                     else:
                                         seen_swings.add(swing_sig)
 
                                 if not is_duplicate:
-                                    nyloz_events.append({
-                                        "event_type": event.event_type,
-                                        "damage": event.amount,
-                                        "source_name": source_name,
-                                        "spell_name": getattr(event, "spell_name", "Unknown"),
-                                        "dest_name": getattr(event, "dest_name", "Unknown")
-                                    })
+                                    nyloz_events.append(
+                                        {
+                                            "event_type": event.event_type,
+                                            "damage": event.amount,
+                                            "source_name": source_name,
+                                            "spell_name": getattr(event, "spell_name", "Unknown"),
+                                            "dest_name": getattr(event, "dest_name", "Unknown"),
+                                        }
+                                    )
 
             except Exception:
                 pass
@@ -106,7 +115,9 @@ def quick_nyloz_analysis():
     print(f"\n📊 DAMAGE ANALYSIS:")
     print(f"   Calculated: {total_damage/1e9:.2f}B")
     print(f"   Game value: {game_value/1e9:.2f}B")
-    print(f"   Difference: {(total_damage - game_value)/1e9:.2f}B ({(total_damage - game_value)/game_value*100:.1f}%)")
+    print(
+        f"   Difference: {(total_damage - game_value)/1e9:.2f}B ({(total_damage - game_value)/game_value*100:.1f}%)"
+    )
 
     # Event type breakdown
     event_types = Counter()
@@ -118,7 +129,9 @@ def quick_nyloz_analysis():
     print(f"\n📋 Event Types:")
     for event_type, count in event_types.most_common():
         damage = damage_by_type[event_type]
-        print(f"   {event_type:<25}: {count:4,} events, {damage/1e9:5.2f}B ({damage/total_damage*100:4.1f}%)")
+        print(
+            f"   {event_type:<25}: {count:4,} events, {damage/1e9:5.2f}B ({damage/total_damage*100:4.1f}%)"
+        )
 
     # Source breakdown
     source_damage = defaultdict(int)
@@ -131,7 +144,9 @@ def quick_nyloz_analysis():
     print(f"\n👤 Source Breakdown:")
     for source, damage in sorted(source_damage.items(), key=lambda x: x[1], reverse=True):
         count = source_counts[source]
-        print(f"   {source:<20}: {count:4,} events, {damage/1e9:5.2f}B ({damage/total_damage*100:4.1f}%)")
+        print(
+            f"   {source:<20}: {count:4,} events, {damage/1e9:5.2f}B ({damage/total_damage*100:4.1f}%)"
+        )
 
     # Top spells
     spell_damage = defaultdict(int)
@@ -140,7 +155,8 @@ def quick_nyloz_analysis():
 
     print(f"\n🔮 Top Spells:")
     for spell, damage in sorted(spell_damage.items(), key=lambda x: x[1], reverse=True)[:8]:
-        print(f"   {spell:<25}: {damage/1e9:5.2f}B ({damage/total_damage*100:4.1f}%)")
+        spell_name = spell if spell else "Unknown"
+        print(f"   {spell_name:<25}: {damage/1e9:5.2f}B ({damage/total_damage*100:4.1f}%)")
 
     # Look for outliers
     high_damage_events = [e for e in nyloz_events if e["damage"] > 50e6]  # >50M
@@ -148,6 +164,7 @@ def quick_nyloz_analysis():
         print(f"\n⚠️ High damage events (>50M):")
         for event in sorted(high_damage_events, key=lambda x: x["damage"], reverse=True)[:5]:
             print(f"   {event['damage']/1e6:5.1f}M: {event['spell_name']} -> {event['dest_name']}")
+
 
 if __name__ == "__main__":
     quick_nyloz_analysis()
