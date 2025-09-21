@@ -178,8 +178,8 @@ def test_character_stream_accumulation():
     """Test that character streams accumulate damage/healing correctly."""
     logger.info("=== Testing Character Stream Accumulation ===")
 
-    # Create character stream
-    character = CharacterEventStream(
+    # Create enhanced character stream
+    character = EnhancedCharacter(
         character_guid="Player-1234-56789ABC", character_name="TestPlayer"
     )
 
