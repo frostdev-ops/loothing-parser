@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .streaming_server import create_app as create_streaming_app
 from .v1.main import create_v1_app
-from ..database.schema import DatabaseManager
+from src.database.schema import DatabaseManager
 
 
 def create_unified_app(db_path: str = "combat_logs.db") -> FastAPI:
@@ -81,7 +81,7 @@ def create_unified_app(db_path: str = "combat_logs.db") -> FastAPI:
     # Mount the streaming endpoints at root level
     # Copy streaming-specific endpoints to main app
     for route in streaming_app.routes:
-        if hasattr(route, 'path'):
+        if hasattr(route, "path"):
             # Skip if it's a health endpoint that we'll replace
             if route.path in ["/health", "/health/live", "/health/ready", "/metrics"]:
                 continue
@@ -99,9 +99,9 @@ def create_unified_app(db_path: str = "combat_logs.db") -> FastAPI:
             "services": {
                 "streaming": "operational",
                 "api_v1": "operational",
-                "database": "connected"
+                "database": "connected",
             },
-            "version": "1.0.0"
+            "version": "1.0.0",
         }
 
     @app.get("/health/live", tags=["Health"])
@@ -118,11 +118,12 @@ def create_unified_app(db_path: str = "combat_logs.db") -> FastAPI:
             return {"status": "ready"}
         except Exception as e:
             from fastapi import HTTPException
+
             raise HTTPException(status_code=503, detail=f"Not ready: {str(e)}")
 
     # Copy metrics endpoint from streaming app
     for route in streaming_app.routes:
-        if hasattr(route, 'path') and route.path == "/metrics":
+        if hasattr(route, "path") and route.path == "/metrics":
             app.routes.append(route)
             break
 
