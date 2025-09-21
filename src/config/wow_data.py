@@ -54,73 +54,67 @@ DIFFICULTY_NAMES: Dict[int, str] = {
     23: "Mythic",
     24: "Timewalking",
     8: "Challenge Mode",
-
     # Raids - Classic
     3: "10 Normal",
     4: "25 Normal",
     5: "10 Heroic",
     6: "25 Heroic",
-
     # Raids - Modern
     17: "LFR",
     14: "Normal",
     15: "Heroic",
     16: "Mythic",
-
     # Raids - Special
     9: "40 Player",
     33: "Timewalking",
     18: "Event",
-
     # PvP
     11: "Battleground",
     12: "Arena",
     13: "Rated Battleground",
-
     # Scenarios
     7: "Scenario",
     19: "Heroic Scenario",
-
     # Legacy
     20: "Mythic Keystone",  # Old M+ designation
     167: "Torghast",
     168: "Path of Ascension",
-
     # Add any unknown IDs you encounter here
 }
 
 
 # Raid difficulties (for encounter categorization)
 RAID_DIFFICULTIES: Set[int] = {
-    3, 4, 5, 6,  # Classic 10/25
-    14, 15, 16, 17,  # Modern LFR/Normal/Heroic/Mythic
-    9, 33, 18  # Special
+    3,
+    4,
+    5,
+    6,  # Classic 10/25
+    14,
+    15,
+    16,
+    17,  # Modern LFR/Normal/Heroic/Mythic
+    9,
+    33,
+    18,  # Special
 }
 
 
 # Dungeon difficulties
-DUNGEON_DIFFICULTIES: Set[int] = {
-    1, 2, 8, 23, 24
-}
+DUNGEON_DIFFICULTIES: Set[int] = {1, 2, 8, 23, 24}
 
 
 # Tank specializations
 TANK_SPECS: Dict[int, str] = {
     # Death Knight
     250: "Blood",
-
     # Demon Hunter
     581: "Vengeance",
-
     # Druid
     104: "Guardian",
-
     # Monk
     268: "Brewmaster",
-
     # Paladin
     66: "Protection",
-
     # Warrior
     73: "Protection",
 }
@@ -130,23 +124,49 @@ TANK_SPECS: Dict[int, str] = {
 HEALER_SPECS: Dict[int, str] = {
     # Druid
     105: "Restoration",
-
     # Monk
     270: "Mistweaver",
-
     # Paladin
     65: "Holy",
-
     # Priest
     256: "Discipline",
     257: "Holy",
-
     # Shaman
     264: "Restoration",
-
     # Evoker
     1468: "Preservation",
     1473: "Augmentation",  # Can be support/healer hybrid
+}
+
+
+# Spec ID to Class name mapping
+SPEC_TO_CLASS: Dict[int, str] = {
+    # Death Knight
+    250: "Death Knight", 251: "Death Knight", 252: "Death Knight",
+    # Demon Hunter
+    577: "Demon Hunter", 581: "Demon Hunter",
+    # Druid
+    102: "Druid", 103: "Druid", 104: "Druid", 105: "Druid",
+    # Evoker
+    1467: "Evoker", 1468: "Evoker", 1473: "Evoker",
+    # Hunter
+    253: "Hunter", 254: "Hunter", 255: "Hunter",
+    # Mage
+    62: "Mage", 63: "Mage", 64: "Mage",
+    # Monk
+    268: "Monk", 269: "Monk", 270: "Monk",
+    # Paladin
+    65: "Paladin", 66: "Paladin", 70: "Paladin",
+    # Priest
+    256: "Priest", 257: "Priest", 258: "Priest",
+    # Rogue
+    259: "Rogue", 260: "Rogue", 261: "Rogue",
+    # Shaman
+    262: "Shaman", 263: "Shaman", 264: "Shaman",
+    # Warlock
+    265: "Warlock", 266: "Warlock", 267: "Warlock",
+    # Warrior
+    71: "Warrior", 72: "Warrior", 73: "Warrior",
 }
 
 
@@ -156,62 +176,50 @@ ALL_SPECS: Dict[int, str] = {
     250: "Blood",
     251: "Frost",
     252: "Unholy",
-
     # Demon Hunter
     577: "Havoc",
     581: "Vengeance",
-
     # Druid
     102: "Balance",
     103: "Feral",
     104: "Guardian",
     105: "Restoration",
-
     # Evoker
     1467: "Devastation",
     1468: "Preservation",
     1473: "Augmentation",
-
     # Hunter
     253: "Beast Mastery",
     254: "Marksmanship",
     255: "Survival",
-
     # Mage
     62: "Arcane",
     63: "Fire",
     64: "Frost",
-
     # Monk
     268: "Brewmaster",
     269: "Windwalker",
     270: "Mistweaver",
-
     # Paladin
     65: "Holy",
     66: "Protection",
     70: "Retribution",
-
     # Priest
     256: "Discipline",
     257: "Holy",
     258: "Shadow",
-
     # Rogue
     259: "Assassination",
     260: "Outlaw",
     261: "Subtlety",
-
     # Shaman
     262: "Elemental",
     263: "Enhancement",
     264: "Restoration",
-
     # Warlock
     265: "Affliction",
     266: "Demonology",
     267: "Destruction",
-
     # Warrior
     71: "Arms",
     72: "Fury",
@@ -224,7 +232,6 @@ MYTHIC_PLUS_AFFIXES: Dict[int, str] = {
     # Level 2+ (rotating weekly)
     9: "Tyrannical",
     10: "Fortified",
-
     # Level 5+ (rotating weekly)
     3: "Volcanic",
     4: "Necrotic",
@@ -240,13 +247,11 @@ MYTHIC_PLUS_AFFIXES: Dict[int, str] = {
     134: "Entangling",
     135: "Afflicted",
     136: "Incorporeal",
-
     # Level 10+ (seasonal)
     148: "Xal'atath's Bargain: Ascendant",
     158: "Xal'atath's Bargain: Devour",
     159: "Xal'atath's Bargain: Voidbound",
     160: "Xal'atath's Bargain: Oblivion",
-
     # Legacy affixes (for old logs)
     2: "Skittish",
     5: "Teeming",
@@ -274,10 +279,8 @@ MAJOR_COOLDOWNS: Dict[int, str] = {
     178207: "Drums of Fury",
     230935: "Drums of the Mountain",
     256740: "Drums of the Maelstrom",
-
     # Power Infusion
     10060: "Power Infusion",
-
     # Major defensive cooldowns
     31850: "Ardent Defender",
     86659: "Guardian of Ancient Kings",
@@ -285,7 +288,6 @@ MAJOR_COOLDOWNS: Dict[int, str] = {
     47788: "Guardian Spirit",
     6940: "Blessing of Sacrifice",
     102342: "Ironbark",
-
     # Battle resurrections
     20484: "Rebirth",
     61999: "Raise Ally",
@@ -298,10 +300,22 @@ MAJOR_COOLDOWNS: Dict[int, str] = {
 # Common consumables
 FLASK_IDS: Set[int] = {
     # The War Within flasks
-    431972, 431973, 431974, 431975, 431976, 431977,
-
+    431972,
+    431973,
+    431974,
+    431975,
+    431976,
+    431977,
     # Dragonflight flasks (for older logs)
-    370652, 370653, 370654, 370655, 371172, 371204, 371339, 371354, 371386,
+    370652,
+    370653,
+    370654,
+    370655,
+    371172,
+    371204,
+    371339,
+    371354,
+    371386,
 }
 
 
@@ -311,7 +325,6 @@ FOOD_BUFF_IDS: Set[int] = {
     462855,  # Blessed Recovery (Versatility food)
     462856,  # Critical Strike food
     462857,  # Mastery food
-
     # Well Fed generic buffs
     104273,  # Well Fed (various foods give this)
 }
@@ -321,7 +334,6 @@ FOOD_BUFF_IDS: Set[int] = {
 AUGMENT_RUNE_IDS: Set[int] = {
     # The War Within
     452925,  # Crystallized Augment Rune
-
     # Dragonflight (for older logs)
     393438,  # Draconic Augment Rune
 }
