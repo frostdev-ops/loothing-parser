@@ -254,10 +254,10 @@ def test_database_storage():
         end_time=datetime.now(),
         duration=300.0,  # 5 minutes
         success=True,
-        encounter_type=EncounterType.RAID
+        encounter_type=EncounterType.RAID,
     )
 
-    encounter.add_character(character)
+    encounter.add_player("Player-1234-56789ABC", character)
 
     # Store encounter data using EventStorage
     try:
