@@ -317,17 +317,17 @@ class EventStorage:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    log_file_id,
-                    encounter_type,
-                    encounter.dungeon_name,
-                    f"+{encounter.keystone_level}",
-                    encounter.dungeon_id,
-                    encounter.dungeon_name,
-                    encounter.start_time.timestamp() if encounter.start_time else None,
-                    encounter.end_time.timestamp() if encounter.end_time else None,
-                    encounter.completed,
-                    encounter.actual_time_seconds,
-                    len(encounter.group_members),
+                    safe_param(log_file_id),
+                    safe_param(encounter_type),
+                    safe_param(encounter.dungeon_name),
+                    safe_param(f"+{encounter.keystone_level}"),
+                    safe_param(encounter.dungeon_id),
+                    safe_param(encounter.dungeon_name),
+                    safe_param(encounter.start_time.timestamp() if encounter.start_time else None),
+                    safe_param(encounter.end_time.timestamp() if encounter.end_time else None),
+                    safe_param(encounter.completed),
+                    safe_param(encounter.actual_time_seconds),
+                    safe_param(len(encounter.group_members)),
                 ),
             )
 
