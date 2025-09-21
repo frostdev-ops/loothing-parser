@@ -29,6 +29,10 @@ class ApiKey:
     description: str
     permissions: Set[str] = field(default_factory=set)
 
+    # Multi-tenancy
+    guild_id: Optional[int] = None  # Guild ID for multi-tenant access
+    guild_name: Optional[str] = None  # Guild name for display
+
     # Rate limiting
     events_per_minute: int = 10000
     max_connections: int = 5
@@ -94,7 +98,7 @@ class AuthManager:
             description="Default development API key",
             permissions=self.default_permissions.copy(),
             events_per_minute=20000,  # Higher limit for dev
-            max_connections=10
+            max_connections=10,
         )
 
         self._api_keys[key_id] = api_key
@@ -106,7 +110,7 @@ class AuthManager:
         description: str,
         permissions: Optional[Set[str]] = None,
         events_per_minute: int = 10000,
-        max_connections: int = 5
+        max_connections: int = 5,
     ) -> tuple[str, str]:
         """
         Generate a new API key.
@@ -135,7 +139,7 @@ class AuthManager:
             description=description,
             permissions=permissions,
             events_per_minute=events_per_minute,
-            max_connections=max_connections
+            max_connections=max_connections,
         )
 
         self._api_keys[key_id] = api_key
@@ -170,10 +174,7 @@ class AuthManager:
             AuthResponse with authentication result
         """
         if not api_key:
-            return AuthResponse(
-                authenticated=False,
-                message="API key required"
-            )
+            return AuthResponse(authenticated=False, message="API key required")
 
         key_hash = self._hash_key(api_key)
 
@@ -186,7 +187,7 @@ class AuthManager:
                 # Get rate limits
                 rate_limit_info = {
                     "events_per_minute": stored_key.events_per_minute,
-                    "max_connections": stored_key.max_connections
+                    "max_connections": stored_key.max_connections,
                 }
 
                 return AuthResponse(
@@ -194,19 +195,13 @@ class AuthManager:
                     client_id=stored_key.client_id,
                     permissions=list(stored_key.permissions),
                     rate_limit=rate_limit_info,
-                    message="Authentication successful"
+                    message="Authentication successful",
                 )
 
-        return AuthResponse(
-            authenticated=False,
-            message="Invalid API key"
-        )
+        return AuthResponse(authenticated=False, message="Invalid API key")
 
     def check_rate_limit(
-        self,
-        client_id: str,
-        event_count: int = 1,
-        is_connection: bool = False
+        self, client_id: str, event_count: int = 1, is_connection: bool = False
     ) -> tuple[bool, str]:
         """
         Check if client is within rate limits.
@@ -321,28 +316,38 @@ class AuthManager:
             "rate_limits": {
                 "events_per_minute": api_key.events_per_minute,
                 "max_connections": api_key.max_connections,
-                "current_usage": {
-                    "events_this_minute": rate_state.events_this_minute if rate_state else 0,
-                    "connections_active": active_connections,
-                } if rate_state else None
-            }
+                "current_usage": (
+                    {
+                        "events_this_minute": (
+                            rate_state.events_this_minute if rate_state else 0
+                        ),
+                        "connections_active": active_connections,
+                    }
+                    if rate_state
+                    else None
+                ),
+            },
         }
 
     def get_all_stats(self) -> Dict[str, Any]:
         """Get statistics for all clients."""
         total_keys = len(self._api_keys)
         active_keys = sum(1 for key in self._api_keys.values() if key.active)
-        total_connections = sum(len(sessions) for sessions in self._active_connections.values())
+        total_connections = sum(
+            len(sessions) for sessions in self._active_connections.values()
+        )
 
         return {
             "total_api_keys": total_keys,
             "active_api_keys": active_keys,
             "total_active_connections": total_connections,
-            "unique_clients": len(set(key.client_id for key in self._api_keys.values())),
+            "unique_clients": len(
+                set(key.client_id for key in self._api_keys.values())
+            ),
             "clients": {
                 client_id: self.get_client_stats(client_id)
                 for client_id in set(key.client_id for key in self._api_keys.values())
-            }
+            },
         }
 
     def cleanup_stale_states(self, max_age_hours: int = 24):
@@ -350,7 +355,8 @@ class AuthManager:
         cutoff_time = time.time() - (max_age_hours * 3600)
 
         stale_clients = [
-            client_id for client_id, state in self._rate_limits.items()
+            client_id
+            for client_id, state in self._rate_limits.items()
             if state.last_request < cutoff_time
         ]
 
@@ -369,7 +375,7 @@ class AuthManager:
 
     def _hash_key(self, api_key: str) -> str:
         """Hash an API key for secure storage."""
-        return hashlib.sha256(api_key.encode('utf-8')).hexdigest()
+        return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
 
 
 # Global auth manager instance
