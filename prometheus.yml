@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'wow-combat-parser'
+    static_configs:
+      - targets: ['streaming-server:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 10s
