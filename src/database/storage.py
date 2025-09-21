@@ -18,6 +18,7 @@ from .schema import DatabaseManager
 from .compression import EventCompressor, compression_stats
 from src.models.character_events import CharacterEventStream, TimestampedEvent
 from src.models.encounter_models import RaidEncounter, MythicPlusRun
+from src.models.unified_encounter import UnifiedEncounter, EncounterType
 
 logger = logging.getLogger(__name__)
 
