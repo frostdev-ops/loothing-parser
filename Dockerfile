@@ -91,4 +91,4 @@ ENV PORT=8000
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Default command to run the unified server (streaming + REST API v1)
-CMD ["python", "-m", "src.api.streaming_server"]
+CMD ["python", "/app/src/api/streaming_server.py"]
