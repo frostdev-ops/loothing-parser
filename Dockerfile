@@ -71,7 +71,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Note: We start as root and switch to appuser in entrypoint script
 # This allows us to set up volumes with correct permissions
 
-# Health check endpoint
+# Health check endpoint (unified server)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
