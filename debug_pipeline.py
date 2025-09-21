@@ -275,8 +275,14 @@ def test_database_storage():
     # Store encounter data using EventStorage
     try:
         storage = EventStorage(db)
+        # Create a temporary log file for testing
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as tmp_file:
+            tmp_file.write("test log content")
+            tmp_file_path = tmp_file.name
+
         # Create a temporary log file entry
-        log_file_id = storage._register_log_file("/tmp/test.txt", "test_hash", 1)
+        log_file_id = storage._register_log_file(tmp_file_path, "test_hash", 1)
         storage.store_unified_encounters([encounter], log_file_id)
         logger.info("✓ Database storage successful")
 
