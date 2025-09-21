@@ -242,6 +242,7 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS characters (
             character_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
             character_guid TEXT UNIQUE NOT NULL,
             character_name TEXT NOT NULL,
             server TEXT,
