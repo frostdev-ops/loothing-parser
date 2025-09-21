@@ -442,8 +442,10 @@ class EventFactory:
             event = cls._create_base_event(parsed_line)
 
         # Add suffix-specific data
+        # When ACL is enabled, prefer SWING_DAMAGE_LANDED over SWING_DAMAGE for accuracy
         if ("_DAMAGE" in event_type or event_type in ["RANGE_DAMAGE"]) and event_type not in [
             "DAMAGE_SPLIT",
+            "SWING_DAMAGE",  # Exclude SWING_DAMAGE in favor of SWING_DAMAGE_LANDED when ACL is enabled
         ]:
             event = cls._add_damage_info(event, parsed_line.suffix_params)
         elif "_HEAL" in event_type and event_type != "SPELL_HEAL_ABSORBED":
