@@ -234,6 +234,34 @@ class UnifiedEncounter:
     success: bool = False
     in_time: Optional[bool] = None  # For M+
 
+    def __post_init__(self):
+        """Validate and clean up fields after initialization."""
+        # Ensure instance_id is an integer or None
+        if self.instance_id is not None and not isinstance(self.instance_id, int):
+            logger.warning(
+                f"Converting instance_id from {type(self.instance_id)} to None for encounter: {self.encounter_name}"
+            )
+            self.instance_id = None
+
+        # Ensure affixes is a list of integers
+        if self.affixes and not isinstance(self.affixes, list):
+            logger.warning(
+                f"Converting affixes from {type(self.affixes)} to empty list for encounter: {self.encounter_name}"
+            )
+            self.affixes = []
+        elif self.affixes:
+            # Ensure all affix IDs are integers
+            cleaned_affixes = []
+            for affix in self.affixes:
+                if isinstance(affix, int):
+                    cleaned_affixes.append(affix)
+                else:
+                    try:
+                        cleaned_affixes.append(int(affix))
+                    except (ValueError, TypeError):
+                        logger.warning(f"Skipping invalid affix ID: {affix} for encounter: {self.encounter_name}")
+            self.affixes = cleaned_affixes
+
     def add_character(self, guid: str, name: str) -> EnhancedCharacter:
         """Add or get a character."""
         if guid not in self.characters:
