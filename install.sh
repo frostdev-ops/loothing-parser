@@ -325,14 +325,11 @@ EOF
 # Development overrides
 services:
   streaming-server:
-    volumes:
-      - ./src:/app/src:ro
-      - ./tests:/app/tests:ro
     environment:
       - RELOAD=true
       - DEBUG=true
       - LOG_LEVEL=debug
-    command: ["python", "/app/src/api/streaming_server.py"]
+    command: ["python", "-m", "src.api.streaming_server"]
 
   nginx:
     volumes:
@@ -354,8 +351,8 @@ http {
 
     client_max_body_size ${MAX_UPLOAD_SIZE:-500M};
 
-    upstream api {
-        server api:8000;
+    upstream streaming-server {
+        server streaming-server:8000;
     }
 
     server {
@@ -379,7 +376,7 @@ http {
         }
 
         location /api {
-            proxy_pass http://api;
+            proxy_pass http://streaming-server;
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -389,7 +386,7 @@ http {
         }
 
         location /ws {
-            proxy_pass http://api;
+            proxy_pass http://streaming-server;
             proxy_http_version 1.1;
             proxy_set_header Upgrade \$http_upgrade;
             proxy_set_header Connection "upgrade";
@@ -412,8 +409,8 @@ http {
 
     client_max_body_size ${MAX_UPLOAD_SIZE:-500M};
 
-    upstream api {
-        server api:8000;
+    upstream streaming-server {
+        server streaming-server:8000;
     }
 
     server {
@@ -426,7 +423,7 @@ http {
         }
 
         location /api {
-            proxy_pass http://api;
+            proxy_pass http://streaming-server;
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -436,7 +433,7 @@ http {
         }
 
         location /ws {
-            proxy_pass http://api;
+            proxy_pass http://streaming-server;
             proxy_http_version 1.1;
             proxy_set_header Upgrade \$http_upgrade;
             proxy_set_header Connection "upgrade";
