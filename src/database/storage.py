@@ -361,6 +361,16 @@ class EventStorage:
             boss_name = encounter.encounter_name
             difficulty = encounter.difficulty
 
+        # Ensure all parameters are properly typed for SQLite
+        def safe_param(value):
+            """Convert parameter to SQLite-safe type."""
+            if isinstance(value, list):
+                return None  # Convert lists to None for now
+            elif isinstance(value, (int, float, str, bool, type(None))):
+                return value
+            else:
+                return str(value) if value is not None else None
+
         cursor = self.db.execute(
             """
             INSERT INTO encounters (
@@ -371,17 +381,17 @@ class EventStorage:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                log_file_id,
-                encounter_type,
-                boss_name,
-                difficulty,
-                encounter.instance_id if isinstance(encounter.instance_id, (int, type(None))) else None,
-                encounter.instance_name,
+                safe_param(log_file_id),
+                safe_param(encounter_type),
+                safe_param(boss_name),
+                safe_param(difficulty),
+                safe_param(encounter.instance_id),
+                safe_param(encounter.instance_name),
                 encounter.start_time.timestamp() if encounter.start_time else None,
                 encounter.end_time.timestamp() if encounter.end_time else None,
-                encounter.success,
-                encounter.combat_duration,
-                len(encounter.characters),
+                safe_param(encounter.success),
+                safe_param(encounter.combat_duration),
+                safe_param(len(encounter.characters)),
                 datetime.now().isoformat(),
             ),
         )
