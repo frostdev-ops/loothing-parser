@@ -16,6 +16,7 @@ import time
 # Optional imports - handle missing dependencies gracefully
 try:
     import zstd
+
     HAS_ZSTD = True
 except ImportError:
     HAS_ZSTD = False
@@ -23,6 +24,7 @@ except ImportError:
 
 try:
     import msgpack
+
     HAS_MSGPACK = True
 except ImportError:
     HAS_MSGPACK = False
@@ -59,9 +61,7 @@ class EventCompressor:
         # Store compression level for direct API usage
         self.compression_level = self.COMPRESSION_LEVEL
 
-    def compress_events(
-        self, events: List[TimestampedEvent]
-    ) -> Tuple[bytes, Dict[str, Any]]:
+    def compress_events(self, events: List[TimestampedEvent]) -> Tuple[bytes, Dict[str, Any]]:
         """
         Compress a block of timestamped events.
 
@@ -90,16 +90,18 @@ class EventCompressor:
         # Serialize to bytes
         serialized = self._serialize_columnar(columnar_data)
 
-        # Compress with zstd
-        compressed = zstd.compress(serialized, self.compression_level)
+        # Compress with zstd if available, otherwise use raw data
+        if HAS_ZSTD:
+            compressed = zstd.compress(serialized, self.compression_level)
+        else:
+            logger.warning("zstd not available, storing uncompressed data")
+            compressed = serialized
 
         # Calculate metrics
         compression_time = time.time() - start_time
         uncompressed_size = len(serialized)
         compressed_size = len(compressed)
-        compression_ratio = (
-            compressed_size / uncompressed_size if uncompressed_size > 0 else 1.0
-        )
+        compression_ratio = compressed_size / uncompressed_size if uncompressed_size > 0 else 1.0
 
         metadata = {
             "event_count": len(events),
@@ -188,18 +190,10 @@ class EventCompressor:
             categories.append(self._intern_string(ts_event.category))
 
             # Source/dest (intern GUIDs for massive savings)
-            source_guids.append(
-                self._intern_string(event.source_guid) if event.source_guid else 0
-            )
-            source_names.append(
-                self._intern_string(event.source_name) if event.source_name else 0
-            )
-            dest_guids.append(
-                self._intern_string(event.dest_guid) if event.dest_guid else 0
-            )
-            dest_names.append(
-                self._intern_string(event.dest_name) if event.dest_name else 0
-            )
+            source_guids.append(self._intern_string(event.source_guid) if event.source_guid else 0)
+            source_names.append(self._intern_string(event.source_name) if event.source_name else 0)
+            dest_guids.append(self._intern_string(event.dest_guid) if event.dest_guid else 0)
+            dest_names.append(self._intern_string(event.dest_name) if event.dest_name else 0)
 
             # Type-specific fields
             if hasattr(event, "spell_id"):
@@ -208,9 +202,7 @@ class EventCompressor:
                 spell_ids.append(0)
 
             if hasattr(event, "spell_name"):
-                spell_names.append(
-                    self._intern_string(event.spell_name) if event.spell_name else 0
-                )
+                spell_names.append(self._intern_string(event.spell_name) if event.spell_name else 0)
             else:
                 spell_names.append(0)
 
@@ -221,9 +213,7 @@ class EventCompressor:
                 amounts.append(0)
 
             # Store minimal raw line info (can reconstruct from other fields if needed)
-            raw_lines.append(
-                self._intern_string(event.raw_line[:100])
-            )  # Truncate for space
+            raw_lines.append(self._intern_string(event.raw_line[:100]))  # Truncate for space
 
         return {
             "version": self.VERSION,
