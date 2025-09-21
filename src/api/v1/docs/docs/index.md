@@ -104,6 +104,7 @@ Get started with the API in minutes:
 | **Aggregations** | `/aggregations` | Custom metrics, percentiles, correlations |
 | **Logs**         | `/logs`         | Upload, processing, streaming             |
 | **Streaming**    | `/stream`       | Real-time WebSocket updates               |
+| **Guilds**       | `/guilds`       | Guild management, member analytics        |
 
 ## Interactive API Explorer
 
