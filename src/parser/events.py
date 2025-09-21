@@ -782,7 +782,6 @@ class EventFactory:
             damage_event.blocked = cls._safe_int(params[damage_offset + 4])
             damage_event.absorbed = cls._safe_int(params[damage_offset + 5])
 
-
         logger.debug(
             f"Returning DamageEvent type: {type(damage_event).__name__}, amount: {damage_event.amount}"
         )
@@ -819,18 +818,29 @@ class EventFactory:
             # spell_power, armor, resources, position, etc. (19 fields total)
             heal_offset = 19
 
+        # Debug logging for heal parsing
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Healing params count: {len(params)}, heal_offset: {heal_offset}")
+        if len(params) > heal_offset:
+            logger.debug(f"Heal params at offset {heal_offset}: {params[heal_offset:heal_offset+5]}")
+
         # Heal parameters: amount, overhealing, absorbed, critical
         # For Advanced Combat Logging, these come after the 19 unit info fields
         min_params_needed = heal_offset + 4
         if len(params) >= min_params_needed:
-            heal_event.amount = cls._safe_int(params[heal_offset])  # Total healing including overheal
+            heal_event.amount = cls._safe_int(
+                params[heal_offset]
+            )  # Total healing including overheal
             heal_event.overhealing = cls._safe_int(params[heal_offset + 1])  # Overhealing amount
             heal_event.absorbed = cls._safe_int(params[heal_offset + 2])  # Absorbed healing
             heal_event.critical = bool(params[heal_offset + 3])  # Critical heal flag
         elif len(params) >= heal_offset + 2:
             # Fallback for shorter parameter lists
             heal_event.amount = cls._safe_int(params[heal_offset])
-            heal_event.overhealing = cls._safe_int(params[heal_offset + 1]) if len(params) > heal_offset + 1 else 0
+            heal_event.overhealing = (
+                cls._safe_int(params[heal_offset + 1]) if len(params) > heal_offset + 1 else 0
+            )
 
         return heal_event
 
