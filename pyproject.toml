@@ -58,9 +58,9 @@ dev = [
 loothing-parser = "src.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/loothing-parser"
-Repository = "https://github.com/yourusername/loothing-parser"
-Issues = "https://github.com/yourusername/loothing-parser/issues"
+Homepage = "https://github.com/frostdev-ops/loothing-parser"
+Repository = "https://github.com/frostdev-ops/loothing-parser"
+Issues = "https://github.com/frostdev-ops/loothing-parser/issues"
 
 [tool.setuptools]
 package-dir = {"" = "."}

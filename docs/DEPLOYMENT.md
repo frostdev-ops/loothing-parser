@@ -22,7 +22,7 @@ Comprehensive deployment guide for the multi-tenant, guild-based combat log pars
 ### One-Line Installation
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/your-repo/wow-log-parser/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/frostdev-ops/loothing-parser/main/install.sh | bash
 ```
 
 ### Interactive Installation
@@ -449,8 +449,8 @@ SSL_KEY=/etc/letsencrypt/live/your-domain.com/privkey.pem
 
 ```bash
 # Clone repository
-git clone https://github.com/your-repo/wow-log-parser.git
-cd wow-log-parser
+git clone https://github.com/frostdev-ops/loothing-parser.git
+cd loothing-parser
 
 # Configure for production
 cp .env.production .env

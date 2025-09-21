@@ -676,6 +676,21 @@ main() {
     echo -e "${BOLD}Welcome to the WoW Combat Log Parser Installation Wizard${NC}"
     echo -e "This wizard will guide you through the installation process.\n"
 
+    # Check if we're in a git repository, if not, clone it
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        print_info "Cloning repository from GitHub..."
+        if git clone https://github.com/frostdev-ops/loothing-parser.git temp_install_dir; then
+            print_success "Repository cloned successfully"
+            cd temp_install_dir
+            print_info "Running installer from cloned repository..."
+            exec ./install.sh "$@"
+        else
+            print_error "Failed to clone repository"
+            echo "Please check your internet connection and try again"
+            exit 1
+        fi
+    fi
+
     # Check if already installed
     if [[ -f ".env" ]] && [[ -f "docker-compose.yml" ]]; then
         print_warning "Existing installation detected"

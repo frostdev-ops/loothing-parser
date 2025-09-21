@@ -36,7 +36,7 @@ A high-performance, multi-tenant combat log parser for World of Warcraft designe
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/frostdev-ops/loothing-parser.git
 cd loothing-parser
 
 # Install dependencies
