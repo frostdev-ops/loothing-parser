@@ -81,6 +81,13 @@ echo "  Database: $DB_PATH"
 echo "  Host: $HOST"
 echo "  Port: $PORT"
 echo "  Log Level: $LOG_LEVEL"
+echo ""
+echo "Available Endpoints:"
+echo "  WebSocket Streaming: ws://$HOST:$PORT/stream"
+echo "  REST API v1: http://$HOST:$PORT/api/v1/*"
+echo "  Health Check: http://$HOST:$PORT/health"
+echo "  API Documentation: http://$HOST:$PORT/docs"
+echo "  Metrics: http://$HOST:$PORT/metrics"
 
 # Wait for any dependent services (if needed)
 # This could be extended to wait for external databases, etc.
