@@ -74,4 +74,4 @@ research/
 .jupyter/
 
 # Monitoring config (will be mounted if needed)
-monitoring/
+# monitoring/
