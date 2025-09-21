@@ -115,12 +115,12 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
         )
 
     # Health check endpoints
-    @app.get("/api/v1/health", tags=["Health"])
+    @app.get("/health", tags=["Health"])
     async def health_check():
         """Health check endpoint."""
         return {"status": "healthy", "version": "1.0.0", "timestamp": time.time()}
 
-    @app.get("/api/v1/status", tags=["Health"])
+    @app.get("/status", tags=["Health"])
     async def api_status():
         """Detailed API status information."""
         return {
