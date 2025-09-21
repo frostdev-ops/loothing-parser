@@ -142,31 +142,57 @@ HEALER_SPECS: Dict[int, str] = {
 # Spec ID to Class name mapping
 SPEC_TO_CLASS: Dict[int, str] = {
     # Death Knight
-    250: "Death Knight", 251: "Death Knight", 252: "Death Knight",
+    250: "Death Knight",
+    251: "Death Knight",
+    252: "Death Knight",
     # Demon Hunter
-    577: "Demon Hunter", 581: "Demon Hunter",
+    577: "Demon Hunter",
+    581: "Demon Hunter",
     # Druid
-    102: "Druid", 103: "Druid", 104: "Druid", 105: "Druid",
+    102: "Druid",
+    103: "Druid",
+    104: "Druid",
+    105: "Druid",
     # Evoker
-    1467: "Evoker", 1468: "Evoker", 1473: "Evoker",
+    1467: "Evoker",
+    1468: "Evoker",
+    1473: "Evoker",
     # Hunter
-    253: "Hunter", 254: "Hunter", 255: "Hunter",
+    253: "Hunter",
+    254: "Hunter",
+    255: "Hunter",
     # Mage
-    62: "Mage", 63: "Mage", 64: "Mage",
+    62: "Mage",
+    63: "Mage",
+    64: "Mage",
     # Monk
-    268: "Monk", 269: "Monk", 270: "Monk",
+    268: "Monk",
+    269: "Monk",
+    270: "Monk",
     # Paladin
-    65: "Paladin", 66: "Paladin", 70: "Paladin",
+    65: "Paladin",
+    66: "Paladin",
+    70: "Paladin",
     # Priest
-    256: "Priest", 257: "Priest", 258: "Priest",
+    256: "Priest",
+    257: "Priest",
+    258: "Priest",
     # Rogue
-    259: "Rogue", 260: "Rogue", 261: "Rogue",
+    259: "Rogue",
+    260: "Rogue",
+    261: "Rogue",
     # Shaman
-    262: "Shaman", 263: "Shaman", 264: "Shaman",
+    262: "Shaman",
+    263: "Shaman",
+    264: "Shaman",
     # Warlock
-    265: "Warlock", 266: "Warlock", 267: "Warlock",
+    265: "Warlock",
+    266: "Warlock",
+    267: "Warlock",
     # Warrior
-    71: "Warrior", 72: "Warrior", 73: "Warrior",
+    71: "Warrior",
+    72: "Warrior",
+    73: "Warrior",
 }
 
 
@@ -363,6 +389,19 @@ def get_spec_name(spec_id: int) -> str:
         Specialization name
     """
     return ALL_SPECS.get(spec_id, f"Unknown Spec ({spec_id})")
+
+
+def get_class_name(spec_id: int) -> str:
+    """
+    Get the class name from spec ID.
+
+    Args:
+        spec_id: WoW specialization ID
+
+    Returns:
+        Class name
+    """
+    return SPEC_TO_CLASS.get(spec_id, f"Unknown Class ({spec_id})")
 
 
 def is_tank_spec(spec_id: int) -> bool:
