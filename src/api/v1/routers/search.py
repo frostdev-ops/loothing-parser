@@ -16,8 +16,8 @@ from ..models.common import FilterCriteria
 from ..models.characters import CharacterProfile
 from ..models.encounters import EncounterDetails
 from ..models.guilds import GuildProfile
-from ...database.schema import DatabaseManager
-from ...database.query import QueryAPI
+from src.database.schema import DatabaseManager
+from src.database.query import QueryAPI
 from ..dependencies import require_read_permission, get_authenticated_user
 
 router = APIRouter()
@@ -66,9 +66,7 @@ class SearchRequest(BaseModel):
 
     query: Optional[str] = Field(None, description="Free text search query")
     scope: SearchScope = Field(default=SearchScope.ALL, description="Search scope")
-    boolean_query: Optional[BooleanSearchQuery] = Field(
-        None, description="Boolean search query"
-    )
+    boolean_query: Optional[BooleanSearchQuery] = Field(None, description="Boolean search query")
     fuzzy_matching: bool = Field(default=False, description="Enable fuzzy matching")
     fuzzy_threshold: float = Field(
         default=0.8, ge=0.0, le=1.0, description="Fuzzy matching threshold"
@@ -77,9 +75,7 @@ class SearchRequest(BaseModel):
     sort_order: str = Field(default="desc", description="Sort order")
     limit: int = Field(default=50, ge=1, le=200, description="Result limit")
     offset: int = Field(default=0, ge=0, description="Result offset")
-    include_highlights: bool = Field(
-        default=True, description="Include search highlights"
-    )
+    include_highlights: bool = Field(default=True, description="Include search highlights")
 
     @validator("sort_order")
     def validate_sort_order(cls, v):
@@ -227,16 +223,12 @@ async def get_search_suggestions(
     try:
         query_api = QueryAPI(db)
 
-        suggestions = await query_api.get_search_suggestions(
-            query=query, scope=scope, limit=limit
-        )
+        suggestions = await query_api.get_search_suggestions(query=query, scope=scope, limit=limit)
 
         return suggestions
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Suggestion generation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Suggestion generation failed: {str(e)}")
 
 
 @router.get("/search/facets")
@@ -260,21 +252,15 @@ async def get_search_facets(
         return facets
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Facet generation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Facet generation failed: {str(e)}")
 
 
 @router.post("/search/fuzzy")
 async def fuzzy_search(
     query: str = Body(..., description="Search query"),
     scope: SearchScope = Body(default=SearchScope.ALL, description="Search scope"),
-    threshold: float = Body(
-        default=0.8, ge=0.0, le=1.0, description="Fuzzy matching threshold"
-    ),
-    max_edits: int = Body(
-        default=2, ge=1, le=3, description="Maximum edit distance"
-    ),
+    threshold: float = Body(default=0.8, ge=0.0, le=1.0, description="Fuzzy matching threshold"),
+    max_edits: int = Body(default=2, ge=1, le=3, description="Maximum edit distance"),
     limit: int = Body(default=50, ge=1, le=200, description="Result limit"),
     db: DatabaseManager = Depends(),
     auth=Depends(require_read_permission),
@@ -387,17 +373,13 @@ async def list_saved_searches(
         return saved_searches
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve saved searches: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve saved searches: {str(e)}")
 
 
 @router.post("/search/saved/{search_id}/execute", response_model=SearchResponse)
 async def execute_saved_search(
     search_id: int,
-    override_params: Optional[Dict[str, Any]] = Body(
-        None, description="Parameters to override"
-    ),
+    override_params: Optional[Dict[str, Any]] = Body(None, description="Parameters to override"),
     db: DatabaseManager = Depends(),
     auth=Depends(require_read_permission),
 ):
@@ -416,13 +398,8 @@ async def execute_saved_search(
             raise HTTPException(status_code=404, detail="Saved search not found")
 
         # Check permissions
-        if (
-            saved_search.created_by != auth.user_id
-            and not saved_search.is_public
-        ):
-            raise HTTPException(
-                status_code=403, detail="Access denied to private search"
-            )
+        if saved_search.created_by != auth.user_id and not saved_search.is_public:
+            raise HTTPException(status_code=403, detail="Access denied to private search")
 
         # Apply overrides
         search_request = saved_search.search_request
@@ -442,9 +419,7 @@ async def execute_saved_search(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to execute saved search: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to execute saved search: {str(e)}")
 
 
 @router.delete("/search/saved/{search_id}")
@@ -468,9 +443,7 @@ async def delete_saved_search(
             raise HTTPException(status_code=404, detail="Saved search not found")
 
         if saved_search.created_by != auth.user_id:
-            raise HTTPException(
-                status_code=403, detail="Can only delete your own searches"
-            )
+            raise HTTPException(status_code=403, detail="Can only delete your own searches")
 
         # Delete search
         await query_api.delete_saved_search(search_id)
@@ -480,9 +453,7 @@ async def delete_saved_search(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to delete saved search: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to delete saved search: {str(e)}")
 
 
 @router.get("/search/popular-terms")
@@ -518,6 +489,4 @@ async def get_popular_search_terms(
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get popular terms: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get popular terms: {str(e)}")
