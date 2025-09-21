@@ -4,6 +4,9 @@ set -e
 # Docker entrypoint script for WoW Combat Log Parser
 # Handles database initialization and unified server startup
 
+# Ensure Python can find our modules
+export PYTHONPATH=/app
+
 echo "Starting WoW Combat Log Parser (Unified Server: Streaming + REST API v1)..."
 
 # Ensure the script runs as root initially for permission setup
