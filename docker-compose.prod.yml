@@ -1,0 +1,167 @@
+version: '3.8'
+
+# ========================================
+# WoW Combat Log Parser - Production Stack
+# ========================================
+
+services:
+  # API Service
+  api:
+    image: wow-log-parser:latest
+    container_name: wow-log-parser-api
+    restart: always
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DB_PATH=/app/data/combat_logs.db
+      - API_KEY=${API_KEY}
+      - WORKERS=${WORKERS:-4}
+      - USER_ID=${USER_ID:-1000}
+      - GROUP_ID=${GROUP_ID:-1000}
+    volumes:
+      - ${DATA_DIR:-./data}:/app/data
+      - ${LOGS_DIR:-./logs}:/app/logs
+      - ${CONFIG_DIR:-./config}:/app/config
+    networks:
+      - parser-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: wow-log-parser-nginx
+    restart: always
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/usr/share/nginx/html:ro
+      - ${LOGS_DIR:-./logs}/nginx:/var/log/nginx
+      - ${SSL_CERT:-./ssl/cert.pem}:/etc/nginx/ssl/cert.pem:ro
+      - ${SSL_KEY:-./ssl/key.pem}:/etc/nginx/ssl/key.pem:ro
+    depends_on:
+      - api
+    networks:
+      - parser-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Database Backup Service
+  db-backup:
+    image: alpine:latest
+    container_name: wow-log-parser-backup
+    restart: always
+    volumes:
+      - ${DATA_DIR:-./data}:/data
+      - ${DATA_DIR:-./data}/backups:/backups
+    environment:
+      - BACKUP_INTERVAL=${BACKUP_INTERVAL:-86400}  # Daily backups by default
+    command: |
+      sh -c 'while true; do
+        echo "Creating database backup..."
+        cp /data/combat_logs.db /backups/combat_logs_$$(date +%Y%m%d_%H%M%S).db
+        find /backups -name "combat_logs_*.db" -mtime +7 -delete
+        echo "Backup complete. Next backup in $$BACKUP_INTERVAL seconds."
+        sleep $$BACKUP_INTERVAL
+      done'
+    networks:
+      - parser-network
+
+  # Grafana Monitoring (Optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: wow-log-parser-grafana
+    restart: always
+    profiles: ["monitoring"]
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=redis-datasource,cloudflare-app
+      - GF_SERVER_ROOT_URL=http://localhost:${GRAFANA_PORT:-3000}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - parser-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus Metrics (Optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: wow-log-parser-prometheus
+    restart: always
+    profiles: ["monitoring"]
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - parser-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache (Optional)
+  redis:
+    image: redis:alpine
+    container_name: wow-log-parser-redis
+    restart: always
+    profiles: ["cache"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - parser-network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  parser-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+volumes:
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  redis-data:
+    driver: local
