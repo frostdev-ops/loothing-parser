@@ -442,10 +442,9 @@ class EventFactory:
             event = cls._create_base_event(parsed_line)
 
         # Add suffix-specific data
-        # When ACL is enabled, prefer SWING_DAMAGE_LANDED over SWING_DAMAGE for accuracy
+        # Process all damage events to DamageEvent objects, handle deduplication at categorizer level
         if ("_DAMAGE" in event_type or event_type in ["RANGE_DAMAGE"]) and event_type not in [
             "DAMAGE_SPLIT",
-            "SWING_DAMAGE",  # Exclude SWING_DAMAGE in favor of SWING_DAMAGE_LANDED when ACL is enabled
         ]:
             event = cls._add_damage_info(event, parsed_line.suffix_params)
         elif "_HEAL" in event_type and event_type != "SPELL_HEAL_ABSORBED":
@@ -820,10 +819,13 @@ class EventFactory:
 
         # Debug logging for heal parsing
         import logging
+
         logger = logging.getLogger(__name__)
         logger.debug(f"Healing params count: {len(params)}, heal_offset: {heal_offset}")
         if len(params) > heal_offset:
-            logger.debug(f"Heal params at offset {heal_offset}: {params[heal_offset:heal_offset+5]}")
+            logger.debug(
+                f"Heal params at offset {heal_offset}: {params[heal_offset:heal_offset+5]}"
+            )
 
         # Heal parameters: amount, overhealing, absorbed, critical
         # For Advanced Combat Logging, these come after the 19 unit info fields
