@@ -419,7 +419,7 @@ class QueryAPI:
         return encounters
 
     def get_character_metrics(
-        self, encounter_id: int, character_name: Optional[str] = None
+        self, encounter_id: int, character_name: Optional[str] = None, guild_id: Optional[int] = None
     ) -> List[CharacterMetrics]:
         """
         Get character performance metrics for an encounter.
@@ -427,11 +427,12 @@ class QueryAPI:
         Args:
             encounter_id: Database encounter ID
             character_name: Optional filter by character name
+            guild_id: Guild ID for multi-tenant filtering (optional for backward compatibility)
 
         Returns:
             List of CharacterMetrics
         """
-        cache_key = f"metrics:{encounter_id}:{character_name}"
+        cache_key = f"metrics:{encounter_id}:{character_name}:guild:{guild_id}"
         cached = self.cache.get(cache_key)
         if cached:
             self.stats["cache_hits"] += 1
@@ -440,7 +441,7 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        # Build query with optional character filter
+        # Build query with optional character filter and guild filtering
         query = """
             SELECT
                 c.character_name, c.character_guid, c.class_name, c.spec_name,
@@ -451,6 +452,11 @@ class QueryAPI:
             WHERE m.encounter_id = ?
         """
         params = [encounter_id]
+
+        # Add guild filtering for both tables
+        if guild_id is not None:
+            query += " AND m.guild_id = ? AND c.guild_id = ?"
+            params.extend([guild_id, guild_id])
 
         if character_name:
             query += " AND c.character_name LIKE ?"
