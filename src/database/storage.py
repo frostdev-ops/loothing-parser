@@ -216,7 +216,9 @@ class EventStorage:
                 "events_stored": total_events,
                 "storage_time": storage_time,
                 "file_hash": file_hash,
-                "characters_stored": len(set(char.guid for enc in encounters for char in enc.characters.values())),
+                "characters_stored": len(
+                    set(char.guid for enc in encounters for char in enc.characters.values())
+                ),
             }
 
         except Exception as e:
@@ -333,6 +335,194 @@ class EventStorage:
             total_events += events_stored
 
         return total_events
+
+    def _store_unified_encounter(self, encounter: UnifiedEncounter, log_file_id: int) -> int:
+        """
+        Store unified encounter metadata and return encounter_id.
+
+        Args:
+            encounter: UnifiedEncounter object to store
+            log_file_id: ID of source log file
+
+        Returns:
+            encounter_id from database
+        """
+        encounter_type = encounter.encounter_type.value
+
+        # Map encounter type for database
+        if encounter_type == "mythic_plus":
+            boss_name = encounter.instance_name or encounter.encounter_name
+            difficulty = f"+{encounter.keystone_level}" if encounter.keystone_level else None
+        else:
+            boss_name = encounter.encounter_name
+            difficulty = encounter.difficulty
+
+        cursor = self.db.execute(
+            """
+            INSERT INTO encounters (
+                log_file_id, encounter_type, boss_name, difficulty,
+                instance_id, instance_name, start_time, end_time,
+                success, combat_length, raid_size,
+                created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                log_file_id,
+                encounter_type,
+                boss_name,
+                difficulty,
+                encounter.instance_id,
+                encounter.instance_name,
+                encounter.start_time.timestamp() if encounter.start_time else None,
+                encounter.end_time.timestamp() if encounter.end_time else None,
+                encounter.success,
+                encounter.combat_duration,
+                len(encounter.characters),
+                datetime.now().isoformat(),
+            ),
+        )
+
+        encounter_id = cursor.lastrowid
+        logger.debug(f"Stored encounter {encounter_id}: {boss_name}")
+
+        # Store M+ specific data if needed
+        if encounter_type == "mythic_plus" and encounter.keystone_level:
+            self._store_mythic_plus_metadata_unified(encounter_id, encounter)
+
+        return encounter_id
+
+    def _store_unified_character_streams(self, encounter_id: int, encounter: UnifiedEncounter) -> int:
+        """
+        Store character data from unified encounter.
+
+        Args:
+            encounter_id: Database encounter ID
+            encounter: UnifiedEncounter with character data
+
+        Returns:
+            Total number of events stored
+        """
+        total_events = 0
+
+        for char_guid, character in encounter.characters.items():
+            # Ensure character exists in database
+            character_id = self._ensure_character_exists_unified(character)
+
+            # Store character metrics from unified encounter
+            self._store_character_metrics_unified(encounter_id, character_id, character, encounter)
+
+            # For now, we'll create empty event streams since UnifiedEncounter
+            # might not have the detailed event streams ready yet
+            # TODO: Implement event stream extraction from UnifiedEncounter.events
+
+        return total_events
+
+    def _ensure_character_exists_unified(self, character) -> int:
+        """Ensure character exists in database for unified encounter."""
+        # Check cache first
+        if character.guid in self.character_cache:
+            return self.character_cache[character.guid]
+
+        # Try to find existing character
+        cursor = self.db.execute(
+            "SELECT character_id FROM characters WHERE character_guid = ?",
+            (character.guid,),
+        )
+        result = cursor.fetchone()
+
+        if result:
+            character_id = result[0]
+            self.character_cache[character.guid] = character_id
+            return character_id
+
+        # Create new character
+        cursor = self.db.execute(
+            """
+            INSERT INTO characters (
+                character_guid, character_name, server, region,
+                class_name, spec_name, first_seen, last_seen
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                character.guid,
+                character.name,
+                getattr(character, 'server', None),
+                getattr(character, 'region', None),
+                getattr(character, 'class_name', None),
+                getattr(character, 'spec_name', None),
+                datetime.now().isoformat(),
+                datetime.now().isoformat(),
+            ),
+        )
+
+        character_id = cursor.lastrowid
+        self.character_cache[character.guid] = character_id
+        logger.debug(f"Created character {character_id}: {character.name}")
+        return character_id
+
+    def _store_character_metrics_unified(self, encounter_id: int, character_id: int, character, encounter: UnifiedEncounter):
+        """Store character metrics from unified encounter."""
+        # Extract metrics from character and encounter metrics
+        metrics = encounter.metrics if hasattr(encounter, 'metrics') else None
+
+        self.db.execute(
+            """
+            INSERT OR REPLACE INTO character_metrics (
+                encounter_id, character_id, damage_done, healing_done,
+                damage_taken, healing_received, overhealing, death_count,
+                activity_percentage, time_alive, dps, hps, dtps,
+                combat_time, combat_dps, combat_hps, combat_dtps,
+                combat_activity_percentage, total_events, cast_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                encounter_id,
+                character_id,
+                getattr(character, 'total_damage', 0),
+                getattr(character, 'total_healing', 0),
+                getattr(character, 'damage_taken', 0),
+                getattr(character, 'healing_received', 0),
+                getattr(character, 'overhealing', 0),
+                getattr(character, 'death_count', 0),
+                getattr(character, 'activity_percentage', 0.0),
+                getattr(character, 'time_alive', encounter.duration),
+                getattr(character, 'dps', 0.0),
+                getattr(character, 'hps', 0.0),
+                getattr(character, 'dtps', 0.0),
+                encounter.combat_duration,
+                getattr(character, 'combat_dps', 0.0),
+                getattr(character, 'combat_hps', 0.0),
+                getattr(character, 'combat_dtps', 0.0),
+                getattr(character, 'combat_activity_percentage', 0.0),
+                len(getattr(character, 'events', [])),
+                getattr(character, 'cast_count', 0),
+            ),
+        )
+
+    def _store_mythic_plus_metadata_unified(self, encounter_id: int, encounter: UnifiedEncounter):
+        """Store M+ specific metadata for unified encounter."""
+        self.db.execute(
+            """
+            INSERT INTO mythic_plus_runs (
+                encounter_id, dungeon_id, keystone_level, affixes,
+                time_limit_seconds, actual_time_seconds, completed,
+                in_time, time_remaining, num_deaths, death_penalties
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                encounter_id,
+                encounter.instance_id or 0,
+                encounter.keystone_level or 0,
+                json.dumps(encounter.affixes) if encounter.affixes else "[]",
+                0,  # time_limit_seconds - not available in unified model yet
+                encounter.duration,
+                encounter.success,
+                encounter.in_time if hasattr(encounter, 'in_time') else False,
+                0,  # time_remaining - calculate from duration if needed
+                0,  # num_deaths - sum from character metrics
+                0,  # death_penalties - calculate from deaths
+            ),
+        )
 
     def _store_event_blocks(
         self, encounter_id: int, character_id: int, events: List[TimestampedEvent]
