@@ -551,15 +551,35 @@ class EventStorage:
                 safe_param(getattr(character, "death_count", 0)),
                 safe_param(getattr(character, "activity_percentage", 0.0)),
                 safe_param(getattr(character, "time_alive", encounter.duration)),
-                safe_param(character.get_dps(encounter.duration) if hasattr(character, 'get_dps') else 0.0),
-                safe_param(character.get_hps(encounter.duration) if hasattr(character, 'get_hps') else 0.0),
-                safe_param(character.get_dtps(encounter.duration) if hasattr(character, 'get_dtps') else 0.0),
+                safe_param(
+                    character.get_dps(encounter.duration) if hasattr(character, "get_dps") else 0.0
+                ),
+                safe_param(
+                    character.get_hps(encounter.duration) if hasattr(character, "get_hps") else 0.0
+                ),
+                safe_param(
+                    character.get_dtps(encounter.duration)
+                    if hasattr(character, "get_dtps")
+                    else 0.0
+                ),
                 safe_param(encounter.combat_duration),
-                safe_param(character.get_combat_dps(encounter.combat_duration) if hasattr(character, 'get_combat_dps') else 0.0),
-                safe_param(character.get_combat_hps(encounter.combat_duration) if hasattr(character, 'get_combat_hps') else 0.0),
-                safe_param(character.get_combat_dtps(encounter.combat_duration) if hasattr(character, 'get_combat_dtps') else 0.0),
+                safe_param(
+                    character.get_combat_dps(encounter.combat_duration)
+                    if hasattr(character, "get_combat_dps")
+                    else 0.0
+                ),
+                safe_param(
+                    character.get_combat_hps(encounter.combat_duration)
+                    if hasattr(character, "get_combat_hps")
+                    else 0.0
+                ),
+                safe_param(
+                    character.get_combat_dtps(encounter.combat_duration)
+                    if hasattr(character, "get_combat_dtps")
+                    else 0.0
+                ),
                 safe_param(getattr(character, "combat_activity_percentage", 0.0)),
-                safe_param(len(getattr(character, "events", []))),
+                safe_param(len(getattr(character, "all_events", []))),
                 safe_param(getattr(character, "cast_count", 0)),
             ),
         )
