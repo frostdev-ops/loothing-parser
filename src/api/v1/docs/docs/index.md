@@ -54,10 +54,10 @@ Get started with the API in minutes:
     ```python
     import requests
 
-    # Set your API key
+    # Set your API key (must be associated with a guild)
     headers = {"Authorization": "Bearer YOUR_API_KEY"}
 
-    # Get character performance
+    # Get character performance for your guild
     response = requests.get(
         "https://api.example.com/api/v1/characters/Thrall/performance",
         headers=headers,
