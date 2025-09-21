@@ -17,7 +17,7 @@ from datetime import datetime
 from dataclasses import dataclass, asdict
 from fastapi import UploadFile, HTTPException
 
-from src.database.schema import DatabaseManager
+from src.database.schema import DatabaseManager, create_tables
 from src.database.storage import EventStorage
 from src.processing.unified_parallel_processor import UnifiedParallelProcessor
 from src.models.unified_encounter import UnifiedEncounter
