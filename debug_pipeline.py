@@ -302,13 +302,13 @@ def test_database_storage():
         if row:
             logger.info(f"Stored character data: {dict(row)}")
 
-            # Check that values are not zero
+            # Check that values are not zero (using database column names)
             assert (
-                row["total_damage_done"] > 0
-            ), f"total_damage_done is {row['total_damage_done']}, expected > 0"
+                row["damage_done"] > 0
+            ), f"damage_done is {row['damage_done']}, expected > 0"
             assert (
-                row["total_healing_done"] > 0
-            ), f"total_healing_done is {row['total_healing_done']}, expected > 0"
+                row["healing_done"] > 0
+            ), f"healing_done is {row['healing_done']}, expected > 0"
             assert row["dps"] > 0, f"dps is {row['dps']}, expected > 0"
             assert row["hps"] > 0, f"hps is {row['hps']}, expected > 0"
 
