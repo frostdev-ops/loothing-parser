@@ -137,8 +137,16 @@ class EventCompressor:
 
         start_time = time.time()
 
-        # Decompress with zstd
-        serialized = zstd.decompress(compressed_data)
+        # Decompress with zstd if available, otherwise assume raw data
+        if HAS_ZSTD:
+            try:
+                serialized = zstd.decompress(compressed_data)
+            except Exception:
+                # Fallback: assume data is already uncompressed
+                logger.warning("Failed to decompress with zstd, assuming raw data")
+                serialized = compressed_data
+        else:
+            serialized = compressed_data
 
         # Deserialize from bytes
         columnar_data = self._deserialize_columnar(serialized)
