@@ -22,9 +22,9 @@ class EventCategorizer:
     """
 
     # Event types that represent damage
+    # When ACL is enabled, prefer SWING_DAMAGE_LANDED over SWING_DAMAGE for accuracy
     DAMAGE_EVENTS = {
-        "SWING_DAMAGE",
-        "SWING_DAMAGE_LANDED",
+        "SWING_DAMAGE_LANDED",  # Preferred over SWING_DAMAGE when ACL is enabled
         "SPELL_DAMAGE",
         "SPELL_PERIODIC_DAMAGE",
         "RANGE_DAMAGE",
