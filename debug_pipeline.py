@@ -81,6 +81,7 @@ def create_sample_damage_event():
             False,  # glancing
             False,  # crushing
         ],
+        advanced_params={},  # Empty for this test
     )
 
     return EventFactory.create_event(parsed_line)
@@ -130,6 +131,7 @@ def create_sample_heal_event():
             0,  # absorbed
             True,  # critical
         ],
+        advanced_params={},  # Empty for this test
     )
 
     return EventFactory.create_event(parsed_line)
