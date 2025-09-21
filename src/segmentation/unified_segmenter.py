@@ -3,7 +3,7 @@ Unified segmenter using the new enhanced data models.
 """
 
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Tuple, Set
 import logging
 
 from src.parser.events import (
