@@ -97,6 +97,8 @@ class AuthManager:
             client_id="development",
             description="Default development API key",
             permissions=self.default_permissions.copy(),
+            guild_id=1,  # Default guild for existing data
+            guild_name="Default Guild",
             events_per_minute=20000,  # Higher limit for dev
             max_connections=10,
         )
@@ -318,9 +320,7 @@ class AuthManager:
                 "max_connections": api_key.max_connections,
                 "current_usage": (
                     {
-                        "events_this_minute": (
-                            rate_state.events_this_minute if rate_state else 0
-                        ),
+                        "events_this_minute": (rate_state.events_this_minute if rate_state else 0),
                         "connections_active": active_connections,
                     }
                     if rate_state
@@ -333,17 +333,13 @@ class AuthManager:
         """Get statistics for all clients."""
         total_keys = len(self._api_keys)
         active_keys = sum(1 for key in self._api_keys.values() if key.active)
-        total_connections = sum(
-            len(sessions) for sessions in self._active_connections.values()
-        )
+        total_connections = sum(len(sessions) for sessions in self._active_connections.values())
 
         return {
             "total_api_keys": total_keys,
             "active_api_keys": active_keys,
             "total_active_connections": total_connections,
-            "unique_clients": len(
-                set(key.client_id for key in self._api_keys.values())
-            ),
+            "unique_clients": len(set(key.client_id for key in self._api_keys.values())),
             "clients": {
                 client_id: self.get_client_stats(client_id)
                 for client_id in set(key.client_id for key in self._api_keys.values())
