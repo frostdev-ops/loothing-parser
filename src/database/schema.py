@@ -453,18 +453,38 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute("CREATE INDEX IF NOT EXISTS idx_block_encounter ON event_blocks(encounter_id)")
 
     # Metrics indices (multi-tenant aware - critical for leaderboards and rankings)
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_guild_performance ON character_metrics(guild_id, dps DESC) WHERE dps > 0")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_guild_healing ON character_metrics(guild_id, hps DESC) WHERE hps > 0")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_dps ON character_metrics(guild_id, combat_dps DESC) WHERE combat_dps > 0")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_hps ON character_metrics(guild_id, combat_hps DESC) WHERE combat_hps > 0")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_guild_character ON character_metrics(guild_id, character_id, created_at DESC)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_guild_encounter ON character_metrics(guild_id, encounter_id)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_performance ON character_metrics(guild_id, dps DESC) WHERE dps > 0"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_healing ON character_metrics(guild_id, hps DESC) WHERE hps > 0"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_dps ON character_metrics(guild_id, combat_dps DESC) WHERE combat_dps > 0"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_hps ON character_metrics(guild_id, combat_hps DESC) WHERE combat_hps > 0"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_character ON character_metrics(guild_id, character_id, created_at DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_encounter ON character_metrics(guild_id, encounter_id)"
+    )
 
     # Legacy metrics indices (for backward compatibility)
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_performance ON character_metrics(dps DESC, hps DESC)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_combat_performance ON character_metrics(combat_dps DESC, combat_hps DESC)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_encounter ON character_metrics(encounter_id)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_metrics_character ON character_metrics(character_id)")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_performance ON character_metrics(dps DESC, hps DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_combat_performance ON character_metrics(combat_dps DESC, combat_hps DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_encounter ON character_metrics(encounter_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_metrics_character ON character_metrics(character_id)"
+    )
 
     # Spell summary indices
     db.execute(
@@ -490,8 +510,8 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_combat_periods_time ON combat_periods(start_time, end_time)"
     )
 
-    # Set schema version
-    db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (1)")
+    # Set schema version (v2 adds multi-tenant guild support)
+    db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (2)")
 
     db.commit()
     logger.info("Database schema created successfully")
