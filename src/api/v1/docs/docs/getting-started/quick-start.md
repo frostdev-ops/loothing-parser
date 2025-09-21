@@ -6,9 +6,10 @@ Get up and running with the WoW Combat Log Analysis API in just a few minutes. T
 
 Before you begin, ensure you have:
 
-- A valid API key (contact support to obtain one)
+- A valid API key associated with your guild (contact support to obtain one)
 - Basic understanding of REST APIs
 - A tool for making HTTP requests (cURL, Postman, or programming language of choice)
+- Your guild is registered in the system
 
 ## Step 1: Get Your API Key
 
@@ -19,7 +20,7 @@ Contact our support team to obtain your API key. You'll receive:
 - **Rate Limits**: Your specific usage limits
 
 !!! tip "API Key Security"
-    Keep your API key secure and never expose it in client-side code or public repositories.
+Keep your API key secure and never expose it in client-side code or public repositories.
 
 ## Step 2: Test Your Connection
 
@@ -55,15 +56,16 @@ First, let's verify your API key works by checking the health endpoint:
     ```
 
 **Expected Response:**
+
 ```json
 {
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "version": "1.0.0",
+  "database": {
     "status": "healthy",
-    "timestamp": "2024-01-15T10:30:00Z",
-    "version": "1.0.0",
-    "database": {
-        "status": "healthy",
-        "latency_ms": 12.5
-    }
+    "latency_ms": 12.5
+  }
 }
 ```
 
@@ -426,16 +428,19 @@ Now that you're familiar with the basics:
 ## Common Issues
 
 ### Authentication Problems
+
 - Double-check your API key is correct
 - Ensure you're using the `Authorization: Bearer` header format
 - Verify your key hasn't expired
 
 ### Rate Limiting
+
 - Monitor the `X-RateLimit-*` headers in responses
 - Implement exponential backoff for retries
 - Consider upgrading your plan for higher limits
 
 ### Data Not Found
+
 - Characters must have recent activity to appear in results
 - Check server names are spelled correctly
 - Verify the time range includes the data you're looking for
