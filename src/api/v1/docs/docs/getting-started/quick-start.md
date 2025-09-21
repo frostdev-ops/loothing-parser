@@ -72,11 +72,11 @@ First, let's verify your API key works by checking the health endpoint:
 
 ## Step 3: Explore Characters
 
-Let's start by exploring character data:
+Let's start by exploring character data. All character data is automatically filtered to your guild context.
 
 ### List Characters
 
-Get a list of characters in the system:
+Get a list of characters in your guild:
 
 === "cURL"
 
