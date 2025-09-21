@@ -12,15 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from .routers import (
-    characters,
-    encounters,
-    analytics,
-    logs,
-    guilds,
-    export,
-    webhooks
-)
+from .routers import characters, encounters, analytics, logs, guilds, export, webhooks
 from .middleware.performance import PerformanceMiddleware
 from .middleware.rate_limiting import RateLimitMiddleware
 from .dependencies import DatabaseDependency
@@ -103,7 +95,7 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
                     "path": str(request.url.path),
                     "method": request.method,
                 }
-            }
+            },
         )
 
     @app.exception_handler(Exception)
@@ -119,18 +111,14 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
                     "path": str(request.url.path),
                     "method": request.method,
                 }
-            }
+            },
         )
 
     # Health check endpoints
     @app.get("/api/v1/health", tags=["Health"])
     async def health_check():
         """Health check endpoint."""
-        return {
-            "status": "healthy",
-            "version": "1.0.0",
-            "timestamp": time.time()
-        }
+        return {"status": "healthy", "version": "1.0.0", "timestamp": time.time()}
 
     @app.get("/api/v1/status", tags=["Health"])
     async def api_status():
@@ -145,8 +133,8 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
                 "real_time_processing": True,
                 "advanced_analytics": True,
                 "export_capabilities": True,
-                "webhook_support": True
-            }
+                "webhook_support": True,
+            },
         }
 
     # Include routers with dependency injection
@@ -154,51 +142,44 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
 
     app.include_router(
         characters.router,
-        prefix="/api/v1",
         tags=["Characters"],
-        dependencies=[db_dependency.dependency]
+        dependencies=[db_dependency.dependency],
     )
 
     app.include_router(
         encounters.router,
-        prefix="/api/v1",
         tags=["Encounters"],
-        dependencies=[db_dependency.dependency]
+        dependencies=[db_dependency.dependency],
     )
 
     app.include_router(
         analytics.router,
-        prefix="/api/v1",
         tags=["Analytics"],
-        dependencies=[db_dependency.dependency]
+        dependencies=[db_dependency.dependency],
     )
 
     app.include_router(
         logs.router,
-        prefix="/api/v1",
         tags=["Log Processing"],
-        dependencies=[db_dependency.dependency]
+        dependencies=[db_dependency.dependency],
     )
 
     app.include_router(
         guilds.router,
         prefix="/api/v1",
         tags=["Guild Management"],
-        dependencies=[db_dependency.dependency]
+        dependencies=[db_dependency.dependency],
     )
 
     app.include_router(
-        export.router,
-        prefix="/api/v1",
-        tags=["Export"],
-        dependencies=[db_dependency.dependency]
+        export.router, prefix="/api/v1", tags=["Export"], dependencies=[db_dependency.dependency]
     )
 
     app.include_router(
         webhooks.router,
         prefix="/api/v1",
         tags=["Webhooks"],
-        dependencies=[db_dependency.dependency]
+        dependencies=[db_dependency.dependency],
     )
 
     return app
