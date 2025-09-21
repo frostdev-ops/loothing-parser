@@ -140,6 +140,12 @@ def create_v1_app(db: DatabaseManager) -> FastAPI:
     # Include routers with dependency injection
     db_dependency = DatabaseDependency(db)
 
+    # Override the DatabaseManager dependency to use our instance
+    def get_database_override():
+        return db
+
+    app.dependency_overrides[DatabaseManager] = get_database_override
+
     app.include_router(
         characters.router,
         tags=["Characters"],
