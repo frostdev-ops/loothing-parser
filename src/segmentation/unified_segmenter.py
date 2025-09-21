@@ -51,6 +51,9 @@ class UnifiedSegmenter:
         # Pet ownership mapping
         self.pet_owners: Dict[str, tuple] = {}  # pet_guid -> (owner_guid, owner_name)
 
+        # Track seen swing attacks to prevent double counting when ACL is enabled
+        self.seen_swings: Set[str] = set()  # Set of swing attack signatures
+
         # Statistics
         self.total_events = 0
         self.parse_errors = 0
@@ -237,7 +240,9 @@ class UnifiedSegmenter:
             if event.dest_guid.startswith(("Pet-", "Creature-", "Vehicle-")):
                 owner_name = getattr(event, "source_name", "Unknown")
                 self.pet_owners[event.dest_guid] = (event.source_guid, owner_name)
-                logger.debug(f"Mapped {event.dest_guid} to owner {event.source_guid} ({owner_name})")
+                logger.debug(
+                    f"Mapped {event.dest_guid} to owner {event.source_guid} ({owner_name})"
+                )
 
     def _handle_combatant_info(self, event: CombatantInfo):
         """Handle combatant info events for talent/equipment data."""
