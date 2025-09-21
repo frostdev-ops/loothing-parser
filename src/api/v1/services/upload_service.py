@@ -71,6 +71,10 @@ class UploadService:
             progress_callback: Callback for progress updates
         """
         self.db = db
+
+        # Ensure database schema is created
+        create_tables(db)
+
         self.storage = EventStorage(db)
         self.processor = UnifiedParallelProcessor()
         self.max_file_size = max_file_size
