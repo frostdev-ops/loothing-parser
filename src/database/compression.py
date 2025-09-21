@@ -316,11 +316,13 @@ class EventCompressor:
         Returns:
             Serialized bytes
         """
-        # Use MessagePack for efficient binary serialization
-        # (Could optimize further with custom binary format)
-        import msgpack
-
-        return msgpack.packb(data, use_bin_type=True)
+        # Use MessagePack for efficient binary serialization if available
+        # Otherwise fall back to JSON
+        if HAS_MSGPACK:
+            return msgpack.packb(data, use_bin_type=True)
+        else:
+            logger.warning("msgpack not available, using JSON fallback")
+            return json.dumps(data).encode('utf-8')
 
     def _deserialize_columnar(self, data: bytes) -> Dict[str, Any]:
         """
