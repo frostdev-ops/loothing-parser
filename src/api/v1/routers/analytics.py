@@ -52,15 +52,15 @@ async def get_performance_trends(
         # Query daily averages for the metric
         query = """
             SELECT
-                DATE(cm.timestamp) as date,
-                AVG(CAST(json_extract(cm.metrics_data, '$.' || ?) AS FLOAT)) as value,
+                DATE(e.start_time) as date,
+                AVG(cm.{}) as value,
                 COUNT(DISTINCT cm.character_id) as sample_size
             FROM character_metrics cm
-            JOIN encounters e ON cm.encounter_id = e.id
-            WHERE DATE(cm.timestamp) BETWEEN ? AND ?
-            GROUP BY DATE(cm.timestamp)
+            JOIN encounters e ON cm.encounter_id = e.encounter_id
+            WHERE DATE(e.start_time) BETWEEN ? AND ?
+            GROUP BY DATE(e.start_time)
             ORDER BY date ASC
-        """
+        """.format(db_column)
 
         cursor = db.execute(
             query, (db_column, start_date.date().isoformat(), end_date.date().isoformat())
@@ -148,7 +148,9 @@ async def get_progression_tracking(
             WHERE e.start_time BETWEEN ? AND ?
             {}
             ORDER BY e.start_time DESC
-        """.format("AND e.guild_name = ?" if guild_name else "")
+        """.format(
+            "AND e.guild_name = ?" if guild_name else ""
+        )
 
         params = [start_date.isoformat(), end_date.isoformat()]
         if guild_name:
@@ -170,7 +172,7 @@ async def get_progression_tracking(
                     "boss_name": row["boss_name"],
                     "difficulty": row["difficulty"],
                     "first_kill": row["start_time"],
-                    "attempts": 0  # Will be calculated later
+                    "attempts": 0,  # Will be calculated later
                 }
 
                 # Update current progress
@@ -195,7 +197,7 @@ async def get_progression_tracking(
             encounters=encounters_list[:20],  # Limit to recent 20
             milestones=[],  # Could be populated with specific achievements
             current_progress=current_progress,
-            progression_rate=progression_rate
+            progression_rate=progression_rate,
         )
 
     except Exception as e:
@@ -233,7 +235,7 @@ async def get_class_balance(
             ORDER BY avg_damage DESC
         """.format(
             f"AND e.difficulty = ?" if difficulty else "",
-            f"AND e.type = ?" if encounter_type else ""
+            f"AND e.type = ?" if encounter_type else "",
         )
 
         params = [start_date.isoformat(), end_date.isoformat()]
@@ -265,11 +267,11 @@ async def get_class_balance(
                     "dps": PerformanceMetric(
                         value=avg_damage,
                         percentile=0.0,  # Would need more complex calculation
-                        rank=0  # Would need ranking logic
+                        rank=0,  # Would need ranking logic
                     )
                 },
                 relative_performance=relative_perf,
-                sample_size=row["sample_size"]
+                sample_size=row["sample_size"],
             )
             class_data.append(entry)
 
@@ -300,7 +302,7 @@ async def get_class_balance(
             encounter_filters={"difficulty": difficulty, "type": encounter_type},
             class_data=class_data,
             balance_score=balance_score,
-            outliers=outliers
+            outliers=outliers,
         )
 
     except Exception as e:
@@ -340,7 +342,7 @@ async def get_spell_usage_stats(
             LIMIT 50
         """.format(
             f"AND c.class_name = ?" if class_name else "",
-            f"AND c.name = ?" if character_name else ""
+            f"AND c.name = ?" if character_name else "",
         )
 
         params = [start_date.isoformat(), end_date.isoformat()]
@@ -369,7 +371,7 @@ async def get_spell_usage_stats(
                 total_damage=row["total_damage"] or 0,
                 total_healing=row["total_healing"] or 0,
                 crit_rate=row["avg_crit_rate"] or 0.0,
-                usage_frequency=(row["total_casts"] / total_casts * 100) if total_casts > 0 else 0
+                usage_frequency=(row["total_casts"] / total_casts * 100) if total_casts > 0 else 0,
             )
             spell_entries.append(entry)
 
@@ -401,7 +403,7 @@ async def get_spell_usage_stats(
             spell_entries=spell_entries,
             most_used_spells=most_used,
             highest_damage_spells=highest_damage,
-            spell_diversity_score=diversity_score
+            spell_diversity_score=diversity_score,
         )
 
     except Exception as e:
@@ -434,7 +436,9 @@ async def get_damage_breakdown(
                 GROUP BY ss.spell_name
                 HAVING total_damage > 0
                 ORDER BY total_damage DESC
-            """.format(f"AND c.name = ?" if character_name else "")
+            """.format(
+                f"AND c.name = ?" if character_name else ""
+            )
 
             params = [encounter_id]
             if character_name:
@@ -460,7 +464,9 @@ async def get_damage_breakdown(
                 HAVING total_damage > 0
                 ORDER BY total_damage DESC
                 LIMIT 30
-            """.format(f"AND c.name = ?" if character_name else "")
+            """.format(
+                f"AND c.name = ?" if character_name else ""
+            )
 
             params = [start_date.isoformat(), end_date.isoformat()]
             if character_name:
@@ -490,7 +496,7 @@ async def get_damage_breakdown(
                 percentage_of_total=(damage / total_damage * 100) if total_damage > 0 else 0,
                 hit_count=hit_count,
                 average_hit=damage / hit_count if hit_count > 0 else 0,
-                crit_rate=row["crit_rate"] or 0.0
+                crit_rate=row["crit_rate"] or 0.0,
             )
             damage_sources.append(source)
 
@@ -501,14 +507,13 @@ async def get_damage_breakdown(
         damage_distribution = {
             "direct_damage": 70.0,  # Would need event parsing for accurate calculation
             "periodic_damage": 20.0,
-            "pet_damage": 10.0
+            "pet_damage": 10.0,
         }
 
         time_range = None
         if not encounter_id:
             time_range = TimeRange(
-                start=start_date.isoformat() + "Z",
-                end=end_date.isoformat() + "Z"
+                start=start_date.isoformat() + "Z", end=end_date.isoformat() + "Z"
             )
 
         return DamageBreakdown(
@@ -518,7 +523,7 @@ async def get_damage_breakdown(
             damage_sources=damage_sources,
             total_damage=int(total_damage),
             top_damage_percentage=(top_3_damage / total_damage * 100) if total_damage > 0 else 0,
-            damage_distribution=damage_distribution
+            damage_distribution=damage_distribution,
         )
 
     except Exception as e:
