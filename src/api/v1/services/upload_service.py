@@ -10,6 +10,7 @@ import hashlib
 import logging
 import asyncio
 import tempfile
+import time
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable, List
 from datetime import datetime
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class UploadStatus:
     """Status of an uploaded file."""
+
     upload_id: str
     file_name: str
     file_size: int
@@ -57,7 +59,7 @@ class UploadService:
         db: DatabaseManager,
         upload_dir: Optional[Path] = None,
         max_file_size: int = 2 * 1024 * 1024 * 1024,  # 2GB
-        progress_callback: Optional[Callable[[str, UploadStatus], None]] = None
+        progress_callback: Optional[Callable[[str, UploadStatus], None]] = None,
     ):
         """
         Initialize upload service.
@@ -91,7 +93,8 @@ class UploadService:
     def _init_upload_tables(self):
         """Initialize database tables for upload tracking."""
         try:
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS uploads (
                     upload_id TEXT PRIMARY KEY,
                     file_name TEXT NOT NULL,
@@ -107,15 +110,20 @@ class UploadService:
                     end_time TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Index for fast lookups
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_uploads_hash ON uploads(file_hash)
-            """)
-            self.db.execute("""
+            """
+            )
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_uploads_status ON uploads(status)
-            """)
+            """
+            )
 
             logger.info("Upload tables initialized")
         except Exception as e:
@@ -135,10 +143,9 @@ class UploadService:
         if not file.filename:
             raise HTTPException(status_code=400, detail="No filename provided")
 
-        if not file.filename.lower().endswith(('.txt', '.log')):
+        if not file.filename.lower().endswith((".txt", ".log")):
             raise HTTPException(
-                status_code=400,
-                detail="Invalid file type. Only .txt and .log files are supported"
+                status_code=400, detail="Invalid file type. Only .txt and .log files are supported"
             )
 
         # Note: file.size might not be available in all cases
@@ -161,7 +168,7 @@ class UploadService:
                         file_path.unlink(missing_ok=True)
                         raise HTTPException(
                             status_code=413,
-                            detail=f"File too large. Maximum size is {self.max_file_size // (1024*1024)}MB"
+                            detail=f"File too large. Maximum size is {self.max_file_size // (1024*1024)}MB",
                         )
 
                     f.write(chunk)
@@ -180,7 +187,7 @@ class UploadService:
         try:
             result = self.db.execute(
                 "SELECT * FROM uploads WHERE file_hash = ? ORDER BY created_at DESC LIMIT 1",
-                (file_hash,)
+                (file_hash,),
             ).fetchone()
 
             if result:
@@ -195,8 +202,14 @@ class UploadService:
                     characters_found=result["characters_found"],
                     events_processed=result["events_processed"],
                     error_message=result["error_message"],
-                    start_time=datetime.fromisoformat(result["start_time"]) if result["start_time"] else None,
-                    end_time=datetime.fromisoformat(result["end_time"]) if result["end_time"] else None,
+                    start_time=(
+                        datetime.fromisoformat(result["start_time"])
+                        if result["start_time"]
+                        else None
+                    ),
+                    end_time=(
+                        datetime.fromisoformat(result["end_time"]) if result["end_time"] else None
+                    ),
                 )
         except Exception as e:
             logger.error(f"Error checking for duplicate: {e}")
@@ -206,19 +219,29 @@ class UploadService:
     def _save_upload_status(self, status: UploadStatus):
         """Save upload status to database."""
         try:
-            self.db.execute("""
+            self.db.execute(
+                """
                 INSERT OR REPLACE INTO uploads (
                     upload_id, file_name, file_size, file_hash, status, progress,
                     encounters_found, characters_found, events_processed,
                     error_message, start_time, end_time
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                status.upload_id, status.file_name, status.file_size, status.file_hash,
-                status.status, status.progress, status.encounters_found,
-                status.characters_found, status.events_processed, status.error_message,
-                status.start_time.isoformat() if status.start_time else None,
-                status.end_time.isoformat() if status.end_time else None
-            ))
+            """,
+                (
+                    status.upload_id,
+                    status.file_name,
+                    status.file_size,
+                    status.file_hash,
+                    status.status,
+                    status.progress,
+                    status.encounters_found,
+                    status.characters_found,
+                    status.events_processed,
+                    status.error_message,
+                    status.start_time.isoformat() if status.start_time else None,
+                    status.end_time.isoformat() if status.end_time else None,
+                ),
+            )
             logger.debug(f"Saved upload status for {status.upload_id}")
         except Exception as e:
             logger.error(f"Failed to save upload status: {e}")
@@ -251,7 +274,7 @@ class UploadService:
             storage_result = self.storage.store_encounters(
                 raids=[enc for enc in encounters if enc.encounter_type.name == "RAID"],
                 mythic_plus=[enc for enc in encounters if enc.encounter_type.name == "MYTHIC_PLUS"],
-                log_file_path=str(file_path)
+                log_file_path=str(file_path),
             )
 
             # Update final status
@@ -264,8 +287,10 @@ class UploadService:
 
             self._notify_progress(upload_id, status)
 
-            logger.info(f"Completed processing {file_path}: {len(encounters)} encounters, "
-                       f"{status.characters_found} characters, {status.events_processed} events")
+            logger.info(
+                f"Completed processing {file_path}: {len(encounters)} encounters, "
+                f"{status.characters_found} characters, {status.events_processed} events"
+            )
 
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {e}")
@@ -318,7 +343,7 @@ class UploadService:
                 file_name=file.filename,
                 file_size=file_path.stat().st_size,
                 file_hash=file_hash,
-                status="pending"
+                status="pending",
             )
 
             # Save initial status
@@ -349,8 +374,7 @@ class UploadService:
         # Check database
         try:
             result = self.db.execute(
-                "SELECT * FROM uploads WHERE upload_id = ?",
-                (upload_id,)
+                "SELECT * FROM uploads WHERE upload_id = ?", (upload_id,)
             ).fetchone()
 
             if result:
@@ -365,15 +389,23 @@ class UploadService:
                     characters_found=result["characters_found"],
                     events_processed=result["events_processed"],
                     error_message=result["error_message"],
-                    start_time=datetime.fromisoformat(result["start_time"]) if result["start_time"] else None,
-                    end_time=datetime.fromisoformat(result["end_time"]) if result["end_time"] else None,
+                    start_time=(
+                        datetime.fromisoformat(result["start_time"])
+                        if result["start_time"]
+                        else None
+                    ),
+                    end_time=(
+                        datetime.fromisoformat(result["end_time"]) if result["end_time"] else None
+                    ),
                 )
         except Exception as e:
             logger.error(f"Error getting upload status: {e}")
 
         return None
 
-    def list_uploads(self, limit: int = 50, status_filter: Optional[str] = None) -> List[UploadStatus]:
+    def list_uploads(
+        self, limit: int = 50, status_filter: Optional[str] = None
+    ) -> List[UploadStatus]:
         """List recent uploads with optional status filter."""
         try:
             query = "SELECT * FROM uploads"
@@ -390,20 +422,30 @@ class UploadService:
 
             uploads = []
             for result in results:
-                uploads.append(UploadStatus(
-                    upload_id=result["upload_id"],
-                    file_name=result["file_name"],
-                    file_size=result["file_size"],
-                    file_hash=result["file_hash"],
-                    status=result["status"],
-                    progress=result["progress"],
-                    encounters_found=result["encounters_found"],
-                    characters_found=result["characters_found"],
-                    events_processed=result["events_processed"],
-                    error_message=result["error_message"],
-                    start_time=datetime.fromisoformat(result["start_time"]) if result["start_time"] else None,
-                    end_time=datetime.fromisoformat(result["end_time"]) if result["end_time"] else None,
-                ))
+                uploads.append(
+                    UploadStatus(
+                        upload_id=result["upload_id"],
+                        file_name=result["file_name"],
+                        file_size=result["file_size"],
+                        file_hash=result["file_hash"],
+                        status=result["status"],
+                        progress=result["progress"],
+                        encounters_found=result["encounters_found"],
+                        characters_found=result["characters_found"],
+                        events_processed=result["events_processed"],
+                        error_message=result["error_message"],
+                        start_time=(
+                            datetime.fromisoformat(result["start_time"])
+                            if result["start_time"]
+                            else None
+                        ),
+                        end_time=(
+                            datetime.fromisoformat(result["end_time"])
+                            if result["end_time"]
+                            else None
+                        ),
+                    )
+                )
 
             return uploads
 
@@ -414,7 +456,8 @@ class UploadService:
     def get_upload_stats(self) -> Dict[str, Any]:
         """Get upload statistics."""
         try:
-            stats = self.db.execute("""
+            stats = self.db.execute(
+                """
                 SELECT
                     COUNT(*) as total_uploads,
                     COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_uploads,
@@ -424,7 +467,8 @@ class UploadService:
                     SUM(encounters_found) as total_encounters,
                     SUM(events_processed) as total_events
                 FROM uploads
-            """).fetchone()
+            """
+            ).fetchone()
 
             return {
                 "total_uploads": stats["total_uploads"] or 0,
@@ -434,7 +478,7 @@ class UploadService:
                 "total_bytes": stats["total_bytes"] or 0,
                 "total_encounters": stats["total_encounters"] or 0,
                 "total_events": stats["total_events"] or 0,
-                "active_uploads": len(self.active_uploads)
+                "active_uploads": len(self.active_uploads),
             }
 
         except Exception as e:
