@@ -247,13 +247,36 @@ class UploadService:
             logger.error(f"Failed to save upload status: {e}")
 
     def _notify_progress(self, upload_id: str, status: UploadStatus):
-        """Send progress notification via callback."""
+        """Send progress notification via callback and WebSocket."""
         try:
             self.active_uploads[upload_id] = status
             self._save_upload_status(status)
 
+            # Call synchronous callback if provided
             if self.progress_callback:
                 self.progress_callback(upload_id, status)
+
+            # Send WebSocket notification asynchronously
+            try:
+                import asyncio
+                from .websocket_notifier import get_websocket_notifier
+
+                notifier = get_websocket_notifier()
+
+                # Schedule the async notification
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        asyncio.create_task(notifier.notify_upload_progress(upload_id, status))
+                    else:
+                        loop.run_until_complete(notifier.notify_upload_progress(upload_id, status))
+                except RuntimeError:
+                    # No event loop running, skip WebSocket notification
+                    logger.debug("No event loop running, skipping WebSocket notification")
+
+            except Exception as ws_error:
+                logger.debug(f"WebSocket notification failed (non-critical): {ws_error}")
+
         except Exception as e:
             logger.error(f"Failed to notify progress: {e}")
 
