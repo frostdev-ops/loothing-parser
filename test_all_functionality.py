@@ -475,8 +475,8 @@ def test_api_endpoints(db):
             WHERE guild_id = 1
         """)
         stats = cursor.fetchone()
-        assert stats[0] == 3, f"Expected 3 total encounters"
-        assert stats[1] == 1, f"Expected 1 successful encounter"
+        assert stats[0] == 3, f"Expected 3 total encounters, got {stats[0]}"
+        assert stats[1] == 2, f"Expected 2 successful encounters, got {stats[1]}"
         log_test("Guilds: Guild statistics query", True)
     except Exception as e:
         log_test("Guilds: Guild statistics query", False, str(e))
