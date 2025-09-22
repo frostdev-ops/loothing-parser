@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.database.schema import DatabaseManager, create_tables
 from src.database.query import QueryAPI
-from src.database.compression import EventCompressor
 
 # Test tracking
 test_results = {
