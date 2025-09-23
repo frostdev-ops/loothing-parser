@@ -111,48 +111,61 @@ class HybridDatabaseManager:
             guild_id: Guild identifier
 
         Returns:
-            Encounter ID
+            Encounter ID (UUID)
         """
         try:
-            # Generate encounter ID if not provided
+            import uuid
+
+            # Generate UUID for encounter
             encounter_id = encounter_data.get('id')
             if not encounter_id:
-                # Create hash-based ID from encounter data
-                hash_input = f"{encounter_data.get('name', '')}_{encounter_data.get('start_time', '')}_{guild_id}"
-                encounter_id = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
+                encounter_id = str(uuid.uuid4())
 
-            # Save to PostgreSQL
+            # Calculate duration in milliseconds
+            duration_ms = None
+            if encounter_data.get('start_time') and encounter_data.get('end_time'):
+                start = encounter_data['start_time']
+                end = encounter_data['end_time']
+                if isinstance(start, str):
+                    from datetime import datetime
+                    start = datetime.fromisoformat(start.replace('Z', '+00:00'))
+                    end = datetime.fromisoformat(end.replace('Z', '+00:00'))
+                duration_ms = int((end - start).total_seconds() * 1000)
+
+            # Save to PostgreSQL using existing combat_encounters table
             self.postgres.execute(
                 """
-                INSERT INTO encounters (
-                    id, guild_id, encounter_name, encounter_id, difficulty,
-                    start_time, end_time, duration, success, phase_count,
-                    pull_number, zone_name, zone_id, player_count,
-                    item_level_avg, wipe_percentage
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO combat_encounters (
+                    id, guild_id, encounter_name, instance_name, difficulty,
+                    start_time, end_time, duration_ms, combat_duration_ms,
+                    success, player_count, total_damage, total_healing,
+                    total_deaths, metadata
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
                 ON CONFLICT (id) DO UPDATE SET
                     end_time = EXCLUDED.end_time,
-                    duration = EXCLUDED.duration,
+                    duration_ms = EXCLUDED.duration_ms,
+                    combat_duration_ms = EXCLUDED.combat_duration_ms,
                     success = EXCLUDED.success,
+                    total_damage = EXCLUDED.total_damage,
+                    total_healing = EXCLUDED.total_healing,
                     updated_at = CURRENT_TIMESTAMP
                 """,
                 (
                     encounter_id,
                     guild_id,
                     encounter_data.get('name'),
-                    encounter_data.get('encounter_id'),
+                    encounter_data.get('zone_name'),
                     encounter_data.get('difficulty'),
                     encounter_data.get('start_time'),
                     encounter_data.get('end_time'),
-                    encounter_data.get('duration'),
+                    duration_ms,
+                    duration_ms,  # Use same value for combat_duration_ms
                     encounter_data.get('success', False),
-                    encounter_data.get('phase_count', 1),
-                    encounter_data.get('pull_number', 1),
-                    encounter_data.get('zone_name'),
-                    encounter_data.get('zone_id'),
                     encounter_data.get('player_count', 0),
-                    encounter_data.get('item_level_avg'),
-                    encounter_data.get('wipe_percentage')
+                    encounter_data.get('total_damage', 0),
+                    encounter_data.get('total_healing', 0),
+                    encounter_data.get('total_deaths', 0),
+                    json.dumps(encounter_data.get('metadata', {}))
                 ),
                 fetch_results=False
             )
