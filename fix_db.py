@@ -53,19 +53,27 @@ def fix_database():
             columns = cursor.fetchall()
             logger.info(f"Characters table columns: {columns}")
 
-            # Check if character_metrics table exists and its columns
+            # Check combat_performances table
             cursor.execute("""
                 SELECT column_name, data_type
                 FROM information_schema.columns
-                WHERE table_name = 'character_metrics'
+                WHERE table_name = 'combat_performances'
                 AND table_schema = 'public'
                 ORDER BY ordinal_position
             """)
-            metrics_columns = cursor.fetchall()
-            if metrics_columns:
-                logger.info(f"Character_metrics table columns: {metrics_columns}")
-            else:
-                logger.info("Character_metrics table does not exist")
+            perf_columns = cursor.fetchall()
+            logger.info(f"Combat_performances table columns: {perf_columns}")
+
+            # Check combat_encounters table
+            cursor.execute("""
+                SELECT column_name, data_type
+                FROM information_schema.columns
+                WHERE table_name = 'combat_encounters'
+                AND table_schema = 'public'
+                ORDER BY ordinal_position
+            """)
+            enc_columns = cursor.fetchall()
+            logger.info(f"Combat_encounters table columns: {enc_columns}")
 
         conn.commit()
         logger.info("Successfully cleaned up database!")
