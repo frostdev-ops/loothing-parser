@@ -655,4 +655,92 @@ async def get_guild_performance(
     guild_name: str, days: int = Query(30, ge=7, le=365), db: DatabaseManager = Depends()
 ):
     """Get comprehensive guild performance analysis."""
-    raise HTTPException(status_code=501, detail="Guild performance endpoint not yet implemented")
+    try:
+        query_api = QueryAPI(db)
+
+        # Find guild by name
+        cursor = db.execute(
+            "SELECT guild_id FROM guilds WHERE guild_name = ?",
+            (guild_name,)
+        )
+        guild_row = cursor.fetchone()
+
+        if not guild_row:
+            raise HTTPException(status_code=404, detail=f"Guild '{guild_name}' not found")
+
+        guild_id = guild_row[0]
+
+        # Get performance data from encounter participants
+        cursor = db.execute(
+            """
+            SELECT
+                c.character_name,
+                c.class,
+                c.spec,
+                AVG(ep.damage_done) as avg_dps,
+                AVG(ep.healing_done) as avg_hps,
+                COUNT(e.encounter_id) as encounters,
+                SUM(CASE WHEN e.success = 1 THEN 1 ELSE 0 END) as kills,
+                MAX(ep.damage_done) as best_dps,
+                MAX(ep.healing_done) as best_hps
+            FROM characters c
+            LEFT JOIN encounter_participants ep ON c.character_id = ep.character_id
+            LEFT JOIN encounters e ON ep.encounter_id = e.encounter_id
+                AND e.start_time >= strftime('%s', 'now', '-{} days')
+            WHERE c.guild_id = ?
+            GROUP BY c.character_id, c.character_name, c.class, c.spec
+            HAVING encounters > 0
+            ORDER BY avg_dps DESC
+            """.format(days),
+            (guild_id,)
+        )
+
+        players = []
+        for row in cursor:
+            character_name, char_class, spec, avg_dps, avg_hps, encounters, kills, best_dps, best_hps = row
+
+            players.append({
+                "character_name": character_name,
+                "class": char_class,
+                "spec": spec or "Unknown",
+                "average_dps": round(avg_dps or 0, 2),
+                "average_hps": round(avg_hps or 0, 2),
+                "encounters": encounters or 0,
+                "kills": kills or 0,
+                "success_rate": round((kills / encounters * 100) if encounters > 0 else 0, 2),
+                "best_dps": round(best_dps or 0, 2),
+                "best_hps": round(best_hps or 0, 2)
+            })
+
+        # Calculate guild-wide statistics
+        total_encounters = sum(p["encounters"] for p in players)
+        total_kills = sum(p["kills"] for p in players)
+        avg_guild_dps = sum(p["average_dps"] for p in players) / len(players) if players else 0
+        avg_guild_hps = sum(p["average_hps"] for p in players) / len(players) if players else 0
+
+        # Get top performers
+        top_dps = sorted(players, key=lambda x: x["average_dps"], reverse=True)[:5]
+        top_hps = sorted([p for p in players if p["average_hps"] > 0], key=lambda x: x["average_hps"], reverse=True)[:5]
+
+        return {
+            "guild_name": guild_name,
+            "period_days": days,
+            "players": players,
+            "summary": {
+                "total_players": len(players),
+                "total_encounters": total_encounters,
+                "total_kills": total_kills,
+                "overall_success_rate": round((total_kills / total_encounters * 100) if total_encounters > 0 else 0, 2),
+                "average_guild_dps": round(avg_guild_dps, 2),
+                "average_guild_hps": round(avg_guild_hps, 2)
+            },
+            "top_performers": {
+                "dps": top_dps,
+                "healers": top_hps
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve guild performance: {str(e)}")
