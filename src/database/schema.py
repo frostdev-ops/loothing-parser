@@ -601,6 +601,42 @@ def create_tables(db: DatabaseManager) -> None:
     """
     )
 
+    # Character talent snapshots (when talents were captured)
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS character_talent_snapshots (
+            snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
+            encounter_id INTEGER REFERENCES encounters(encounter_id),
+            character_id INTEGER NOT NULL REFERENCES characters(character_id),
+            snapshot_time REAL NOT NULL,
+            source TEXT NOT NULL CHECK(source IN ('combatant_info', 'manual', 'armory')),
+            specialization TEXT DEFAULT '',
+            talent_loadout TEXT DEFAULT '',
+            total_talents INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(character_id, encounter_id)
+        )
+    """
+    )
+
+    # Individual talent selections for each snapshot
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS character_talent_selections (
+            talent_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_id INTEGER NOT NULL REFERENCES character_talent_snapshots(snapshot_id),
+            talent_slot INTEGER NOT NULL,
+            talent_spell_id INTEGER NOT NULL,
+            talent_tier INTEGER DEFAULT 0,
+            talent_column INTEGER DEFAULT 0,
+            is_selected BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(snapshot_id, talent_slot)
+        )
+    """
+    )
+
     logger.info("Creating database indices for fast queries...")
 
     # Guild indices for multi-tenancy
