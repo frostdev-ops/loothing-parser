@@ -769,6 +769,8 @@ def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
         "event_blocks",
         "character_metrics",
         "spell_summary",
+        "character_gear_snapshots",
+        "character_gear_items",
     ]
     for table in tables:
         cursor = db.execute(f"SELECT COUNT(*) FROM {table}")
