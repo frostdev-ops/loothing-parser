@@ -373,13 +373,15 @@ class HybridDatabaseManager:
         Save character performance metrics to PostgreSQL.
 
         Args:
-            encounter_id: Encounter identifier
+            encounter_id: Encounter identifier (UUID)
             metrics: List of character metrics
 
         Returns:
             Success status
         """
         try:
+            import uuid
+
             for metric in metrics:
                 # Get character ID if we have the name
                 character_id = None
@@ -392,59 +394,54 @@ class HybridDatabaseManager:
                     if result:
                         character_id = result[0]['id']
 
-                # Save metrics
+                # Generate UUID for performance record
+                perf_id = str(uuid.uuid4())
+
+                # Save to combat_performances table
                 self.postgres.execute(
                     """
-                    INSERT INTO character_metrics (
-                        encounter_id, character_id, character_guid, character_name,
-                        damage_done, healing_done, damage_taken, healing_taken,
-                        deaths, interrupts, dispels, crowd_control,
-                        defensive_casts, offensive_casts, resources_gained, resources_wasted,
-                        active_time, dps, hps, dtps, activity_percent, death_time
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (encounter_id, character_guid) DO UPDATE SET
-                        damage_done = EXCLUDED.damage_done,
-                        healing_done = EXCLUDED.healing_done,
-                        damage_taken = EXCLUDED.damage_taken,
-                        healing_taken = EXCLUDED.healing_taken,
-                        deaths = EXCLUDED.deaths,
-                        dps = EXCLUDED.dps,
-                        hps = EXCLUDED.hps,
-                        dtps = EXCLUDED.dtps,
-                        updated_at = CURRENT_TIMESTAMP
+                    INSERT INTO combat_performances (
+                        id, guild_id, encounter_id, character_id, character_name,
+                        class, spec, role, item_level,
+                        damage_done, healing_done, damage_taken, overhealing,
+                        absorb_healing, deaths, interrupts, dispels,
+                        active_time_ms, dps, hps, dtps, activity_percentage,
+                        metadata
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
                     """,
                     (
+                        perf_id,
+                        metric.get('guild_id', 1),
                         encounter_id,
                         character_id,
-                        metric.get('character_guid'),
-                        metric.get('character_name'),
+                        character_name,
+                        metric.get('class'),
+                        metric.get('spec'),
+                        metric.get('role', 'DPS'),  # Default to DPS if not specified
+                        metric.get('item_level'),
                         metric.get('damage_done', 0),
                         metric.get('healing_done', 0),
                         metric.get('damage_taken', 0),
-                        metric.get('healing_taken', 0),
+                        metric.get('overhealing', 0),
+                        metric.get('absorb_healing', 0),
                         metric.get('deaths', 0),
                         metric.get('interrupts', 0),
                         metric.get('dispels', 0),
-                        metric.get('crowd_control', 0),
-                        metric.get('defensive_casts', 0),
-                        metric.get('offensive_casts', 0),
-                        metric.get('resources_gained', 0),
-                        metric.get('resources_wasted', 0),
-                        metric.get('active_time', 0.0),
+                        int(metric.get('active_time', 0) * 1000),  # Convert to milliseconds
                         metric.get('dps', 0.0),
                         metric.get('hps', 0.0),
                         metric.get('dtps', 0.0),
                         metric.get('activity_percent', 0.0),
-                        metric.get('death_time')
+                        json.dumps(metric.get('metadata', {}))
                     ),
                     fetch_results=False
                 )
 
-            logger.debug(f"Saved {len(metrics)} character metrics for encounter {encounter_id}")
+            logger.debug(f"Saved {len(metrics)} character performances for encounter {encounter_id}")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to save character metrics: {e}")
+            logger.error(f"Failed to save character performances: {e}")
             return False
 
     def query_encounter_events(
