@@ -19,6 +19,16 @@ from .compression import EventCompressor, compression_stats
 from src.models.character_events import TimestampedEvent, CharacterEventStream
 from src.models.encounter_models import RaidEncounter, MythicPlusRun
 
+# Import TimeRange from common models if not already available
+try:
+    from ..models.common import TimeRange
+except ImportError:
+    # Define locally if not available
+    @dataclass
+    class TimeRange:
+        start: datetime
+        end: datetime
+
 logger = logging.getLogger(__name__)
 
 
@@ -786,6 +796,1342 @@ class QueryAPI:
 
         self.cache.put(cache_key, spell_usages)
         return spell_usages
+
+    def get_encounters(
+        self,
+        limit: int = 10,
+        offset: int = 0,
+        filters: Optional[Dict[str, Any]] = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+        guild_id: Optional[int] = None,
+    ) -> List[EncounterSummary]:
+        """
+        Get encounters with pagination and filtering.
+
+        Args:
+            limit: Maximum number of encounters to return
+            offset: Number of encounters to skip
+            filters: Optional filters (boss_name, difficulty, encounter_type, success, etc.)
+            sort_by: Field to sort by
+            sort_order: Sort order ('asc' or 'desc')
+            guild_id: Guild ID for multi-tenant filtering
+
+        Returns:
+            List of EncounterSummary objects
+        """
+        # Use filters to determine what to search for
+        if filters:
+            # Delegate to search_encounters with filters
+            return self.search_encounters(
+                boss_name=filters.get('boss_name'),
+                difficulty=filters.get('difficulty'),
+                encounter_type=filters.get('encounter_type'),
+                success=filters.get('success'),
+                start_date=filters.get('start_date'),
+                end_date=filters.get('end_date'),
+                limit=limit,
+                guild_id=guild_id,
+            )[offset:offset+limit] if offset > 0 else self.search_encounters(
+                boss_name=filters.get('boss_name'),
+                difficulty=filters.get('difficulty'),
+                encounter_type=filters.get('encounter_type'),
+                success=filters.get('success'),
+                start_date=filters.get('start_date'),
+                end_date=filters.get('end_date'),
+                limit=limit + offset,
+                guild_id=guild_id,
+            )[offset:]
+        else:
+            # No filters, get recent encounters with offset
+            cache_key = f"encounters:{limit}:{offset}:{sort_by}:{sort_order}:guild:{guild_id}"
+            cached = self.cache.get(cache_key)
+            if cached:
+                self.stats["cache_hits"] += 1
+                return cached
+
+            start_time = time.time()
+            self.stats["queries_executed"] += 1
+
+            # Build query with optional guild filtering
+            query = """
+                SELECT
+                    encounter_id, encounter_type, boss_name, difficulty,
+                    start_time, end_time, success, combat_length, raid_size,
+                    (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
+                FROM encounters e
+            """
+            params = []
+
+            if guild_id is not None:
+                query += " WHERE guild_id = ?"
+                params.append(guild_id)
+
+            # Validate sort_by column for security
+            valid_sort_columns = {
+                "created_at", "start_time", "end_time", "boss_name",
+                "difficulty", "combat_length", "raid_size"
+            }
+            if sort_by not in valid_sort_columns:
+                sort_by = "created_at"
+
+            # Validate sort_order
+            if sort_order.lower() not in ["asc", "desc"]:
+                sort_order = "desc"
+
+            query += f" ORDER BY {sort_by} {sort_order.upper()} LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+
+            cursor = self.db.execute(query, params)
+
+            encounters = []
+            for row in cursor:
+                encounter = EncounterSummary(
+                    encounter_id=row[0],
+                    encounter_type=row[1],
+                    boss_name=row[2],
+                    difficulty=row[3],
+                    start_time=datetime.fromtimestamp(row[4]) if row[4] else None,
+                    end_time=datetime.fromtimestamp(row[5]) if row[5] else None,
+                    success=bool(row[6]),
+                    combat_length=row[7],
+                    raid_size=row[8],
+                    character_count=row[9],
+                )
+                encounters.append(encounter)
+
+            query_time = time.time() - start_time
+            self.stats["total_query_time"] += query_time
+            self.stats["cache_misses"] += 1
+
+            self.cache.put(cache_key, encounters)
+            return encounters
+
+    def get_encounters_count(
+        self,
+        filters: Optional[Dict[str, Any]] = None,
+        guild_id: Optional[int] = None,
+    ) -> int:
+        """
+        Get total count of encounters matching filters.
+
+        Args:
+            filters: Optional filters (boss_name, difficulty, encounter_type, success, etc.)
+            guild_id: Guild ID for multi-tenant filtering
+
+        Returns:
+            Total count of matching encounters
+        """
+        cache_key = f"count:{filters}:guild:{guild_id}"
+        cached = self.cache.get(cache_key)
+        if cached:
+            self.stats["cache_hits"] += 1
+            return cached
+
+        start_time = time.time()
+        self.stats["queries_executed"] += 1
+
+        # Build dynamic query
+        conditions = []
+        params = []
+
+        # Add guild filtering first
+        if guild_id is not None:
+            conditions.append("guild_id = ?")
+            params.append(guild_id)
+
+        if filters:
+            if filters.get('boss_name'):
+                conditions.append("boss_name LIKE ?")
+                params.append(f"%{filters['boss_name']}%")
+
+            if filters.get('difficulty'):
+                conditions.append("difficulty = ?")
+                params.append(filters['difficulty'])
+
+            if filters.get('encounter_type'):
+                conditions.append("encounter_type = ?")
+                params.append(filters['encounter_type'])
+
+            if filters.get('success') is not None:
+                conditions.append("success = ?")
+                params.append(filters['success'])
+
+            if filters.get('start_date'):
+                conditions.append("start_time >= ?")
+                params.append(filters['start_date'].timestamp())
+
+            if filters.get('end_date'):
+                conditions.append("start_time <= ?")
+                params.append(filters['end_date'].timestamp())
+
+        where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+        cursor = self.db.execute(
+            f"SELECT COUNT(*) FROM encounters {where_clause}",
+            params,
+        )
+        count = cursor.fetchone()[0]
+
+        query_time = time.time() - start_time
+        self.stats["total_query_time"] += query_time
+        self.stats["cache_misses"] += 1
+
+        self.cache.put(cache_key, count)
+        return count
+
+    def get_encounter_detail(
+        self,
+        encounter_id: int,
+        guild_id: Optional[int] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get detailed information about an encounter.
+
+        Args:
+            encounter_id: Database encounter ID
+            guild_id: Guild ID for multi-tenant filtering
+
+        Returns:
+            Detailed encounter information including metrics and events
+        """
+        # Get basic encounter info
+        encounter = self.get_encounter(encounter_id, guild_id)
+        if not encounter:
+            return None
+
+        # Get character metrics for this encounter
+        metrics = self.get_character_metrics(encounter_id, guild_id=guild_id)
+
+        # Calculate aggregates
+        total_damage = sum(m.damage_done for m in metrics)
+        total_healing = sum(m.healing_done for m in metrics)
+        total_deaths = sum(m.death_count for m in metrics)
+        participant_names = [m.character_name for m in metrics]
+
+        # Return flat structure matching EncounterDetail model
+        return {
+            "encounter_id": encounter.encounter_id,
+            "encounter_type": encounter.encounter_type,
+            "boss_name": encounter.boss_name,
+            "difficulty": encounter.difficulty or "",
+            "zone_name": encounter.boss_name,  # Use boss_name as zone for now
+            "start_time": encounter.start_time.isoformat() if encounter.start_time else None,
+            "end_time": encounter.end_time.isoformat() if encounter.end_time else None,
+            "duration": encounter.combat_length,
+            "combat_duration": encounter.combat_length,
+            "success": encounter.success,
+            "wipe_percentage": None,
+            "participants": participant_names,
+            "raid_size": encounter.raid_size,
+            "total_damage": total_damage,
+            "total_healing": total_healing,
+            "total_deaths": total_deaths,
+        }
+
+    def get_characters(
+        self,
+        limit: int = 20,
+        offset: int = 0,
+        filters: Optional[Dict[str, Any]] = None,
+        sort_by: str = "last_seen",
+        sort_order: str = "desc",
+        guild_id: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get a list of characters with optional filtering.
+
+        Args:
+            limit: Maximum number of characters to return
+            offset: Number of characters to skip
+            filters: Optional filters
+            sort_by: Field to sort by
+            sort_order: Sort order (asc/desc)
+            guild_id: Guild ID for multi-tenant filtering
+
+        Returns:
+            List of character profiles
+        """
+        conditions = []
+        params = []
+
+        if guild_id is not None:
+            conditions.append("guild_id = ?")
+            params.append(guild_id)
+
+        if filters:
+            if filters.get('server'):
+                conditions.append("server = ?")
+                params.append(filters['server'])
+
+            if filters.get('class_name'):
+                conditions.append("class_name = ?")
+                params.append(filters['class_name'])
+
+            if filters.get('min_encounters'):
+                conditions.append("encounter_count >= ?")
+                params.append(filters['min_encounters'])
+
+        where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+        # Map sort fields to database columns
+        sort_map = {
+            "last_seen": "last_seen",
+            "total_encounters": "encounter_count",
+            "average_dps": "encounter_count",  # Use encounter_count as fallback since average_dps doesn't exist
+        }
+        order_by = f"ORDER BY {sort_map.get(sort_by, 'last_seen')} {sort_order}"
+
+        cursor = self.db.execute(
+            f"""
+            SELECT
+                character_id,
+                character_name,
+                server,
+                region,
+                class_name,
+                spec_name,
+                encounter_count,
+                last_seen,
+                guild_id
+            FROM characters
+            {where_clause}
+            {order_by}
+            LIMIT ? OFFSET ?
+            """,
+            params + [limit, offset]
+        )
+
+        characters = []
+        for row in cursor.fetchall():
+            characters.append({
+                "character_id": row[0],
+                "name": row[1],
+                "server": row[2] or "Unknown",
+                "region": row[3] or "US",
+                "class_name": row[4] or "Unknown",
+                "spec": row[5] or "Unknown",
+                "encounter_count": row[6] or 0,
+                "average_dps": 0.0,  # Not in table, default value
+                "average_hps": 0.0,  # Not in table, default value
+                "last_seen": row[7],
+                "guild_id": row[8],
+            })
+
+        return characters
+
+    def get_characters_count(
+        self,
+        filters: Optional[Dict[str, Any]] = None,
+        guild_id: Optional[int] = None,
+    ) -> int:
+        """
+        Get total count of characters matching filters.
+
+        Args:
+            filters: Optional filters (server, class_name, min_encounters, etc.)
+            guild_id: Guild ID for multi-tenant filtering
+
+        Returns:
+            Total count of matching characters
+        """
+        cache_key = f"char_count:{filters}:guild:{guild_id}"
+        cached = self.cache.get(cache_key)
+        if cached:
+            self.stats["cache_hits"] += 1
+            return cached
+
+        start_time = time.time()
+        self.stats["queries_executed"] += 1
+
+        # Build dynamic query
+        conditions = []
+        params = []
+
+        # Add guild filtering first
+        if guild_id is not None:
+            conditions.append("guild_id = ?")
+            params.append(guild_id)
+
+        if filters:
+            if filters.get('server'):
+                conditions.append("server = ?")
+                params.append(filters['server'])
+
+            if filters.get('region'):
+                conditions.append("region = ?")
+                params.append(filters['region'])
+
+            if filters.get('class_name'):
+                conditions.append("class_name = ?")
+                params.append(filters['class_name'])
+
+            if filters.get('min_encounters'):
+                conditions.append("encounter_count >= ?")
+                params.append(filters['min_encounters'])
+
+            if filters.get('active_since'):
+                conditions.append("last_seen >= ?")
+                params.append(filters['active_since'])
+
+        where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+        cursor = self.db.execute(
+            f"SELECT COUNT(*) FROM characters {where_clause}",
+            params,
+        )
+        count = cursor.fetchone()[0]
+
+        query_time = time.time() - start_time
+        self.stats["total_query_time"] += query_time
+        self.stats["cache_misses"] += 1
+
+        self.cache.put(cache_key, count)
+        return count
+
+    def get_guild(self, guild_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get guild by ID.
+
+        Args:
+            guild_id: Guild database ID
+
+        Returns:
+            Guild information or None if not found
+        """
+        cache_key = f"guild:{guild_id}"
+        cached = self.cache.get(cache_key)
+        if cached:
+            self.stats["cache_hits"] += 1
+            return cached
+
+        start_time = time.time()
+        self.stats["queries_executed"] += 1
+
+        cursor = self.db.execute(
+            """
+            SELECT
+                guild_id, guild_name, server, region, faction,
+                created_at, updated_at, is_active
+            FROM guilds
+            WHERE guild_id = ?
+            """,
+            (guild_id,)
+        )
+
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        guild = {
+            "guild_id": row[0],
+            "guild_name": row[1],
+            "server": row[2],
+            "region": row[3],
+            "faction": row[4],
+            "created_at": row[5],
+            "updated_at": row[6],
+            "is_active": bool(row[7]),
+        }
+
+        query_time = time.time() - start_time
+        self.stats["total_query_time"] += query_time
+        self.stats["cache_misses"] += 1
+
+        self.cache.put(cache_key, guild)
+        return guild
+
+    def get_guilds(
+        self,
+        limit: int = 20,
+        offset: int = 0,
+        is_active: Optional[bool] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        List all guilds with pagination.
+
+        Args:
+            limit: Maximum number of guilds to return
+            offset: Number of guilds to skip
+            is_active: Filter by active status
+
+        Returns:
+            List of guild information dictionaries
+        """
+        cache_key = f"guilds:{limit}:{offset}:{is_active}"
+        cached = self.cache.get(cache_key)
+        if cached:
+            self.stats["cache_hits"] += 1
+            return cached
+
+        start_time = time.time()
+        self.stats["queries_executed"] += 1
+
+        query = """
+            SELECT
+                guild_id, guild_name, server, region, faction,
+                created_at, updated_at, is_active,
+                (SELECT COUNT(*) FROM encounters WHERE guild_id = g.guild_id) as encounter_count
+            FROM guilds g
+        """
+        params = []
+
+        if is_active is not None:
+            query += " WHERE is_active = ?"
+            params.append(is_active)
+
+        query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        cursor = self.db.execute(query, params)
+
+        guilds = []
+        for row in cursor:
+            guild = {
+                "guild_id": row[0],
+                "guild_name": row[1],
+                "server": row[2],
+                "region": row[3],
+                "faction": row[4],
+                "created_at": row[5],
+                "updated_at": row[6],
+                "is_active": bool(row[7]),
+                "encounter_count": row[8],
+            }
+            guilds.append(guild)
+
+        query_time = time.time() - start_time
+        self.stats["total_query_time"] += query_time
+        self.stats["cache_misses"] += 1
+
+        self.cache.put(cache_key, guilds)
+        return guilds
+
+    def create_guild(
+        self,
+        guild_name: str,
+        server: str,
+        region: str = "US",
+        faction: Optional[str] = None,
+    ) -> int:
+        """
+        Create new guild.
+
+        Args:
+            guild_name: Name of the guild
+            server: Server name
+            region: Region (default: US)
+            faction: Optional faction (Alliance/Horde)
+
+        Returns:
+            New guild ID
+        """
+        cursor = self.db.execute(
+            """
+            INSERT INTO guilds (guild_name, server, region, faction)
+            VALUES (?, ?, ?, ?)
+            """,
+            (guild_name, server, region, faction)
+        )
+        self.db.commit()
+
+        # Clear guild-related caches
+        self.cache.clear()
+
+        return cursor.lastrowid
+
+    def update_guild(
+        self,
+        guild_id: int,
+        guild_name: Optional[str] = None,
+        server: Optional[str] = None,
+        region: Optional[str] = None,
+        faction: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> bool:
+        """
+        Update guild information.
+
+        Args:
+            guild_id: Guild ID to update
+            guild_name: New guild name
+            server: New server
+            region: New region
+            faction: New faction
+            is_active: Active status
+
+        Returns:
+            True if successful
+        """
+        updates = []
+        params = []
+
+        if guild_name is not None:
+            updates.append("guild_name = ?")
+            params.append(guild_name)
+
+        if server is not None:
+            updates.append("server = ?")
+            params.append(server)
+
+        if region is not None:
+            updates.append("region = ?")
+            params.append(region)
+
+        if faction is not None:
+            updates.append("faction = ?")
+            params.append(faction)
+
+        if is_active is not None:
+            updates.append("is_active = ?")
+            params.append(is_active)
+
+        if not updates:
+            return False
+
+        updates.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(guild_id)
+
+        self.db.execute(
+            f"UPDATE guilds SET {', '.join(updates)} WHERE guild_id = ?",
+            params
+        )
+        self.db.commit()
+
+        # Clear guild-related caches
+        self.cache.clear()
+
+        return True
+
+    def update_guild_settings(
+        self,
+        guild_id: int,
+        raid_schedule: Optional[str] = None,
+        loot_system: Optional[str] = None,
+        public_logs: Optional[bool] = None,
+    ) -> bool:
+        """
+        Update guild settings in the JSONB settings column.
+
+        Args:
+            guild_id: Guild ID to update
+            raid_schedule: Guild raid schedule
+            loot_system: Loot distribution system
+            public_logs: Whether logs are public
+
+        Returns:
+            True if successful
+        """
+        import json
+
+        # Get current settings
+        cursor = self.db.execute(
+            "SELECT settings FROM guilds WHERE guild_id = ?",
+            (guild_id,)
+        )
+        result = cursor.fetchone()
+
+        if not result:
+            return False
+
+        # Parse current settings or use empty dict
+        current_settings = {}
+        if result[0]:
+            try:
+                current_settings = json.loads(result[0]) if isinstance(result[0], str) else result[0]
+            except (json.JSONDecodeError, TypeError):
+                current_settings = {}
+
+        # Update only provided settings
+        if raid_schedule is not None:
+            current_settings["raid_schedule"] = raid_schedule
+
+        if loot_system is not None:
+            current_settings["loot_system"] = loot_system
+
+        if public_logs is not None:
+            current_settings["public_logs"] = public_logs
+
+        # Update the guild with new settings
+        self.db.execute(
+            "UPDATE guilds SET settings = ?, updated_at = CURRENT_TIMESTAMP WHERE guild_id = ?",
+            (json.dumps(current_settings), guild_id)
+        )
+        self.db.commit()
+
+        # Clear guild-related caches
+        self.cache.clear()
+
+        return True
+
+    def delete_guild(self, guild_id: int) -> bool:
+        """
+        Soft delete guild (set is_active to FALSE).
+
+        Args:
+            guild_id: Guild ID to delete
+
+        Returns:
+            True if successful
+        """
+        self.db.execute(
+            """
+            UPDATE guilds
+            SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
+            WHERE guild_id = ?
+            """,
+            (guild_id,)
+        )
+        self.db.commit()
+
+        # Clear guild-related caches
+        self.cache.clear()
+
+        return True
+
+    def get_guild_encounters(
+        self,
+        guild_id: int,
+        encounter_type: Optional[str] = None,
+        limit: int = 100,
+    ) -> List[EncounterSummary]:
+        """
+        Get encounters for specific guild.
+
+        Args:
+            guild_id: Guild ID
+            encounter_type: Optional filter by type ('raid' or 'mythic_plus')
+            limit: Maximum number of encounters to return
+
+        Returns:
+            List of EncounterSummary objects for the guild
+        """
+        cache_key = f"guild_encounters:{guild_id}:{encounter_type}:{limit}"
+        cached = self.cache.get(cache_key)
+        if cached:
+            self.stats["cache_hits"] += 1
+            return cached
+
+        start_time = time.time()
+        self.stats["queries_executed"] += 1
+
+        query = """
+            SELECT
+                encounter_id, encounter_type, boss_name, difficulty,
+                start_time, end_time, success, combat_length, raid_size,
+                (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
+            FROM encounters e
+            WHERE guild_id = ?
+        """
+        params = [guild_id]
+
+        if encounter_type:
+            query += " AND encounter_type = ?"
+            params.append(encounter_type)
+
+        query += " ORDER BY start_time DESC LIMIT ?"
+        params.append(limit)
+
+        cursor = self.db.execute(query, params)
+
+        encounters = []
+        for row in cursor:
+            encounter = EncounterSummary(
+                encounter_id=row[0],
+                encounter_type=row[1],
+                boss_name=row[2],
+                difficulty=row[3],
+                start_time=datetime.fromtimestamp(row[4]) if row[4] else None,
+                end_time=datetime.fromtimestamp(row[5]) if row[5] else None,
+                success=bool(row[6]),
+                combat_length=row[7],
+                raid_size=row[8],
+                character_count=row[9],
+            )
+            encounters.append(encounter)
+
+        query_time = time.time() - start_time
+        self.stats["total_query_time"] += query_time
+        self.stats["cache_misses"] += 1
+
+        self.cache.put(cache_key, encounters)
+        return encounters
+
+    def export_encounter_data(
+        self,
+        encounter_id: int,
+        guild_id: Optional[int] = None,
+        decompress_events: bool = False,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Export full encounter data with optional event decompression.
+
+        Args:
+            encounter_id: Encounter ID to export
+            guild_id: Guild ID for multi-tenant filtering
+            decompress_events: Whether to decompress and include event data
+
+        Returns:
+            Complete encounter data dictionary or None if not found
+        """
+        # Get encounter summary
+        encounter = self.get_encounter(encounter_id, guild_id)
+        if not encounter:
+            return None
+
+        # Get character metrics
+        metrics = self.get_character_metrics(encounter_id, guild_id=guild_id)
+
+        # Build export data
+        export_data = {
+            "encounter": {
+                "encounter_id": encounter.encounter_id,
+                "encounter_type": encounter.encounter_type,
+                "boss_name": encounter.boss_name,
+                "difficulty": encounter.difficulty,
+                "start_time": encounter.start_time.isoformat() if encounter.start_time else None,
+                "end_time": encounter.end_time.isoformat() if encounter.end_time else None,
+                "success": encounter.success,
+                "combat_length": encounter.combat_length,
+                "raid_size": encounter.raid_size,
+                "character_count": encounter.character_count,
+            },
+            "character_metrics": [
+                {
+                    "character_name": m.character_name,
+                    "character_guid": m.character_guid,
+                    "class_name": m.class_name,
+                    "spec_name": m.spec_name,
+                    "damage_done": m.damage_done,
+                    "healing_done": m.healing_done,
+                    "damage_taken": m.damage_taken,
+                    "death_count": m.death_count,
+                    "dps": m.dps,
+                    "hps": m.hps,
+                    "activity_percentage": m.activity_percentage,
+                    "time_alive": m.time_alive,
+                    "combat_time": m.combat_time,
+                    "combat_dps": m.combat_dps,
+                    "combat_hps": m.combat_hps,
+                }
+                for m in metrics
+            ],
+        }
+
+        # Optionally include decompressed events
+        if decompress_events:
+            # Get event blocks for this encounter
+            query = """
+                SELECT
+                    eb.character_id,
+                    c.character_name,
+                    eb.block_index,
+                    eb.start_time,
+                    eb.end_time,
+                    eb.compressed_data,
+                    eb.event_count
+                FROM event_blocks eb
+                JOIN characters c ON eb.character_id = c.character_id
+                WHERE eb.encounter_id = ?
+                ORDER BY eb.character_id, eb.block_index
+            """
+            cursor = self.db.execute(query, (encounter_id,))
+            blocks = cursor.fetchall()
+
+            events_by_character = {}
+            for block in blocks:
+                char_name = block[1]
+                if char_name not in events_by_character:
+                    events_by_character[char_name] = []
+
+                # Decompress events from this block
+                compressed_data = block[5]
+                decompressed = self.decompressor.decompress_events(compressed_data)
+
+                # Add basic event info (not full event data to keep size manageable)
+                for event in decompressed[:10]:  # Limit to first 10 events per block for export
+                    events_by_character[char_name].append({
+                        "timestamp": event.timestamp,
+                        "event_type": event.event.event_type if hasattr(event.event, 'event_type') else "unknown",
+                    })
+
+            export_data["event_samples"] = events_by_character
+
+        return export_data
+
+    def get_character_profile(
+        self, character_name: str, server: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get detailed character profile."""
+        query = """
+            SELECT
+                character_id, character_guid, character_name, server, region,
+                class_name, spec_name, first_seen, last_seen, encounter_count
+            FROM characters
+            WHERE character_name = ?
+        """
+        params = [character_name]
+
+        if server:
+            query += " AND server = ?"
+            params.append(server)
+
+        cursor = self.db.execute(query, params)
+        row = cursor.fetchone()
+
+        if not row:
+            return None
+
+        return {
+            "character_id": row[0],
+            "character_guid": row[1],
+            "name": row[2],
+            "server": row[3] or "Unknown",
+            "region": row[4] or "US",
+            "class_name": row[5] or "Unknown",
+            "spec": row[6] or "Unknown",
+            "first_seen": row[7],
+            "last_seen": row[8],
+            "encounter_count": row[9] or 0,
+        }
+
+    def get_character_performance(
+        self,
+        character_name: str,
+        encounter_id: Optional[int] = None,
+        time_range: Optional[TimeRange] = None,
+        difficulty: Optional[str] = None,
+        encounter_type: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Get character performance metrics."""
+        # Get character ID first
+        cursor = self.db.execute(
+            "SELECT character_id FROM characters WHERE character_name = ?",
+            (character_name,)
+        )
+        char_row = cursor.fetchone()
+        if not char_row:
+            return None
+
+        character_id = char_row[0]
+
+        if encounter_id:
+            # Get specific encounter performance
+            cursor = self.db.execute(
+                """
+                SELECT
+                    damage_done, healing_done, damage_taken, death_count,
+                    dps, hps, activity_percentage, combat_dps, combat_hps
+                FROM character_metrics
+                WHERE character_id = ? AND encounter_id = ?
+                """,
+                (character_id, encounter_id)
+            )
+            row = cursor.fetchone()
+            if row:
+                return {
+                    "damage_done": row[0],
+                    "healing_done": row[1],
+                    "damage_taken": row[2],
+                    "death_count": row[3],
+                    "dps": row[4],
+                    "hps": row[5],
+                    "activity_percentage": row[6],
+                    "combat_dps": row[7],
+                    "combat_hps": row[8],
+                }
+        else:
+            # Get aggregate performance
+            query = """
+                SELECT
+                    AVG(cm.dps) as avg_dps,
+                    AVG(cm.hps) as avg_hps,
+                    AVG(cm.activity_percentage) as avg_activity,
+                    SUM(cm.death_count) as total_deaths,
+                    COUNT(*) as encounter_count
+                FROM character_metrics cm
+                JOIN encounters e ON cm.encounter_id = e.encounter_id
+                WHERE cm.character_id = ?
+            """
+            params = [character_id]
+
+            if time_range:
+                query += " AND e.start_time BETWEEN ? AND ?"
+                params.extend([time_range.start.timestamp(), time_range.end.timestamp()])
+
+            if difficulty:
+                query += " AND e.difficulty = ?"
+                params.append(difficulty)
+
+            if encounter_type:
+                query += " AND e.encounter_type = ?"
+                params.append(encounter_type)
+
+            cursor = self.db.execute(query, params)
+            row = cursor.fetchone()
+
+            if row and row[4] > 0:  # Has encounters
+                return {
+                    "avg_dps": row[0] or 0.0,
+                    "avg_hps": row[1] or 0.0,
+                    "avg_activity": row[2] or 0.0,
+                    "total_deaths": row[3] or 0,
+                    "encounter_count": row[4],
+                }
+
+        return None
+
+    def get_character_history(
+        self,
+        character_name: str,
+        time_range: TimeRange,
+        encounter_type: Optional[str] = None,
+        difficulty: Optional[str] = None,
+        limit: int = 100,
+    ) -> Optional[Dict[str, Any]]:
+        """Get character performance history."""
+        cursor = self.db.execute(
+            "SELECT character_id FROM characters WHERE character_name = ?",
+            (character_name,)
+        )
+        char_row = cursor.fetchone()
+        if not char_row:
+            return None
+
+        character_id = char_row[0]
+
+        query = """
+            SELECT
+                e.encounter_id, e.boss_name, e.difficulty, e.start_time,
+                cm.dps, cm.hps, cm.death_count
+            FROM character_metrics cm
+            JOIN encounters e ON cm.encounter_id = e.encounter_id
+            WHERE cm.character_id = ?
+            AND e.start_time BETWEEN ? AND ?
+        """
+        params = [character_id, time_range.start.timestamp(), time_range.end.timestamp()]
+
+        if encounter_type:
+            query += " AND e.encounter_type = ?"
+            params.append(encounter_type)
+
+        if difficulty:
+            query += " AND e.difficulty = ?"
+            params.append(difficulty)
+
+        query += " ORDER BY e.start_time DESC LIMIT ?"
+        params.append(limit)
+
+        cursor = self.db.execute(query, params)
+        history = []
+
+        for row in cursor:
+            history.append({
+                "encounter_id": row[0],
+                "boss_name": row[1],
+                "difficulty": row[2],
+                "date": datetime.fromtimestamp(row[3]) if row[3] else None,
+                "dps": row[4],
+                "hps": row[5],
+                "deaths": row[6],
+            })
+
+        return {"history": history} if history else None
+
+    def get_character_ranking(
+        self,
+        character_name: str,
+        metric: str,
+        time_range: TimeRange,
+        encounter_type: Optional[str] = None,
+        difficulty: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Get character ranking for a metric."""
+        # Simplified ranking - would need more complex calculation in production
+        cursor = self.db.execute(
+            "SELECT character_id FROM characters WHERE character_name = ?",
+            (character_name,)
+        )
+        char_row = cursor.fetchone()
+        if not char_row:
+            return None
+
+        character_id = char_row[0]
+
+        # Get character's average for the metric
+        query = f"""
+            SELECT AVG(cm.{metric}) as avg_metric
+            FROM character_metrics cm
+            JOIN encounters e ON cm.encounter_id = e.encounter_id
+            WHERE cm.character_id = ?
+            AND e.start_time BETWEEN ? AND ?
+        """
+        params = [character_id, time_range.start.timestamp(), time_range.end.timestamp()]
+
+        if encounter_type:
+            query += " AND e.encounter_type = ?"
+            params.append(encounter_type)
+
+        if difficulty:
+            query += " AND e.difficulty = ?"
+            params.append(difficulty)
+
+        cursor = self.db.execute(query, params)
+        row = cursor.fetchone()
+
+        if not row or row[0] is None:
+            return None
+
+        return {
+            "metric": metric,
+            "value": row[0],
+            "percentile": 50,  # Placeholder - would need actual calculation
+            "rank": 1,  # Placeholder
+        }
+
+    def get_character_gear(
+        self, character_name: str, encounter_id: Optional[int] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get character gear information."""
+        try:
+            # Get character ID
+            cursor = self.db.execute(
+                "SELECT character_id FROM characters WHERE character_name = ?",
+                (character_name,)
+            )
+            char_row = cursor.fetchone()
+            if not char_row:
+                return None
+
+            character_id = char_row[0]
+
+            # Import gear parser here to avoid circular imports
+            from ..parser.gear_parser import GearParser
+            gear_parser = GearParser()
+
+            if encounter_id:
+                # Get gear for specific encounter
+                snapshot = gear_parser.get_character_gear_by_encounter(self.db, character_id, encounter_id)
+            else:
+                # Get most recent gear snapshot
+                cursor = self.db.execute(
+                    """
+                    SELECT snapshot_id, encounter_id, snapshot_time, source,
+                           average_item_level, equipped_item_level, total_items
+                    FROM character_gear_snapshots
+                    WHERE character_id = ?
+                    ORDER BY snapshot_time DESC
+                    LIMIT 1
+                    """,
+                    (character_id,)
+                )
+
+                snapshot_row = cursor.fetchone()
+                if not snapshot_row:
+                    return {
+                        "character_name": character_name,
+                        "gear": [],
+                        "item_level": 0,
+                        "average_item_level": 0,
+                        "total_items": 0,
+                        "snapshot_time": None,
+                        "source": None,
+                        "recommendations": [],
+                    }
+
+                snapshot_id, enc_id, snapshot_time, source, avg_ilvl, equipped_ilvl, total_items = snapshot_row
+                snapshot = gear_parser.get_character_gear_by_encounter(self.db, character_id, enc_id)
+
+            if not snapshot:
+                return {
+                    "character_name": character_name,
+                    "gear": [],
+                    "item_level": 0,
+                    "average_item_level": 0,
+                    "total_items": 0,
+                    "snapshot_time": None,
+                    "source": None,
+                    "recommendations": [],
+                }
+
+            # Convert gear items to dictionary format
+            gear_items = []
+            for item in snapshot.items:
+                gear_item = {
+                    "slot": item.slot_name,
+                    "slot_index": item.slot_index,
+                    "item_entry": item.item_entry,
+                    "item_level": item.item_level,
+                    "enchant_id": item.enchant_id,
+                    "gems": item.gem_ids,
+                    "upgrade_level": item.upgrade_level,
+                    "bonus_ids": item.bonus_ids,
+                }
+                gear_items.append(gear_item)
+
+            # Generate basic recommendations (placeholder for now)
+            recommendations = []
+            if snapshot.average_item_level > 0:
+                # Find slots with below-average item levels
+                below_avg_slots = [
+                    item for item in snapshot.items
+                    if item.item_level < snapshot.average_item_level - 10
+                ]
+
+                for item in below_avg_slots:
+                    recommendations.append({
+                        "type": "upgrade",
+                        "slot": item.slot_name,
+                        "current_ilvl": item.item_level,
+                        "recommended_ilvl": int(snapshot.average_item_level),
+                        "message": f"{item.slot_name} is significantly below average item level"
+                    })
+
+                # Check for missing enchants on enchantable slots
+                enchantable_slots = ["Main_Hand", "Off_Hand", "Chest", "Legs", "Feet", "Hands", "Wrist", "Back"]
+                for item in snapshot.items:
+                    if item.slot_name in enchantable_slots and item.enchant_id == 0:
+                        recommendations.append({
+                            "type": "enchant",
+                            "slot": item.slot_name,
+                            "message": f"{item.slot_name} is missing an enchant"
+                        })
+
+            return {
+                "character_name": character_name,
+                "gear": gear_items,
+                "item_level": snapshot.average_item_level,  # Legacy field
+                "average_item_level": snapshot.average_item_level,
+                "equipped_item_level": snapshot.equipped_item_level,
+                "total_items": snapshot.total_items,
+                "snapshot_time": snapshot.snapshot_time,
+                "source": snapshot.source,
+                "recommendations": recommendations,
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting character gear for {character_name}: {e}")
+            return None
+
+    def get_character_talents(
+        self, character_name: str, encounter_id: Optional[int] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get character talent information."""
+        # Placeholder - talent tracking not implemented in current schema
+        return {
+            "character_name": character_name,
+            "talents": [],
+            "recommendations": [],
+        }
+
+    def get_character_trends(
+        self,
+        character_name: str,
+        metric: str,
+        time_range: TimeRange,
+        interval: str,
+        encounter_type: Optional[str] = None,
+        difficulty: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Get character performance trends."""
+        cursor = self.db.execute(
+            "SELECT character_id FROM characters WHERE character_name = ?",
+            (character_name,)
+        )
+        char_row = cursor.fetchone()
+        if not char_row:
+            return None
+
+        character_id = char_row[0]
+
+        # Get daily averages for simplicity
+        query = f"""
+            SELECT
+                DATE(e.start_time, 'unixepoch') as date,
+                AVG(cm.{metric}) as value
+            FROM character_metrics cm
+            JOIN encounters e ON cm.encounter_id = e.encounter_id
+            WHERE cm.character_id = ?
+            AND e.start_time BETWEEN ? AND ?
+        """
+        params = [character_id, time_range.start.timestamp(), time_range.end.timestamp()]
+
+        if encounter_type:
+            query += " AND e.encounter_type = ?"
+            params.append(encounter_type)
+
+        if difficulty:
+            query += " AND e.difficulty = ?"
+            params.append(difficulty)
+
+        query += " GROUP BY DATE(e.start_time, 'unixepoch') ORDER BY date"
+
+        cursor = self.db.execute(query, params)
+        data_points = []
+
+        for row in cursor:
+            data_points.append({
+                "date": row[0],
+                "value": row[1] or 0,
+            })
+
+        return {
+            "metric": metric,
+            "data_points": data_points,
+        } if data_points else None
+
+    def compare_characters(
+        self,
+        base_character: str,
+        compare_characters: List[str],
+        metric: str,
+        encounter_id: Optional[int] = None,
+        time_range: Optional[TimeRange] = None,
+    ) -> Dict[str, Any]:
+        """Compare characters on a specific metric."""
+        all_characters = [base_character] + compare_characters
+        comparisons = {}
+
+        for char_name in all_characters:
+            cursor = self.db.execute(
+                "SELECT character_id FROM characters WHERE character_name = ?",
+                (char_name,)
+            )
+            char_row = cursor.fetchone()
+            if not char_row:
+                continue
+
+            character_id = char_row[0]
+
+            if encounter_id:
+                # Compare specific encounter
+                cursor = self.db.execute(
+                    f"SELECT {metric} FROM character_metrics WHERE character_id = ? AND encounter_id = ?",
+                    (character_id, encounter_id)
+                )
+                row = cursor.fetchone()
+                if row:
+                    comparisons[char_name] = row[0] or 0
+            elif time_range:
+                # Compare time range average
+                cursor = self.db.execute(
+                    f"""
+                    SELECT AVG(cm.{metric})
+                    FROM character_metrics cm
+                    JOIN encounters e ON cm.encounter_id = e.encounter_id
+                    WHERE cm.character_id = ?
+                    AND e.start_time BETWEEN ? AND ?
+                    """,
+                    (character_id, time_range.start.timestamp(), time_range.end.timestamp())
+                )
+                row = cursor.fetchone()
+                if row and row[0] is not None:
+                    comparisons[char_name] = row[0]
+
+        return {
+            "metric": metric,
+            "comparisons": comparisons,
+        }
 
     def get_database_stats(self) -> Dict[str, Any]:
         """Get comprehensive database and query statistics."""
