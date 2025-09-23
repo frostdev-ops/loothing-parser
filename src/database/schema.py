@@ -723,6 +723,26 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_combat_periods_time ON combat_periods(start_time, end_time)"
     )
 
+    # Gear tracking indices (multi-tenant aware)
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_guild_character ON character_gear_snapshots(guild_id, character_id, snapshot_time DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_guild_encounter ON character_gear_snapshots(guild_id, encounter_id)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_character_time ON character_gear_snapshots(character_id, snapshot_time DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_source ON character_gear_snapshots(source, snapshot_time DESC)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gear_items_snapshot ON character_gear_items(snapshot_id, slot_index)"
+    )
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gear_items_item ON character_gear_items(item_entry, item_level DESC)"
+    )
+
     # Set schema version (v2 adds multi-tenant guild support)
     db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (2)")
 
