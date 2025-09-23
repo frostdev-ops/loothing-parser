@@ -572,7 +572,82 @@ async def get_guild_attendance(
     guild_name: str, days: int = Query(30, ge=7, le=365), db: DatabaseManager = Depends()
 ):
     """Get guild attendance tracking data."""
-    raise HTTPException(status_code=501, detail="Guild attendance endpoint not yet implemented")
+    try:
+        query_api = QueryAPI(db)
+
+        # Find guild by name
+        cursor = db.execute(
+            "SELECT guild_id FROM guilds WHERE guild_name = ?",
+            (guild_name,)
+        )
+        guild_row = cursor.fetchone()
+
+        if not guild_row:
+            raise HTTPException(status_code=404, detail=f"Guild '{guild_name}' not found")
+
+        guild_id = guild_row[0]
+
+        # Get encounter participation in the last N days
+        cursor = db.execute(
+            """
+            SELECT
+                c.character_name,
+                COUNT(DISTINCT DATE(e.start_time, 'unixepoch')) as raid_days,
+                COUNT(e.encounter_id) as total_encounters,
+                SUM(CASE WHEN e.success = 1 THEN 1 ELSE 0 END) as successful_encounters
+            FROM characters c
+            LEFT JOIN encounter_participants ep ON c.character_id = ep.character_id
+            LEFT JOIN encounters e ON ep.encounter_id = e.encounter_id
+                AND e.start_time >= strftime('%s', 'now', '-{} days')
+            WHERE c.guild_id = ?
+            GROUP BY c.character_id, c.character_name
+            ORDER BY raid_days DESC, c.character_name
+            """.format(days),
+            (guild_id,)
+        )
+
+        members = []
+        total_raid_days = 0
+
+        # Get total available raid days for attendance calculation
+        cursor_total = db.execute(
+            """
+            SELECT COUNT(DISTINCT DATE(start_time, 'unixepoch')) as total_raid_days
+            FROM encounters
+            WHERE guild_id = ? AND start_time >= strftime('%s', 'now', '-{} days')
+            """.format(days),
+            (guild_id,)
+        )
+        total_raid_days = cursor_total.fetchone()[0] or 1
+
+        for row in cursor:
+            character_name, raid_days, total_encounters, successful_encounters = row
+            attendance_rate = (raid_days / total_raid_days * 100) if total_raid_days > 0 else 0
+
+            members.append({
+                "character_name": character_name,
+                "raid_days": raid_days or 0,
+                "total_encounters": total_encounters or 0,
+                "successful_encounters": successful_encounters or 0,
+                "attendance_rate": round(attendance_rate, 2)
+            })
+
+        return {
+            "guild_name": guild_name,
+            "period_days": days,
+            "total_raid_days": total_raid_days,
+            "members": members,
+            "summary": {
+                "average_attendance": sum(m["attendance_rate"] for m in members) / len(members) if members else 0,
+                "total_members": len(members),
+                "active_members": len([m for m in members if m["raid_days"] > 0])
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve guild attendance: {str(e)}")
 
 
 @router.get("/guilds/{guild_name}/performance", response_model=GuildPerformance)
