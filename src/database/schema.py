@@ -1,39 +1,79 @@
 """
-SQLite database schema for WoW combat log storage.
+Database schema for WoW combat log storage.
 
+Supports both SQLite (standalone) and PostgreSQL (Docker) with automatic backend selection.
 Optimized for fast queries and efficient storage with aggressive compression.
 """
 
 import sqlite3
 import logging
+import os
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 import time
 
 logger = logging.getLogger(__name__)
 
+# Check if we should use PostgreSQL adapter
+try:
+    from ..config import get_database_config
+    from .postgres_adapter import DatabaseManager as PostgreSQLDatabaseManager
+    _postgres_available = True
+except ImportError:
+    _postgres_available = False
+
 
 class DatabaseManager:
     """
-    Manages SQLite database connection and schema operations.
+    Universal database manager with automatic backend selection.
 
-    Provides connection pooling, transaction management, and
-    schema versioning for the combat log database.
+    Automatically selects PostgreSQL (Docker) or SQLite (standalone) based on environment.
+    Provides unified interface for connection pooling, transaction management, and
+    schema operations.
     """
 
     def __init__(self, db_path: str = "combat_logs.db"):
         """
-        Initialize database manager.
+        Initialize database manager with automatic backend selection.
 
         Args:
-            db_path: Path to SQLite database file
+            db_path: SQLite database path (used only if PostgreSQL not configured)
         """
         self.db_path = Path(db_path)
-        self.connection: Optional[sqlite3.Connection] = None
-        self._setup_database()
+        self.backend = None
+        self.backend_type = None
+        self._initialize_backend()
 
-    def _setup_database(self):
-        """Initialize database with optimized settings."""
+    def _initialize_backend(self):
+        """Initialize the appropriate database backend."""
+        # Check if PostgreSQL configuration is available
+        if _postgres_available and self._should_use_postgresql():
+            logger.info("Initializing PostgreSQL backend")
+            try:
+                self.backend = PostgreSQLDatabaseManager()
+                self.backend_type = "postgresql"
+                logger.info("PostgreSQL backend initialized successfully")
+                return
+            except Exception as e:
+                logger.warning(f"Failed to initialize PostgreSQL backend: {e}")
+                logger.info("Falling back to SQLite backend")
+
+        # Fall back to SQLite
+        logger.info(f"Initializing SQLite backend at {self.db_path}")
+        self.backend_type = "sqlite"
+        self._setup_sqlite_database()
+
+    def _should_use_postgresql(self) -> bool:
+        """Determine if PostgreSQL should be used."""
+        try:
+            config = get_database_config()
+            return config.get("type") == "postgresql"
+        except:
+            # If config is not available, check environment directly
+            return bool(os.getenv("DB_HOST") and os.getenv("DB_NAME"))
+
+    def _setup_sqlite_database(self):
+        """Initialize SQLite database with optimized settings."""
         try:
             # Ensure parent directory exists with proper error handling
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -67,28 +107,66 @@ class DatabaseManager:
         # Set row factory for dict-like access
         self.connection.row_factory = sqlite3.Row
 
-        logger.info(f"Database initialized at {self.db_path}")
+        logger.info(f"SQLite database initialized at {self.db_path}")
 
-    def execute(self, query: str, params: tuple = ()) -> sqlite3.Cursor:
-        """Execute a single query."""
-        return self.connection.execute(query, params)
+    def execute(self, query: str, params: tuple = (), fetch_results: bool = True) -> Optional[List[Dict[str, Any]]]:
+        """Execute a single query on the appropriate backend."""
+        if self.backend_type == "postgresql":
+            return self.backend.execute(query, params, fetch_results)
+        else:
+            # SQLite backend
+            cursor = self.connection.execute(query, params)
+            if fetch_results and cursor.description:
+                return [dict(row) for row in cursor.fetchall()]
+            return None
 
-    def executemany(self, query: str, params_list: List[tuple]) -> sqlite3.Cursor:
+    def execute_many(self, query: str, params_list: List[tuple]) -> None:
         """Execute query with multiple parameter sets."""
-        return self.connection.executemany(query, params_list)
+        if self.backend_type == "postgresql":
+            return self.backend.execute_many(query, params_list)
+        else:
+            # SQLite backend
+            self.connection.executemany(query, params_list)
+            self.connection.commit()
+
+    # Legacy method for compatibility
+    def executemany(self, query: str, params_list: List[tuple]) -> None:
+        """Execute query with multiple parameter sets (legacy method)."""
+        return self.execute_many(query, params_list)
 
     def commit(self):
         """Commit current transaction."""
-        self.connection.commit()
+        if self.backend_type == "postgresql":
+            # PostgreSQL handles commits per connection
+            pass
+        else:
+            self.connection.commit()
 
     def rollback(self):
         """Rollback current transaction."""
-        self.connection.rollback()
+        if self.backend_type == "postgresql":
+            # PostgreSQL handles rollbacks per connection
+            pass
+        else:
+            self.connection.rollback()
 
     def close(self):
         """Close database connection."""
-        if self.connection:
+        if self.backend_type == "postgresql":
+            self.backend.close()
+        elif hasattr(self, 'connection') and self.connection:
             self.connection.close()
+
+    def health_check(self) -> bool:
+        """Check database health."""
+        if self.backend_type == "postgresql":
+            return self.backend.health_check()
+        else:
+            try:
+                self.execute("SELECT 1", fetch_results=True)
+                return True
+            except Exception:
+                return False
 
     def get_table_info(self, table_name: str) -> List[Dict[str, Any]]:
         """Get table schema information."""
@@ -477,6 +555,48 @@ def create_tables(db: DatabaseManager) -> None:
             duration REAL NOT NULL,
             event_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """
+    )
+
+    # Character gear snapshots (when gear was captured)
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS character_gear_snapshots (
+            snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
+            encounter_id INTEGER REFERENCES encounters(encounter_id),
+            character_id INTEGER NOT NULL REFERENCES characters(character_id),
+            snapshot_time REAL NOT NULL,
+            source TEXT NOT NULL CHECK(source IN ('combatant_info', 'manual', 'armory')),
+            average_item_level REAL DEFAULT 0.0,
+            equipped_item_level REAL DEFAULT 0.0,
+            total_items INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(character_id, encounter_id)
+        )
+    """
+    )
+
+    # Individual gear items for each snapshot
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS character_gear_items (
+            item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_id INTEGER NOT NULL REFERENCES character_gear_snapshots(snapshot_id),
+            slot_index INTEGER NOT NULL CHECK(slot_index BETWEEN 1 AND 18),
+            slot_name TEXT NOT NULL,
+            item_entry INTEGER NOT NULL,
+            item_level INTEGER DEFAULT 0,
+            enchant_id INTEGER DEFAULT 0,
+            gem_1_id INTEGER DEFAULT 0,
+            gem_2_id INTEGER DEFAULT 0,
+            gem_3_id INTEGER DEFAULT 0,
+            gem_4_id INTEGER DEFAULT 0,
+            upgrade_level INTEGER DEFAULT 0,
+            bonus_ids TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(snapshot_id, slot_index)
         )
     """
     )
