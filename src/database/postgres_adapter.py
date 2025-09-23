@@ -114,6 +114,10 @@ class PostgreSQLManager:
                         logger.info(f"Verified required tables exist: {required_tables}")
 
             logger.info("PostgreSQL schema check completed")
+        except Exception as e:
+            logger.error(f"Failed to check schema: {e}")
+            # Don't fail if we can't check - the database might still work
+            logger.warning("Continuing despite schema check failure")
 
     def get_connection(self):
         """Get a connection from the pool."""
