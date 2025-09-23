@@ -368,12 +368,13 @@ class HybridDatabaseManager:
         """
         try:
             for metric in metrics:
-                # Get character ID if we have the GUID
+                # Get character ID if we have the name
                 character_id = None
-                if metric.get('character_guid'):
+                character_name = metric.get('character_name')
+                if character_name:
                     result = self.postgres.execute(
-                        "SELECT id FROM characters WHERE guid = %s",
-                        (metric['character_guid'],)
+                        "SELECT id FROM characters WHERE character_name = %s",
+                        (character_name,)
                     )
                     if result:
                         character_id = result[0]['id']
