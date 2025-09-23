@@ -2017,12 +2017,107 @@ class QueryAPI:
         self, character_name: str, encounter_id: Optional[int] = None
     ) -> Optional[Dict[str, Any]]:
         """Get character talent information."""
-        # Placeholder - talent tracking not implemented in current schema
-        return {
-            "character_name": character_name,
-            "talents": [],
-            "recommendations": [],
-        }
+        try:
+            # Get character ID
+            cursor = self.db.execute(
+                "SELECT character_id FROM characters WHERE character_name = ?",
+                (character_name,)
+            )
+            char_row = cursor.fetchone()
+            if not char_row:
+                return None
+
+            character_id = char_row[0]
+
+            # Import talent parser here to avoid circular imports
+            from ..parser.talent_parser import TalentParser
+            talent_parser = TalentParser()
+
+            if encounter_id:
+                # Get talents for specific encounter
+                snapshot = talent_parser.get_character_talents_by_encounter(self.db, character_id, encounter_id)
+            else:
+                # Get most recent talent snapshot
+                cursor = self.db.execute(
+                    """
+                    SELECT snapshot_id, encounter_id, snapshot_time, source,
+                           specialization, talent_loadout, total_talents
+                    FROM character_talent_snapshots
+                    WHERE character_id = ?
+                    ORDER BY snapshot_time DESC
+                    LIMIT 1
+                    """,
+                    (character_id,)
+                )
+
+                snapshot_row = cursor.fetchone()
+                if not snapshot_row:
+                    return {
+                        "character_name": character_name,
+                        "specialization": "",
+                        "talent_loadout": "",
+                        "talents": [],
+                        "total_talents": 0,
+                        "snapshot_time": None,
+                        "source": None,
+                        "recommendations": [],
+                    }
+
+                snapshot_id, enc_id, snapshot_time, source, specialization, talent_loadout, total_talents = snapshot_row
+                snapshot = talent_parser.get_character_talents_by_encounter(self.db, character_id, enc_id)
+
+            if not snapshot:
+                return {
+                    "character_name": character_name,
+                    "specialization": "",
+                    "talent_loadout": "",
+                    "talents": [],
+                    "total_talents": 0,
+                    "snapshot_time": None,
+                    "source": None,
+                    "recommendations": [],
+                }
+
+            # Convert talent selections to dictionary format
+            talent_selections = []
+            for talent in snapshot.talents:
+                talent_data = {
+                    "slot": talent.talent_slot,
+                    "spell_id": talent.talent_spell_id,
+                    "tier": talent.talent_tier,
+                    "column": talent.talent_column,
+                    "selected": talent.is_selected,
+                }
+                talent_selections.append(talent_data)
+
+            # Generate recommendations
+            # Try to determine encounter type from encounter_id
+            encounter_type = None
+            if encounter_id:
+                cursor = self.db.execute(
+                    "SELECT encounter_type FROM encounters WHERE encounter_id = ?",
+                    (encounter_id,)
+                )
+                enc_row = cursor.fetchone()
+                if enc_row:
+                    encounter_type = enc_row[0]
+
+            recommendations = talent_parser.generate_talent_recommendations(snapshot, encounter_type)
+
+            return {
+                "character_name": character_name,
+                "specialization": snapshot.specialization,
+                "talent_loadout": snapshot.talent_loadout,
+                "talents": talent_selections,
+                "total_talents": snapshot.total_talents,
+                "snapshot_time": snapshot.snapshot_time,
+                "source": snapshot.source,
+                "recommendations": recommendations,
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting character talents for {character_name}: {e}")
+            return None
 
     def get_character_trends(
         self,
