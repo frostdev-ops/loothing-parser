@@ -347,11 +347,12 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_metrics_guild_encounter ON character_metrics(guild_id, encounter_id)", 
     ]
 
-    for index_sql in indexes_to_create:
-        try:
-            db.execute(index_sql)
-        except Exception as e:
-            logger.warning(f"Failed to create index: {index_sql} - {e}")
+    # Skip index creation in migration - indexes will be created after all tables exist
+    # for index_sql in indexes_to_create:
+    #     try:
+    #         db.execute(index_sql)
+    #     except Exception as e:
+    #         logger.warning(f"Failed to create index: {index_sql} - {e}")
 
     # Update schema version
     db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (?)", (CURRENT_SCHEMA_VERSION,))
