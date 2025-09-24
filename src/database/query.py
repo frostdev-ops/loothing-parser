@@ -2001,9 +2001,9 @@ class QueryAPI:
                 for item in snapshot.items:
                     if item.slot_name in enchantable_slots and item.enchant_id == 0:
                         recommendations.append({
-                            "type": "enchant" 
-                            "slot": item.slot_name 
-                            "message": f"{item.slot_name} is missing an enchant"
+                            "type": "enchant",
+                            "slot": item.slot_name,
+                            "message": f"{item.slot_name} is missing an enchant",
                         })
 
             return {
