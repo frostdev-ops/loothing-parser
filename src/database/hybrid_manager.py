@@ -252,6 +252,7 @@ class HybridDatabaseManager:
                 absorbed=event.get('absorbed'),
                 blocked=event.get('blocked'),
                 resisted=event.get('resisted'),
+                guild_id=guild_id,
                 tags=tags,
                 fields=event.get('fields')
             )
@@ -313,7 +314,7 @@ class HybridDatabaseManager:
                 }
                 influx_events.append(influx_event)
 
-            return self.influx.write_combat_events_batch(influx_events)
+            return self.influx.write_combat_events_batch(influx_events, guild_id=guild_id)
 
         except Exception as e:
             logger.error(f"Failed to save combat events batch: {e}")

@@ -82,6 +82,147 @@ class InfluxDBDirectManager:
 
         logger.info("InfluxDB Direct Manager initialized successfully")
 
+    def _validate_guild_id(self, guild_id: int = None) -> int:
+        """
+        Validate guild_id with fallback handling.
+
+        Args:
+            guild_id: Guild identifier to validate
+
+        Returns:
+            Valid guild_id (defaults to 1 if invalid/missing)
+        """
+        if guild_id is None or guild_id <= 0:
+            logger.warning(f"Invalid or missing guild_id: {guild_id}, using fallback guild_id=1")
+            return 1
+
+        return guild_id
+
+    def _generate_time_window_encounter_id(
+        self,
+        encounter_start: datetime,
+        guild_id: int,
+        boss_encounter_id: str = None,
+        boss_name: str = None
+    ) -> str:
+        """
+        Generate a time-window based encounter ID for proper time-series organization.
+
+        The ID format includes:
+        - Guild ID for multi-tenancy
+        - Timestamp for time-series ordering
+        - Boss encounter ID or name hash for encounter identification
+        - Short UUID suffix for uniqueness
+
+        Args:
+            encounter_start: Start timestamp of the encounter
+            guild_id: Guild identifier
+            boss_encounter_id: Game's encounter ID (e.g., 2902 for Ulgrax)
+            boss_name: Boss name as fallback identifier
+
+        Returns:
+            Time-window based encounter ID: "guild{guild_id}_t{timestamp}_enc{boss_id}_{uuid_suffix}"
+        """
+        try:
+            # Convert timestamp to milliseconds for precision
+            timestamp_ms = int(encounter_start.timestamp() * 1000)
+
+            # Use boss encounter ID if available, otherwise hash boss name
+            if boss_encounter_id:
+                boss_identifier = str(boss_encounter_id)
+            elif boss_name:
+                import hashlib
+                boss_hash = hashlib.sha256(boss_name.encode()).hexdigest()[:8]
+                boss_identifier = f"hash{boss_hash}"
+            else:
+                boss_identifier = "unknown"
+
+            # Generate short UUID suffix for uniqueness
+            import uuid
+            uuid_suffix = str(uuid.uuid4())[:8]
+
+            # Create time-window based encounter ID
+            encounter_id = f"guild{guild_id}_t{timestamp_ms}_enc{boss_identifier}_{uuid_suffix}"
+
+            logger.debug(f"Generated time-window encounter ID: {encounter_id}")
+            return encounter_id
+
+        except Exception as e:
+            logger.error(f"Failed to generate time-window encounter ID: {e}")
+            # Fallback to UUID
+            return str(uuid.uuid4())
+
+    def process_encounter_event(self, event: Dict[str, Any], guild_id: int = None) -> bool:
+        """
+        Process ENCOUNTER_START or ENCOUNTER_END events for boundary detection.
+
+        Args:
+            event: Encounter event data
+            guild_id: Guild identifier for multi-tenancy
+
+        Returns:
+            Success status
+        """
+        try:
+            event_type = event.get('event_type')
+            timestamp = event.get('timestamp')
+
+            if not event_type or not timestamp:
+                logger.warning(f"Invalid encounter event: missing type or timestamp")
+                return False
+
+            if isinstance(timestamp, str):
+                timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+
+            validated_guild_id = self._validate_guild_id(guild_id)
+
+            if event_type == "ENCOUNTER_START":
+                # Store encounter start info for later pairing with END event
+                encounter_key = f"{event.get('encounter_id', 'unknown')}_{validated_guild_id}"
+                self._active_encounters = getattr(self, '_active_encounters', {})
+                self._active_encounters[encounter_key] = {
+                    'start_time': timestamp,
+                    'boss_name': event.get('encounter_name', 'Unknown Boss'),
+                    'difficulty': event.get('difficulty', 0),
+                    'guild_id': validated_guild_id,
+                    'encounter_id': event.get('encounter_id')
+                }
+                logger.info(f"Started encounter tracking: {encounter_key}")
+
+            elif event_type == "ENCOUNTER_END":
+                # Match with stored START event and create window
+                encounter_key = f"{event.get('encounter_id', 'unknown')}_{validated_guild_id}"
+                active_encounters = getattr(self, '_active_encounters', {})
+
+                if encounter_key in active_encounters:
+                    start_info = active_encounters[encounter_key]
+                    encounter_metadata = {
+                        'boss_name': start_info['boss_name'],
+                        'difficulty': start_info['difficulty'],
+                        'guild_id': validated_guild_id,
+                        'encounter_id': start_info['encounter_id'],
+                        'success': event.get('success', False)
+                    }
+
+                    # Create encounter window
+                    window_id = self.define_encounter_window(
+                        encounter_start=start_info['start_time'],
+                        encounter_end=timestamp,
+                        encounter_metadata=encounter_metadata
+                    )
+
+                    # Clean up active encounter
+                    del active_encounters[encounter_key]
+                    logger.info(f"Completed encounter: {encounter_key} -> {window_id}")
+                else:
+                    logger.warning(f"ENCOUNTER_END without matching START: {encounter_key}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to process encounter event: {e}")
+            return False
+
     def stream_combat_events(
         self 
         events: List[Dict[str Any]] 
@@ -109,7 +250,7 @@ class InfluxDBDirectManager:
 
             for event in events:
                 # Create InfluxDB point for each event
-                point = Point("combat_event")
+                point = Point("combat_events")
 
                 # Set timestamp with high precision
                 timestamp = event.get('timestamp')
@@ -119,34 +260,36 @@ class InfluxDBDirectManager:
 
                 # Core tags for efficient querying (indexed)
                 if encounter_id:
-                    point.tag("encounter_id" encounter_id)
-                point.tag("event_type" event.get('event_type' 'UNKNOWN'))
+                    point.tag("encounter_id", encounter_id)
+                point.tag("event_type", event.get('event_type', 'UNKNOWN'))
 
                 if event.get('source_guid'):
-                    point.tag("source_guid" event['source_guid'])
+                    point.tag("source_guid", event['source_guid'])
                 if event.get('source_name'):
-                    point.tag("source_name" event['source_name'])
+                    point.tag("source_name", event['source_name'])
                 if event.get('target_guid'):
-                    point.tag("target_guid" event['target_guid'])
+                    point.tag("target_guid", event['target_guid'])
                 if event.get('target_name'):
-                    point.tag("target_name" event['target_name'])
+                    point.tag("target_name", event['target_name'])
 
                 # Spell/ability information
                 if event.get('spell_id'):
-                    point.tag("spell_id" str(event['spell_id']))
+                    point.tag("spell_id", str(event['spell_id']))
                 if event.get('spell_name'):
-                    point.tag("spell_name" event['spell_name'])
+                    point.tag("spell_name", event['spell_name'])
                 if event.get('school'):
-                    point.tag("school" event['school'])
+                    point.tag("school", event['school'])
 
                 # Encounter context tags
                 if encounter_context:
                     if encounter_context.get('boss_name'):
                         point.tag("boss_name" encounter_context['boss_name'])
                     if encounter_context.get('difficulty'):
-                        point.tag("difficulty" encounter_context['difficulty'])
-                    if encounter_context.get('guild_id'):
-                        point.tag("guild_id" str(encounter_context['guild_id']))
+                        point.tag("difficulty", encounter_context['difficulty'])
+                    # Add guild_id with validation and fallback
+                    guild_id_from_context = encounter_context.get('guild_id')
+                    validated_guild_id = self._validate_guild_id(guild_id_from_context)
+                    point.tag("guild_id", str(validated_guild_id))
 
                 # Numeric fields (not indexed for aggregation)
                 if event.get('amount') is not None:
@@ -189,10 +332,10 @@ class InfluxDBDirectManager:
             return False
 
     def define_encounter_window(
-        self 
-        encounter_start: datetime 
-        encounter_end: datetime 
-        encounter_metadata: Dict[str Any]
+        self,
+        encounter_start: datetime,
+        encounter_end: datetime,
+        encounter_metadata: Dict[str, Any]
     ) -> str:
         """
         Define an encounter as a time window in InfluxDB.
@@ -209,38 +352,44 @@ class InfluxDBDirectManager:
             Encounter window ID (UUID)
         """
         try:
-            encounter_id = str(uuid.uuid4())
+            # Generate time-window based encounter ID
+            encounter_id = self._generate_time_window_encounter_id(
+                encounter_start=encounter_start,
+                guild_id=encounter_metadata.get('guild_id', 1),
+                boss_encounter_id=encounter_metadata.get('encounter_id'),
+                boss_name=encounter_metadata.get('boss_name')
+            )
 
             # Create encounter boundary markers in InfluxDB
             start_point = Point("encounter_boundary") \
-                .tag("encounter_id" encounter_id) \
-                .tag("boundary_type" "start") \
-                .tag("boss_name" encounter_metadata.get('boss_name' '')) \
-                .tag("difficulty" encounter_metadata.get('difficulty' '')) \
-                .tag("guild_id" str(encounter_metadata.get('guild_id' 1))) \
+                .tag("encounter_id", encounter_id) \
+                .tag("boundary_type", "start") \
+                .tag("boss_name", encounter_metadata.get('boss_name', '')) \
+                .tag("difficulty", encounter_metadata.get('difficulty', '')) \
+                .tag("guild_id", str(encounter_metadata.get('guild_id', 1))) \
                 .field("success" False) \
-                .time(encounter_start WritePrecision.MS)
+                .time(encounter_start, WritePrecision.MS)
 
             end_point = Point("encounter_boundary") \
-                .tag("encounter_id" encounter_id) \
-                .tag("boundary_type" "end") \
-                .tag("boss_name" encounter_metadata.get('boss_name' '')) \
-                .tag("difficulty" encounter_metadata.get('difficulty' '')) \
-                .tag("guild_id" str(encounter_metadata.get('guild_id' 1))) \
-                .field("success" encounter_metadata.get('success' False)) \
-                .field("duration_ms" int((encounter_end - encounter_start).total_seconds() * 1000)) \
-                .time(encounter_end WritePrecision.MS)
+                .tag("encounter_id", encounter_id) \
+                .tag("boundary_type", "end") \
+                .tag("boss_name", encounter_metadata.get('boss_name', '')) \
+                .tag("difficulty", encounter_metadata.get('difficulty', '')) \
+                .tag("guild_id", str(encounter_metadata.get('guild_id', 1))) \
+                .field("success", encounter_metadata.get('success', False)) \
+                .field("duration_ms", int((encounter_end - encounter_start).total_seconds() * 1000)) \
+                .time(encounter_end, WritePrecision.MS)
 
             # Write boundary markers
             self.influx.write_api.write(
-                bucket=self.influx.bucket 
-                org=self.influx.org 
-                record=[start_point end_point]
+                bucket=self.influx.bucket,
+                org=self.influx.org,
+                record=[start_point, end_point]
             )
 
             # Optionally store encounter summary in PostgreSQL
             if self.postgres:
-                self._store_encounter_summary(encounter_id encounter_start encounter_end encounter_metadata)
+                self._store_encounter_summary(encounter_id, encounter_start, encounter_end, encounter_metadata)
 
             self.stats["encounters_processed"] += 1
             logger.info(f"Defined encounter window: {encounter_id} ({encounter_metadata.get('boss_name')})")
@@ -311,7 +460,7 @@ class InfluxDBDirectManager:
             query_parts = [
                 f'from(bucket: "{self.influx.bucket}")' 
                 f'|> range(start: {start_time.isoformat()}Z stop: {end_time.isoformat()}Z)' 
-                '|> filter(fn: (r) => r._measurement == "combat_event")'
+                '|> filter(fn: (r) => r._measurement == "combat_events")'
             ]
 
             # Add filters
@@ -400,7 +549,7 @@ class InfluxDBDirectManager:
             damage_query = f'''
                 from(bucket: "{self.influx.bucket}")
                 |> range(start: {start_time.isoformat()}Z stop: {end_time.isoformat()}Z)
-                |> filter(fn: (r) => r._measurement == "combat_event")
+                |> filter(fn: (r) => r._measurement == "combat_events")
                 |> filter(fn: (r) => r.event_type =~ /.*DAMAGE.*/)
                 |> filter(fn: (r) => r._field == "amount")
                 |> group(columns: ["{group_by_str}"])
@@ -411,7 +560,7 @@ class InfluxDBDirectManager:
             healing_query = f'''
                 from(bucket: "{self.influx.bucket}")
                 |> range(start: {start_time.isoformat()}Z stop: {end_time.isoformat()}Z)
-                |> filter(fn: (r) => r._measurement == "combat_event")
+                |> filter(fn: (r) => r._measurement == "combat_events")
                 |> filter(fn: (r) => r.event_type =~ /.*HEAL.*/)
                 |> filter(fn: (r) => r._field == "amount")
                 |> group(columns: ["{group_by_str}"])

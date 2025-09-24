@@ -76,20 +76,20 @@ class DatabaseManager:
         """Initialize SQLite database with optimized settings."""
         try:
             # Ensure parent directory exists with proper error handling
-            self.db_path.parent.mkdir(parents=True exist_ok=True)
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Test write permissions before creating database
             test_file = self.db_path.parent / ".write_test"
             try:
                 test_file.touch()
                 test_file.unlink()
-            except (PermissionError OSError) as e:
+            except (PermissionError, OSError) as e:
                 logger.error(
                     f"No write permission to database directory {self.db_path.parent}: {e}"
                 )
                 raise RuntimeError(f"Cannot write to database directory: {e}")
 
-            self.connection = sqlite3.connect(self.db_path timeout=30.0 check_same_thread=False)
+            self.connection = sqlite3.connect(self.db_path, timeout=30.0, check_same_thread=False)
         except Exception as e:
             logger.error(f"Failed to setup database at {self.db_path}: {e}")
             raise
@@ -109,30 +109,30 @@ class DatabaseManager:
 
         logger.info(f"SQLite database initialized at {self.db_path}")
 
-    def execute(self query: str params: tuple = () fetch_results: bool = True) -> Optional[List[Dict[str Any]]]:
+    def execute(self, query: str, params: tuple = (), fetch_results: bool = True) -> Optional[List[Dict[str, Any]]]:
         """Execute a single query on the appropriate backend."""
         if self.backend_type == "postgresql":
-            return self.backend.execute(query params fetch_results)
+            return self.backend.execute(query, params, fetch_results)
         else:
             # SQLite backend
-            cursor = self.connection.execute(query params)
+            cursor = self.connection.execute(query, params)
             if fetch_results and cursor.description:
                 return [dict(row) for row in cursor.fetchall()]
             return None
 
-    def execute_many(self query: str params_list: List[tuple]) -> None:
+    def execute_many(self, query: str, params_list: List[tuple]) -> None:
         """Execute query with multiple parameter sets."""
         if self.backend_type == "postgresql":
-            return self.backend.execute_many(query params_list)
+            return self.backend.execute_many(query, params_list)
         else:
             # SQLite backend
-            self.connection.executemany(query params_list)
+            self.connection.executemany(query, params_list)
             self.connection.commit()
 
     # Legacy method for compatibility
-    def executemany(self query: str params_list: List[tuple]) -> None:
+    def executemany(self, query: str, params_list: List[tuple]) -> None:
         """Execute query with multiple parameter sets (legacy method)."""
-        return self.execute_many(query params_list)
+        return self.execute_many(query, params_list)
 
     def commit(self):
         """Commit current transaction."""
@@ -154,7 +154,7 @@ class DatabaseManager:
         """Close database connection."""
         if self.backend_type == "postgresql":
             self.backend.close()
-        elif hasattr(self 'connection') and self.connection:
+        elif hasattr(self, 'connection') and self.connection:
             self.connection.close()
 
     def health_check(self) -> bool:
@@ -163,12 +163,12 @@ class DatabaseManager:
             return self.backend.health_check()
         else:
             try:
-                self.execute("SELECT 1" fetch_results=True)
+                self.execute("SELECT 1", fetch_results=True)
                 return True
             except Exception:
                 return False
 
-    def get_table_info(self table_name: str) -> List[Dict[str Any]]:
+    def get_table_info(self, table_name: str) -> List[Dict[str, Any]]:
         """Get table schema information."""
         if self.backend_type == "postgresql":
             query = """
@@ -176,14 +176,14 @@ class DatabaseManager:
                 FROM information_schema.columns
                 WHERE table_name = %s
             """
-            result = self.execute(query (table_name ))
+            result = self.execute(query, (table_name,))
             return result if result else []
         else:
             # SQLite
             result = self.execute(f"PRAGMA table_info({table_name})")
             return result if result else []
 
-    def table_exists(self table_name: str) -> bool:
+    def table_exists(self, table_name: str) -> bool:
         """Check if table exists."""
         if self.backend_type == "postgresql":
             query = """
@@ -192,8 +192,8 @@ class DatabaseManager:
                     WHERE table_name = %s
                 )
             """
-            result = self.execute(query (table_name ))
-            return result and len(result) > 0 and result[0].get('exists' False)
+            result = self.execute(query, (table_name,))
+            return result and len(result) > 0 and result[0].get('exists', False)
         else:
             # SQLite
             result = self.execute(
@@ -222,8 +222,8 @@ def _migrate_character_schema(db: DatabaseManager) -> None:
         logger.info("Migrating characters table to new schema with server/region columns")
 
         # Add new columns
-        db.execute("ALTER TABLE characters ADD COLUMN server TEXT" fetch_results=False)
-        db.execute("ALTER TABLE characters ADD COLUMN region TEXT" fetch_results=False)
+        db.execute("ALTER TABLE characters ADD COLUMN server TEXT", fetch_results=False)
+        db.execute("ALTER TABLE characters ADD COLUMN region TEXT", fetch_results=False)
 
         # Migrate existing data: parse realm column for server-region format
         from src.models.character import parse_character_name
@@ -241,24 +241,24 @@ def _migrate_character_schema(db: DatabaseManager) -> None:
             if realm and "-" in realm:
                 parts = realm.split("-")
                 if len(parts) == 2:
-                    server region = parts
+                    server, region = parts
                     db.execute(
-                        "UPDATE characters SET server = %s region = %s WHERE character_id = %s" 
-                        (server region char_id) 
+                        "UPDATE characters SET server = %s, region = %s WHERE character_id = %s",
+                        (server, region, char_id),
                         fetch_results=False 
                     )
                 else:
                     # Just use as server
                     db.execute(
-                        "UPDATE characters SET server = %s WHERE character_id = %s" 
-                        (realm char_id) 
+                        "UPDATE characters SET server = %s WHERE character_id = %s",
+                        (realm, char_id),
                         fetch_results=False 
                     )
             else:
                 # Use as server
                 db.execute(
-                    "UPDATE characters SET server = ? WHERE character_id = ?" 
-                    (realm char_id) 
+                    "UPDATE characters SET server = ? WHERE character_id = ?",
+                    (realm, char_id),
                     fetch_results=False 
                 )
 
@@ -276,7 +276,7 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
     result = db.execute("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
     current_version_row = result[0] if result else None
 
-    if current_version_row and current_version_row.get('version' 0) >= 2:
+    if current_version_row and current_version_row.get('version', 0) >= 2:
         return  # Already at v2 or higher
 
     logger.info("Migrating database to version 2 (guild multi-tenancy)")
@@ -351,7 +351,7 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
             logger.warning(f"Failed to create index: {index_sql} - {e}")
 
     # Update schema version
-    db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (%s2)")
+    db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (?)", (CURRENT_SCHEMA_VERSION,))
     db.commit()
 
     logger.info("Migration to version 2 completed successfully")
@@ -366,8 +366,8 @@ def create_tables(db: DatabaseManager) -> None:
     """
 
     # Skip table creation if using PostgreSQL or HybridDatabaseManager (tables already exist in main database)
-    if (hasattr(db 'db_type') and db.db_type == 'postgresql') or \
-       (hasattr(db 'postgres') and hasattr(db 'influx')):
+    if (hasattr(db, 'db_type') and db.db_type == 'postgresql') or \
+       (hasattr(db, 'postgres') and hasattr(db, 'influx')):
         logger.info("Using PostgreSQL/Hybrid manager - skipping table creation (using existing database schema)")
         return
 
@@ -837,13 +837,13 @@ def create_tables(db: DatabaseManager) -> None:
     )
 
     # Set schema version (v2 adds multi-tenant guild support)
-    db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (%s2)")
+    db.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (?)", (CURRENT_SCHEMA_VERSION,))
 
     db.commit()
     logger.info("Database schema created successfully")
 
 
-def get_database_stats(db: DatabaseManager) -> Dict[str Any]:
+def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
     """
     Get database statistics and performance metrics.
 
@@ -886,10 +886,10 @@ def get_database_stats(db: DatabaseManager) -> Dict[str Any]:
         row = result[0]
         stats.update(
             {
-                "total_compressed_bytes": row[0] 
-                "total_uncompressed_bytes": row[1] 
-                "average_compression_ratio": round(row[2] 3) if row[2] else 0 
-                "total_blocks": row[3] 
+                "total_compressed_bytes": row[0],
+                "total_uncompressed_bytes": row[1],
+                "average_compression_ratio": round(row[2], 3) if row[2] else 0,
+                "total_blocks": row[3],
             }
         )
 

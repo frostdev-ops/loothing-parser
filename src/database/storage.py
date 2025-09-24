@@ -43,7 +43,7 @@ def safe_param(value):
         return value
 
     # Catch any other iterable types (except strings and bytes)
-    if hasattr(value "__iter__") and not isinstance(value (str bytes)):
+    if hasattr(value, "__iter__") and not isinstance(value (str bytes)):
         logger.debug(f"Converting iterable type {type(value)} to None: {value}")
         return None
 
@@ -473,13 +473,13 @@ class EventStorage:
             self._store_character_metrics_unified(encounter_id character_id character encounter guild_id)
 
             # Extract and stream events for this character to InfluxDB
-            if hasattr(encounter "events") and encounter.events:
+            if hasattr(encounter, "events") and encounter.events:
                 # Filter events for this character
                 character_events = [
                     event
                     for event in encounter.events
-                    if (hasattr(event "source_guid") and event.source_guid == char_guid)
-                    or (hasattr(event "dest_guid") and event.dest_guid == char_guid)
+                    if (hasattr(event, "source_guid") and event.source_guid == char_guid)
+                    or (hasattr(event, "dest_guid") and event.dest_guid == char_guid)
                 ]
 
                 if character_events:
@@ -525,10 +525,10 @@ class EventStorage:
                 safe_param(guild_id) 
                 safe_param(character.character_guid) 
                 safe_param(character.character_name) 
-                safe_param(getattr(character "server" None)) 
-                safe_param(getattr(character "region" None)) 
-                safe_param(getattr(character "class_name" None)) 
-                safe_param(getattr(character "spec_name" None)) 
+                safe_param(getattr(character, "server", None)),
+                safe_param(getattr(character, "region", None)),
+                safe_param(getattr(character, "class_name", None)),
+                safe_param(getattr(character, "spec_name", None)) 
                 safe_param(datetime.now().isoformat()) 
                 safe_param(datetime.now().isoformat()) 
             ) 
@@ -544,7 +544,7 @@ class EventStorage:
     ):
         """Store character metrics from unified encounter."""
         # Extract metrics from character and encounter metrics
-        metrics = encounter.metrics if hasattr(encounter "metrics") else None
+        metrics = encounter.metrics if hasattr(encounter, "metrics") else None
 
         self.db.execute(
             """
@@ -560,44 +560,44 @@ class EventStorage:
                 safe_param(guild_id) 
                 safe_param(encounter_id) 
                 safe_param(character_id) 
-                safe_param(getattr(character "total_damage_done" 0)) 
-                safe_param(getattr(character "total_healing_done" 0)) 
-                safe_param(getattr(character "total_damage_taken" 0)) 
-                safe_param(getattr(character "total_healing_received" 0)) 
-                safe_param(getattr(character "total_overhealing" 0)) 
-                safe_param(getattr(character "death_count" 0)) 
-                safe_param(getattr(character "activity_percentage" 0.0)) 
-                safe_param(getattr(character "time_alive" encounter.duration)) 
+                safe_param(getattr(character, "total_damage_done", 0)),
+                safe_param(getattr(character, "total_healing_done", 0)),
+                safe_param(getattr(character, "total_damage_taken", 0)),
+                safe_param(getattr(character, "total_healing_received", 0)),
+                safe_param(getattr(character, "total_overhealing", 0)),
+                safe_param(getattr(character, "death_count", 0)),
+                safe_param(getattr(character, "activity_percentage", 0.0)),
+                safe_param(getattr(character, "time_alive", encounter.duration)) 
                 safe_param(
-                    character.get_dps(encounter.duration) if hasattr(character "get_dps") else 0.0
+                    character.get_dps(encounter.duration) if hasattr(character, "get_dps") else 0.0
                 ) 
                 safe_param(
-                    character.get_hps(encounter.duration) if hasattr(character "get_hps") else 0.0
+                    character.get_hps(encounter.duration) if hasattr(character, "get_hps") else 0.0
                 ) 
                 safe_param(
                     character.get_dtps(encounter.duration)
-                    if hasattr(character "get_dtps")
+                    if hasattr(character, "get_dtps")
                     else 0.0
                 ) 
                 safe_param(encounter.combat_duration) 
                 safe_param(
                     character.get_combat_dps(encounter.combat_duration)
-                    if hasattr(character "get_combat_dps")
+                    if hasattr(character, "get_combat_dps")
                     else 0.0
                 ) 
                 safe_param(
                     character.get_combat_hps(encounter.combat_duration)
-                    if hasattr(character "get_combat_hps")
+                    if hasattr(character, "get_combat_hps")
                     else 0.0
                 ) 
                 safe_param(
                     character.get_combat_dtps(encounter.combat_duration)
-                    if hasattr(character "get_combat_dtps")
+                    if hasattr(character, "get_combat_dtps")
                     else 0.0
-                ) 
-                safe_param(getattr(character "combat_activity_percentage" 0.0)) 
-                safe_param(len(getattr(character "all_events" []))) 
-                safe_param(getattr(character "cast_count" 0)) 
+                ),
+                safe_param(getattr(character, "combat_activity_percentage", 0.0)),
+                safe_param(len(getattr(character, "all_events", []))),
+                safe_param(getattr(character, "cast_count", 0)) 
             ) 
         )
 
@@ -619,7 +619,7 @@ class EventStorage:
                 0  # time_limit_seconds - not available in unified model yet
                 encounter.duration 
                 encounter.success 
-                encounter.in_time if hasattr(encounter "in_time") else False 
+                encounter.in_time if hasattr(encounter, "in_time") else False 
                 0  # time_remaining - calculate from duration if needed
                 0  # num_deaths - sum from character metrics
                 0  # death_penalties - calculate from deaths
@@ -672,13 +672,13 @@ class EventStorage:
             for ts_event in char_stream.all_events:
                 event_dict = {
                     "timestamp": ts_event.timestamp 
-                    "encounter_id": encounter_id 
-                    "character_id": character_id 
-                    "character_guid": char_stream.character_guid 
-                    "character_name": char_stream.character_name 
-                    "event_type": getattr(ts_event.event "event_type" "unknown") 
-                    "event_data": asdict(ts_event.event) if hasattr(ts_event.event "__dict__") else str(ts_event.event) 
-                    "category": ts_event.category 
+                    "encounter_id": encounter_id,
+                    "character_id": character_id,
+                    "character_guid": char_stream.character_guid,
+                    "character_name": char_stream.character_name,
+                    "event_type": getattr(ts_event.event, "event_type", "unknown"),
+                    "event_data": asdict(ts_event.event) if hasattr(ts_event.event, "__dict__") else str(ts_event.event),
+                    "category": ts_event.category, 
                 }
                 events_for_influx.append(event_dict)
 
@@ -715,12 +715,12 @@ class EventStorage:
 
             for event in events:
                 event_dict = {
-                    "timestamp": getattr(event "timestamp" time.time()) 
-                    "encounter_id": encounter_id 
-                    "character_id": character_id 
-                    "character_guid": getattr(event "source_guid" None) or getattr(event "dest_guid" None) 
-                    "event_type": getattr(event "event_type" "unknown") 
-                    "event_data": asdict(event) if hasattr(event "__dict__") else str(event) 
+                    "timestamp": getattr(event, "timestamp", time.time()),
+                    "encounter_id": encounter_id,
+                    "character_id": character_id,
+                    "character_guid": getattr(event, "source_guid", None) or getattr(event, "dest_guid", None),
+                    "event_type": getattr(event, "event_type", "unknown"),
+                    "event_data": asdict(event) if hasattr(event, "__dict__") else str(event),
                 }
                 events_for_influx.append(event_dict)
 
@@ -835,27 +835,27 @@ class EventStorage:
         spell_stats = {}
 
         for event in char_stream.damage_done:
-            if hasattr(event "spell_id") and event.spell_id:
-                key = (event.spell_id event.spell_name)
+            if hasattr(event, "spell_id") and event.spell_id:
+                key = (event.spell_id, event.spell_name)
                 if key not in spell_stats:
                     spell_stats[key] = {
                         "cast_count": 0 
                         "hit_count": 0 
                         "crit_count": 0 
-                        "total_damage": 0 
-                        "max_damage": 0 
+                        "total_damage": 0,
+                        "max_damage": 0,
                     }
                 spell_stats[key]["hit_count"] += 1
-                spell_stats[key]["total_damage"] += getattr(event "amount" 0)
+                spell_stats[key]["total_damage"] += getattr(event, "amount", 0)
                 spell_stats[key]["max_damage"] = max(
-                    spell_stats[key]["max_damage"] getattr(event "amount" 0)
+                    spell_stats[key]["max_damage"], getattr(event, "amount", 0)
                 )
-                if getattr(event "critical" False):
+                if getattr(event, "critical", False):
                     spell_stats[key]["crit_count"] += 1
 
         for event in char_stream.healing_done:
-            if hasattr(event "spell_id") and event.spell_id:
-                key = (event.spell_id event.spell_name)
+            if hasattr(event, "spell_id") and event.spell_id:
+                key = (event.spell_id, event.spell_name)
                 if key not in spell_stats:
                     spell_stats[key] = {
                         "cast_count": 0 
@@ -867,16 +867,16 @@ class EventStorage:
                 spell_stats[key]["hit_count"] += 1
                 spell_stats[key]["total_healing"] = spell_stats[key].get(
                     "total_healing" 0
-                ) + getattr(event "effective_healing" 0)
+                ) + getattr(event, "effective_healing", 0)
                 spell_stats[key]["max_healing"] = max(
-                    spell_stats[key].get("max_healing" 0) 
-                    getattr(event "effective_healing" 0) 
+                    spell_stats[key].get("max_healing", 0) 
+                    getattr(event, "effective_healing", 0) 
                 )
-                if getattr(event "critical" False):
+                if getattr(event, "critical", False):
                     spell_stats[key]["crit_count"] += 1
 
         # Store spell summaries
-        for (spell_id spell_name) stats in spell_stats.items():
+        for (spell_id, spell_name), stats in spell_stats.items():
             self.db.execute(
                 """
                 INSERT OR REPLACE INTO spell_summary (
@@ -1029,14 +1029,14 @@ class EventStorage:
             """ 
             (
                 safe_param(encounter_id) 
-                safe_param(getattr(encounter "dungeon_id" 0)) 
+                safe_param(getattr(encounter, "dungeon_id", 0)), 
                 safe_param(encounter.keystone_level) 
                 safe_param(
                     json.dumps(encounter.affixes)
-                    if hasattr(encounter "affixes") and encounter.affixes
+                    if hasattr(encounter, "affixes") and encounter.affixes
                     else "[]"
                 ) 
-                safe_param(getattr(encounter "time_limit" 0)) 
+                safe_param(getattr(encounter, "time_limit", 0)), 
                 safe_param(encounter.combat_duration) 
                 safe_param(encounter.success) 
                 safe_param(encounter.success)  # in_time same as success for now

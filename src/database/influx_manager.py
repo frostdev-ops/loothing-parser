@@ -100,6 +100,22 @@ class InfluxDBManager:
             logger.error(f"Failed to ensure bucket exists: {e}")
             # Continue anyway - bucket might exist but we can't list it
 
+    def _validate_guild_id(self, guild_id: int = None) -> int:
+        """
+        Validate guild_id with fallback handling.
+
+        Args:
+            guild_id: Guild identifier to validate
+
+        Returns:
+            Valid guild_id (defaults to 1 if invalid/missing)
+        """
+        if guild_id is None or guild_id <= 0:
+            logger.warning(f"Invalid or missing guild_id: {guild_id}, using fallback guild_id=1")
+            return 1
+
+        return guild_id
+
     def write_combat_event(
         self,
         encounter_id: str,
@@ -150,7 +166,7 @@ class InfluxDBManager:
         """
         try:
             # Create point with measurement name
-            point = Point("combat_event")
+            point = Point("combat_events")
 
             # Add timestamp
             point.time(timestamp, WritePrecision.MS)
@@ -159,9 +175,9 @@ class InfluxDBManager:
             point.tag("encounter_id", encounter_id)
             point.tag("event_type", event_type)
 
-            # Add guild_id tag for multi-tenant isolation
-            if guild_id is not None:
-                point.tag("guild_id", str(guild_id))
+            # Add guild_id tag for multi-tenant isolation with validation
+            validated_guild_id = self._validate_guild_id(guild_id)
+            point.tag("guild_id", str(validated_guild_id))
 
             if source_guid:
                 point.tag("source_guid", source_guid)
@@ -210,12 +226,13 @@ class InfluxDBManager:
             logger.error(f"Failed to write combat event: {e}")
             return False
 
-    def write_combat_events_batch(self, events: List[Dict[str, Any]]) -> bool:
+    def write_combat_events_batch(self, events: List[Dict[str, Any]], guild_id: int = None) -> bool:
         """
         Write multiple combat events in a batch for better performance.
 
         Args:
             events: List of event dictionaries with same structure as write_combat_event
+            guild_id: Guild identifier for multi-tenant isolation
 
         Returns:
             Success status
@@ -224,16 +241,21 @@ class InfluxDBManager:
             points = []
 
             for event in events:
-                point = Point("combat_event")
+                point = Point("combat_events")
 
                 # Required fields
                 point.time(event['timestamp'], WritePrecision.MS)
                 point.tag("encounter_id", event['encounter_id'])
                 point.tag("event_type", event['event_type'])
 
-                # Add guild_id tag if available in event tags
-                if 'tags' in event and event['tags'] and 'guild_id' in event['tags']:
-                    point.tag("guild_id", event['tags']['guild_id'])
+                # Add guild_id tag for multi-tenant isolation with validation
+                # Priority: direct parameter > event tags
+                event_guild_id = guild_id
+                if not event_guild_id and 'tags' in event and event['tags'] and 'guild_id' in event['tags']:
+                    event_guild_id = event['tags']['guild_id']
+
+                validated_guild_id = self._validate_guild_id(event_guild_id)
+                point.tag("guild_id", str(validated_guild_id))
 
                 # Optional tags
                 for tag_field in ['source_guid', 'source_name', 'target_guid',
@@ -306,7 +328,7 @@ class InfluxDBManager:
                 f'|> range(start: {self._format_time(start_time)}, stop: {self._format_time(end_time)})'
                 if start_time and end_time else
                 '|> range(start: -30d)',  # Default to last 30 days
-                '|> filter(fn: (r) => r._measurement == "combat_event")',
+                '|> filter(fn: (r) => r._measurement == "combat_events")',
                 f'|> filter(fn: (r) => r.encounter_id == "{encounter_id}")'
             ]
 
@@ -370,7 +392,7 @@ class InfluxDBManager:
                 query = f"""
                 from(bucket: "{self.bucket}")
                 |> range(start: -30d)
-                |> filter(fn: (r) => r._measurement == "combat_event")
+                |> filter(fn: (r) => r._measurement == "combat_events")
                 |> filter(fn: (r) => r.encounter_id == "{encounter_id}")
                 |> filter(fn: (r) => r.event_type =~ /DAMAGE/)
                 |> filter(fn: (r) => r._field == "amount")
@@ -387,7 +409,7 @@ class InfluxDBManager:
                 query = f"""
                 from(bucket: "{self.bucket}")
                 |> range(start: -30d)
-                |> filter(fn: (r) => r._measurement == "combat_event")
+                |> filter(fn: (r) => r._measurement == "combat_events")
                 |> filter(fn: (r) => r.encounter_id == "{encounter_id}")
                 |> filter(fn: (r) => r.event_type =~ /HEAL/)
                 |> filter(fn: (r) => r._field == "amount")
@@ -404,7 +426,7 @@ class InfluxDBManager:
                 query = f"""
                 from(bucket: "{self.bucket}")
                 |> range(start: -30d)
-                |> filter(fn: (r) => r._measurement == "combat_event")
+                |> filter(fn: (r) => r._measurement == "combat_events")
                 |> filter(fn: (r) => r.encounter_id == "{encounter_id}")
                 |> filter(fn: (r) => r.event_type == "UNIT_DIED")
                 """
