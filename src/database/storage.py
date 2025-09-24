@@ -778,7 +778,7 @@ class EventStorage:
                 INSERT INTO characters (
                     character_guid, character_name, server, region, class_name, spec_name, encounter_count
                 ) VALUES (%s, %s, %s, %s, %s, %s, 1)
-            """ 
+            """,
                 (
                     char_guid,
                     char_stream.character_name,
