@@ -172,14 +172,14 @@ class HybridDatabaseManager:
                     total_deaths, metadata
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
                 ON CONFLICT (id) DO UPDATE SET
-                    end_time = EXCLUDED.end_time 
-                    duration_ms = EXCLUDED.duration_ms 
-                    combat_duration_ms = EXCLUDED.combat_duration_ms 
-                    success = EXCLUDED.success 
-                    total_damage = EXCLUDED.total_damage 
-                    total_healing = EXCLUDED.total_healing 
+                    end_time = EXCLUDED.end_time,
+                    duration_ms = EXCLUDED.duration_ms,
+                    combat_duration_ms = EXCLUDED.combat_duration_ms,
+                    success = EXCLUDED.success,
+                    total_damage = EXCLUDED.total_damage,
+                    total_healing = EXCLUDED.total_healing,
                     updated_at = CURRENT_TIMESTAMP
-                """ 
+                """, 
                 (
                     encounter_id,
                     guild_id,
