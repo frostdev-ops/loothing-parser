@@ -624,8 +624,8 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS character_gear_items (
             item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            snapshot_id INTEGER NOT NULL REFERENCES character_gear_snapshots(snapshot_id) 
-            slot_index INTEGER NOT NULL CHECK(slot_index BETWEEN 1 AND 18) 
+            snapshot_id INTEGER NOT NULL REFERENCES character_gear_snapshots(snapshot_id),
+            slot_index INTEGER NOT NULL CHECK(slot_index BETWEEN 1 AND 18),
             slot_name TEXT NOT NULL,
             item_entry INTEGER NOT NULL,
             item_level INTEGER DEFAULT 0,
@@ -637,7 +637,7 @@ def create_tables(db: DatabaseManager) -> None:
             upgrade_level INTEGER DEFAULT 0,
             bonus_ids TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(snapshot_id slot_index)
+            UNIQUE(snapshot_id, slot_index)
         )
     """
     )
