@@ -2226,7 +2226,7 @@ class QueryAPI:
                     WHERE cm.character_id = %s
                     AND e.start_time BETWEEN %s AND %s
                     """ 
-                    (character_id time_range.start.timestamp() time_range.end.timestamp())
+                    (character_id, time_range.start.timestamp(), time_range.end.timestamp())
                 )
                 row = cursor.fetchone()
                 if row and row[0] is not None:
