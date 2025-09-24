@@ -196,7 +196,7 @@ class HybridDatabaseManager:
                     encounter_data.get('total_healing', 0),
                     encounter_data.get('total_deaths', 0),
                     json.dumps(encounter_data.get('metadata', {}))
-                ) 
+                ),
                 fetch_results=False
             )
 
