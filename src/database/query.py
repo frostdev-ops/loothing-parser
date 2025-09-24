@@ -2044,7 +2044,7 @@ class QueryAPI:
 
             if encounter_id:
                 # Get talents for specific encounter
-                snapshot = talent_parser.get_character_talents_by_encounter(self.db character_id encounter_id)
+                snapshot = talent_parser.get_character_talents_by_encounter(self.db, character_id, encounter_id)
             else:
                 # Get most recent talent snapshot
                 cursor = self.db.execute(
