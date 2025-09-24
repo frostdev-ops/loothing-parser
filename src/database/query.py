@@ -2445,14 +2445,14 @@ class QueryAPI:
                 RETURNING encounter_id
                 """ 
                 (
-                    guild_id 
-                    "time_window" 
-                    encounter_name 
-                    start_time.timestamp() 
-                    end_time.timestamp() 
-                    True  # Assume successful for time-window definitions
-                    (end_time - start_time).total_seconds() 
-                    datetime.now().isoformat() 
+                    guild_id,
+                    "time_window",
+                    encounter_name,
+                    start_time.timestamp(),
+                    end_time.timestamp(),
+                    True,  # Assume successful for time-window definitions
+                    (end_time - start_time).total_seconds(),
+                    datetime.now().isoformat(),
                 ) 
             )
 
