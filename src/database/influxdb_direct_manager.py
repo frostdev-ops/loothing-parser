@@ -36,11 +36,11 @@ class InfluxDBDirectManager:
     """
 
     def __init__(
-        self 
-        influx_url: str = None 
-        influx_token: str = None 
-        influx_org: str = None 
-        influx_bucket: str = None 
+        self,
+        influx_url: str = None,
+        influx_token: str = None,
+        influx_org: str = None,
+        influx_bucket: str = None,
         postgres_enabled: bool = True
     ):
         """
@@ -57,9 +57,9 @@ class InfluxDBDirectManager:
 
         # Initialize InfluxDB for all combat event data
         self.influx = InfluxDBManager(
-            url=influx_url 
-            token=influx_token 
-            org=influx_org 
+            url=influx_url,
+            token=influx_token,
+            org=influx_org,
             bucket=influx_bucket
         )
 
@@ -74,9 +74,9 @@ class InfluxDBDirectManager:
 
         # Event streaming statistics
         self.stats = {
-            "events_streamed": 0 
-            "encounters_processed": 0 
-            "streaming_errors": 0 
+            "events_streamed": 0,
+            "encounters_processed": 0,
+            "streaming_errors": 0,
             "last_stream_time": None
         }
 
@@ -224,9 +224,9 @@ class InfluxDBDirectManager:
             return False
 
     def stream_combat_events(
-        self 
-        events: List[Dict[str Any]] 
-        encounter_context: Optional[Dict[str Any]] = None
+        self,
+        events: List[Dict[str, Any]],
+        encounter_context: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Stream combat events directly to InfluxDB.
@@ -254,9 +254,9 @@ class InfluxDBDirectManager:
 
                 # Set timestamp with high precision
                 timestamp = event.get('timestamp')
-                if isinstance(timestamp str):
-                    timestamp = datetime.fromisoformat(timestamp.replace('Z' '+00:00'))
-                point.time(timestamp WritePrecision.MS)
+                if isinstance(timestamp, str):
+                    timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                point.time(timestamp, WritePrecision.MS)
 
                 # Core tags for efficient querying (indexed)
                 if encounter_id:
@@ -283,7 +283,7 @@ class InfluxDBDirectManager:
                 # Encounter context tags
                 if encounter_context:
                     if encounter_context.get('boss_name'):
-                        point.tag("boss_name" encounter_context['boss_name'])
+                        point.tag("boss_name", encounter_context['boss_name'])
                     if encounter_context.get('difficulty'):
                         point.tag("difficulty", encounter_context['difficulty'])
                     # Add guild_id with validation and fallback
@@ -293,29 +293,29 @@ class InfluxDBDirectManager:
 
                 # Numeric fields (not indexed for aggregation)
                 if event.get('amount') is not None:
-                    point.field("amount" float(event['amount']))
+                    point.field("amount", float(event['amount']))
                 if event.get('overkill') is not None:
-                    point.field("overkill" float(event['overkill']))
+                    point.field("overkill", float(event['overkill']))
                 if event.get('absorbed') is not None:
-                    point.field("absorbed" float(event['absorbed']))
+                    point.field("absorbed", float(event['absorbed']))
                 if event.get('blocked') is not None:
-                    point.field("blocked" float(event['blocked']))
+                    point.field("blocked", float(event['blocked']))
                 if event.get('resisted') is not None:
-                    point.field("resisted" float(event['resisted']))
+                    point.field("resisted", float(event['resisted']))
 
                 # Boolean flags
-                point.field("critical" event.get('critical' False))
+                point.field("critical", event.get('critical', False))
 
                 # Additional metadata as fields
                 if event.get('raw_event'):
-                    point.field("raw_event" str(event['raw_event']))
+                    point.field("raw_event", str(event['raw_event']))
 
                 influx_points.append(point)
 
             # Stream to InfluxDB in batch
             success = self.influx.write_api.write(
-                bucket=self.influx.bucket 
-                org=self.influx.org 
+                bucket=self.influx.bucket,
+                org=self.influx.org,
                 record=influx_points
             )
 
