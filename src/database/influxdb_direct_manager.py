@@ -544,7 +544,7 @@ class InfluxDBDirectManager:
                 pass
 
             # Build aggregation query
-            group_by_str = '" "'.join(group_by)
+            group_by_str = '", "'.join(group_by)
 
             damage_query = f'''
                 from(bucket: "{self.influx.bucket}")
