@@ -329,22 +329,22 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
     # Create new multi-tenant indexes
     indexes_to_create = [
         "CREATE INDEX IF NOT EXISTS idx_guild_lookup ON guilds(guild_name, server, region)",
-        "CREATE INDEX IF NOT EXISTS idx_guild_active ON guilds(is_active, created_at)", 
-        "CREATE INDEX IF NOT EXISTS idx_log_guild ON log_files(guild_id processed_at DESC)" 
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id start_time DESC)" 
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id boss_name difficulty start_time DESC)" 
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id encounter_type success start_time DESC)" 
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id instance_name difficulty)" 
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_progression ON encounters(guild_id difficulty success start_time DESC)" 
-        "CREATE INDEX IF NOT EXISTS idx_character_guild_name ON characters(guild_id character_name server)" 
-        "CREATE INDEX IF NOT EXISTS idx_character_guild_class ON characters(guild_id class_name spec_name)" 
-        "CREATE INDEX IF NOT EXISTS idx_character_guild_active ON characters(guild_id last_seen DESC)" 
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_performance ON character_metrics(guild_id dps DESC) WHERE dps > 0" 
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_healing ON character_metrics(guild_id hps DESC) WHERE hps > 0" 
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_dps ON character_metrics(guild_id combat_dps DESC) WHERE combat_dps > 0" 
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_hps ON character_metrics(guild_id combat_hps DESC) WHERE combat_hps > 0" 
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_character ON character_metrics(guild_id character_id created_at DESC)" 
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_encounter ON character_metrics(guild_id encounter_id)" 
+        "CREATE INDEX IF NOT EXISTS idx_guild_active ON guilds(is_active, created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_log_guild ON log_files(guild_id, processed_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id, start_time DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id, boss_name, difficulty, start_time DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id, encounter_type, success, start_time DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id, instance_name, difficulty)",
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_progression ON encounters(guild_id, difficulty, success, start_time DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_name ON characters(guild_id, character_name, server)",
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_class ON characters(guild_id, class_name, spec_name)",
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_active ON characters(guild_id, last_seen DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_performance ON character_metrics(guild_id, dps DESC) WHERE dps > 0",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_healing ON character_metrics(guild_id, hps DESC) WHERE hps > 0",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_dps ON character_metrics(guild_id, combat_dps DESC) WHERE combat_dps > 0",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_hps ON character_metrics(guild_id, combat_hps DESC) WHERE combat_hps > 0",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_character ON character_metrics(guild_id, character_id, created_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_encounter ON character_metrics(guild_id, encounter_id)", 
     ]
 
     for index_sql in indexes_to_create:
