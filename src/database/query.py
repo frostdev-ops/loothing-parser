@@ -94,7 +94,7 @@ class SpellUsage:
 class QueryCache:
     """LRU cache for query results with TTL support."""
 
-    def __init__(self max_size: int = 1000 ttl_seconds: int = 300):
+    def __init__(self, max_size: int = 1000, ttl_seconds: int = 300):
         """
         Initialize query cache.
 
