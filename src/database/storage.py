@@ -9,16 +9,16 @@ import hashlib
 import logging
 import json
 import time
-from typing import List Dict Any Optional Tuple Set Union
+from typing import List, Dict, Any, Optional, Tuple, Set, Union
 from pathlib import Path
 from datetime import datetime
 from dataclasses import asdict
 
 from .schema import DatabaseManager
 from .influxdb_direct_manager import InfluxDBDirectManager
-from src.models.character_events import CharacterEventStream TimestampedEvent
-from src.models.encounter_models import RaidEncounter MythicPlusRun
-from src.models.unified_encounter import UnifiedEncounter EncounterType
+from src.models.character_events import CharacterEventStream, TimestampedEvent
+from src.models.encounter_models import RaidEncounter, MythicPlusRun
+from src.models.unified_encounter import UnifiedEncounter, EncounterType
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +34,16 @@ def safe_param(value):
         return None
 
     # Convert all collection types to None
-    if isinstance(value (list tuple dict set)):
+    if isinstance(value, (list, tuple, dict, set)):
         logger.debug(f"Converting collection type {type(value)} to None: {value}")
         return None
 
     # Allow basic SQLite types
-    if isinstance(value (int float str bool)):
+    if isinstance(value, (int, float, str, bool)):
         return value
 
     # Catch any other iterable types (except strings and bytes)
-    if hasattr(value, "__iter__") and not isinstance(value (str bytes)):
+    if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
         logger.debug(f"Converting iterable type {type(value)} to None: {value}")
         return None
 
@@ -64,7 +64,7 @@ class EventStorage:
     - Time-window based encounter definitions
     """
 
-    def __init__(self db: DatabaseManager):
+    def __init__(self, db: DatabaseManager):
         """
         Initialize event storage.
 
@@ -74,11 +74,11 @@ class EventStorage:
         self.db = db
 
         # Initialize time-series manager if available
-        if hasattr(db 'influxdb') and db.influxdb:
+        if hasattr(db, 'influxdb') and db.influxdb:
             self.influxdb_manager = InfluxDBDirectManager(
-                url=db.influxdb.url 
-                token=db.influxdb.token 
-                org=db.influxdb.org 
+                url=db.influxdb.url,
+                token=db.influxdb.token,
+                org=db.influxdb.org,
                 bucket=db.influxdb.bucket
             )
         else:
@@ -86,27 +86,27 @@ class EventStorage:
             logger.warning("No InfluxDB connection available events will not be stored in time-series format")
 
         # Caches for fast lookups
-        self.character_cache: Dict[str int] = {}  # guid -> character_id
+        self.character_cache: Dict[str, int] = {}  # guid -> character_id
         self.file_cache: Set[str] = set()  # processed file hashes
 
         # Performance tracking
         self.stats = {
-            "encounters_stored": 0 
-            "characters_stored": 0 
-            "events_stored": 0 
-            "storage_time": 0.0 
+            "encounters_stored": 0,
+            "characters_stored": 0,
+            "events_stored": 0,
+            "storage_time": 0.0
         }
 
         # Load existing caches
         self._load_caches()
 
     def store_encounters(
-        self 
-        raids: List[RaidEncounter] 
-        mythic_plus: List[MythicPlusRun] 
-        log_file_path: str 
-        guild_id: Optional[int] = None 
-    ) -> Dict[str Any]:
+        self,
+        raids: List[RaidEncounter],
+        mythic_plus: List[MythicPlusRun],
+        log_file_path: str,
+        guild_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         """
         Store raid encounters and M+ runs in database.
 
@@ -125,7 +125,7 @@ class EventStorage:
             file_hash = self._calculate_file_hash(log_file_path)
             if file_hash in self.file_cache:
                 logger.info(f"File {log_file_path} already processed skipping")
-                return {"status": "skipped" "reason": "already_processed"}
+                return {"status": "skipped", "reason": "already_processed"}
 
             # Begin transaction
             total_events = 0
@@ -205,7 +205,7 @@ class EventStorage:
             file_hash = self._calculate_file_hash(log_file_path)
             if file_hash in self.file_cache:
                 logger.info(f"File {log_file_path} already processed skipping")
-                return {"status": "skipped" "reason": "already_processed"}
+                return {"status": "skipped", "reason": "already_processed"}
 
             # Begin transaction
             total_events = 0
