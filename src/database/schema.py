@@ -744,13 +744,13 @@ def create_tables(db: DatabaseManager) -> None:
 
     # Metrics indices (multi-tenant aware - critical for leaderboards and rankings)
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_performance ON character_metrics(guild_id dps DESC) WHERE dps > 0"
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_performance ON character_metrics(guild_id, dps DESC) WHERE dps > 0"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_healing ON character_metrics(guild_id hps DESC) WHERE hps > 0"
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_healing ON character_metrics(guild_id, hps DESC) WHERE hps > 0"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_dps ON character_metrics(guild_id combat_dps DESC) WHERE combat_dps > 0"
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_dps ON character_metrics(guild_id, combat_dps DESC) WHERE combat_dps > 0"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_hps ON character_metrics(guild_id combat_hps DESC) WHERE combat_hps > 0"
