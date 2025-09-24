@@ -861,15 +861,15 @@ def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
 
     # Table row counts
     tables = [
-        "encounters" 
-        "characters" 
-        "event_blocks" 
-        "character_metrics" 
-        "spell_summary" 
-        "character_gear_snapshots" 
-        "character_gear_items" 
-        "character_talent_snapshots" 
-        "character_talent_selections" 
+        "encounters",
+        "characters",
+        "event_blocks",
+        "character_metrics",
+        "spell_summary",
+        "character_gear_snapshots",
+        "character_gear_items",
+        "character_talent_snapshots",
+        "character_talent_selections"
     ]
     for table in tables:
         result = db.execute(f"SELECT COUNT(*) FROM {table}")
@@ -879,9 +879,9 @@ def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
     result = db.execute(
         """
         SELECT
-            SUM(compressed_size) as total_compressed 
-            SUM(uncompressed_size) as total_uncompressed 
-            AVG(compression_ratio) as avg_compression_ratio 
+            SUM(compressed_size) as total_compressed,
+            SUM(uncompressed_size) as total_uncompressed,
+            AVG(compression_ratio) as avg_compression_ratio,
             COUNT(*) as block_count
         FROM event_blocks
     """
@@ -901,8 +901,8 @@ def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
     result = db.execute(
         """
         SELECT COUNT(*)
-        FROM combat_encounters
-        WHERE created_at > datetime('now' '-7 days')
+        FROM encounters
+        WHERE created_at > datetime('now', '-7 days')
     """
     )
     stats["encounters_last_7_days"] = result[0][0] if result else 0
