@@ -417,7 +417,7 @@ def create_tables(db: DatabaseManager) -> None:
             file_size INTEGER NOT NULL,
             processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             event_count INTEGER DEFAULT 0,
-            encounter_count INTEGER DEFAULT 0,
+            encounter_count INTEGER DEFAULT 0
         )
     """
     )
@@ -444,7 +444,7 @@ def create_tables(db: DatabaseManager) -> None:
             bloodlust_used BOOLEAN DEFAULT FALSE,
             bloodlust_time REAL,
             battle_resurrections INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """
     )
