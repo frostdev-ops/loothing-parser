@@ -417,7 +417,7 @@ def create_tables(db: DatabaseManager) -> None:
             file_size INTEGER NOT NULL,
             processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             event_count INTEGER DEFAULT 0,
-            encounter_count INTEGER DEFAULT 0
+            encounter_count INTEGER DEFAULT 0,
         )
     """
     )
@@ -444,7 +444,7 @@ def create_tables(db: DatabaseManager) -> None:
             bloodlust_used BOOLEAN DEFAULT FALSE,
             bloodlust_time REAL,
             battle_resurrections INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         )
     """
     )
@@ -463,7 +463,7 @@ def create_tables(db: DatabaseManager) -> None:
             spec_name TEXT,
             first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            encounter_count INTEGER DEFAULT 0
+            encounter_count INTEGER DEFAULT 0,
         )
     """
     )
@@ -475,15 +475,15 @@ def create_tables(db: DatabaseManager) -> None:
             block_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
-            block_index INTEGER NOT NULL 
-            start_time REAL NOT NULL 
-            end_time REAL NOT NULL 
-            event_count INTEGER NOT NULL 
-            compressed_data BLOB NOT NULL 
-            uncompressed_size INTEGER NOT NULL 
-            compressed_size INTEGER NOT NULL 
-            compression_ratio REAL NOT NULL 
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            block_index INTEGER NOT NULL,
+            start_time REAL NOT NULL,
+            end_time REAL NOT NULL,
+            event_count INTEGER NOT NULL,
+            compressed_data BLOB NOT NULL,
+            uncompressed_size INTEGER NOT NULL,
+            compressed_size INTEGER NOT NULL,
+            compression_ratio REAL NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         )
     """
     )
@@ -496,27 +496,27 @@ def create_tables(db: DatabaseManager) -> None:
             guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
-            damage_done INTEGER DEFAULT 0 
-            healing_done INTEGER DEFAULT 0 
-            damage_taken INTEGER DEFAULT 0 
-            healing_received INTEGER DEFAULT 0 
-            overhealing INTEGER DEFAULT 0 
-            death_count INTEGER DEFAULT 0 
-            activity_percentage REAL DEFAULT 0.0 
-            time_alive REAL DEFAULT 0.0 
-            dps REAL DEFAULT 0.0 
-            hps REAL DEFAULT 0.0 
-            dtps REAL DEFAULT 0.0 
-            combat_time REAL DEFAULT 0.0 
-            combat_dps REAL DEFAULT 0.0 
-            combat_hps REAL DEFAULT 0.0 
-            combat_dtps REAL DEFAULT 0.0 
-            combat_activity_percentage REAL DEFAULT 0.0 
-            damage_absorbed_by_shields INTEGER DEFAULT 0 
-            damage_absorbed_for_me INTEGER DEFAULT 0 
-            total_events INTEGER DEFAULT 0 
-            cast_count INTEGER DEFAULT 0 
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+            damage_done INTEGER DEFAULT 0,
+            healing_done INTEGER DEFAULT 0,
+            damage_taken INTEGER DEFAULT 0,
+            healing_received INTEGER DEFAULT 0,
+            overhealing INTEGER DEFAULT 0,
+            death_count INTEGER DEFAULT 0,
+            activity_percentage REAL DEFAULT 0.0,
+            time_alive REAL DEFAULT 0.0,
+            dps REAL DEFAULT 0.0,
+            hps REAL DEFAULT 0.0,
+            dtps REAL DEFAULT 0.0,
+            combat_time REAL DEFAULT 0.0,
+            combat_dps REAL DEFAULT 0.0,
+            combat_hps REAL DEFAULT 0.0,
+            combat_dtps REAL DEFAULT 0.0,
+            combat_activity_percentage REAL DEFAULT 0.0,
+            damage_absorbed_by_shields INTEGER DEFAULT 0,
+            damage_absorbed_for_me INTEGER DEFAULT 0,
+            total_events INTEGER DEFAULT 0,
+            cast_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(encounter_id character_id)
         )
     """
@@ -529,15 +529,15 @@ def create_tables(db: DatabaseManager) -> None:
             summary_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
-            spell_id INTEGER NOT NULL 
-            spell_name TEXT NOT NULL 
-            cast_count INTEGER DEFAULT 0 
-            hit_count INTEGER DEFAULT 0 
-            crit_count INTEGER DEFAULT 0 
-            total_damage INTEGER DEFAULT 0 
-            total_healing INTEGER DEFAULT 0 
-            max_damage INTEGER DEFAULT 0 
-            max_healing INTEGER DEFAULT 0 
+            spell_id INTEGER NOT NULL,
+            spell_name TEXT NOT NULL,
+            cast_count INTEGER DEFAULT 0,
+            hit_count INTEGER DEFAULT 0,
+            crit_count INTEGER DEFAULT 0,
+            total_damage INTEGER DEFAULT 0,
+            total_healing INTEGER DEFAULT 0,
+            max_damage INTEGER DEFAULT 0,
+            max_healing INTEGER DEFAULT 0,
             UNIQUE(encounter_id character_id spell_id)
         )
     """
@@ -549,17 +549,17 @@ def create_tables(db: DatabaseManager) -> None:
         CREATE TABLE IF NOT EXISTS mythic_plus_runs (
             run_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER UNIQUE REFERENCES encounters(encounter_id) 
-            dungeon_id INTEGER NOT NULL 
-            keystone_level INTEGER NOT NULL 
-            affixes TEXT  -- JSON array of affix IDs
-            time_limit_seconds INTEGER NOT NULL 
-            actual_time_seconds REAL NOT NULL 
-            completed BOOLEAN DEFAULT FALSE 
-            in_time BOOLEAN DEFAULT FALSE 
-            time_remaining REAL DEFAULT 0.0 
-            num_deaths INTEGER DEFAULT 0 
-            death_penalties REAL DEFAULT 0.0 
-            enemy_forces_percent REAL DEFAULT 0.0
+            dungeon_id INTEGER NOT NULL,
+            keystone_level INTEGER NOT NULL,
+            affixes TEXT  -- JSON array of affix IDs,
+            time_limit_seconds INTEGER NOT NULL,
+            actual_time_seconds REAL NOT NULL,
+            completed BOOLEAN DEFAULT FALSE,
+            in_time BOOLEAN DEFAULT FALSE,
+            time_remaining REAL DEFAULT 0.0,
+            num_deaths INTEGER DEFAULT 0,
+            death_penalties REAL DEFAULT 0.0,
+            enemy_forces_percent REAL DEFAULT 0.0,
         )
     """
     )
@@ -570,16 +570,16 @@ def create_tables(db: DatabaseManager) -> None:
         CREATE TABLE IF NOT EXISTS combat_segments (
             segment_id INTEGER PRIMARY KEY AUTOINCREMENT,
             run_id INTEGER NOT NULL REFERENCES mythic_plus_runs(run_id) 
-            segment_index INTEGER NOT NULL 
+            segment_index INTEGER NOT NULL,
             segment_type TEXT NOT NULL CHECK(segment_type IN ('boss' 'trash' 'miniboss')) 
-            segment_name TEXT 
-            start_time REAL NOT NULL 
-            end_time REAL 
-            duration REAL DEFAULT 0.0 
-            mob_count INTEGER DEFAULT 0 
-            enemy_forces_start REAL DEFAULT 0.0 
-            enemy_forces_end REAL DEFAULT 0.0 
-            enemy_forces_gained REAL DEFAULT 0.0
+            segment_name TEXT,
+            start_time REAL NOT NULL,
+            end_time REAL,
+            duration REAL DEFAULT 0.0,
+            mob_count INTEGER DEFAULT 0,
+            enemy_forces_start REAL DEFAULT 0.0,
+            enemy_forces_end REAL DEFAULT 0.0,
+            enemy_forces_gained REAL DEFAULT 0.0,
         )
     """
     )
@@ -590,12 +590,12 @@ def create_tables(db: DatabaseManager) -> None:
         CREATE TABLE IF NOT EXISTS combat_periods (
             period_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
-            period_index INTEGER NOT NULL 
-            start_time REAL NOT NULL 
-            end_time REAL NOT NULL 
-            duration REAL NOT NULL 
-            event_count INTEGER DEFAULT 0 
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            period_index INTEGER NOT NULL,
+            start_time REAL NOT NULL,
+            end_time REAL NOT NULL,
+            duration REAL NOT NULL,
+            event_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         )
     """
     )
@@ -608,12 +608,12 @@ def create_tables(db: DatabaseManager) -> None:
             guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
             encounter_id INTEGER REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
-            snapshot_time REAL NOT NULL 
+            snapshot_time REAL NOT NULL,
             source TEXT NOT NULL CHECK(source IN ('combatant_info' 'manual' 'armory')) 
-            average_item_level REAL DEFAULT 0.0 
-            equipped_item_level REAL DEFAULT 0.0 
-            total_items INTEGER DEFAULT 0 
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+            average_item_level REAL DEFAULT 0.0,
+            equipped_item_level REAL DEFAULT 0.0,
+            total_items INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(character_id encounter_id)
         )
     """
@@ -626,17 +626,17 @@ def create_tables(db: DatabaseManager) -> None:
             item_id INTEGER PRIMARY KEY AUTOINCREMENT,
             snapshot_id INTEGER NOT NULL REFERENCES character_gear_snapshots(snapshot_id) 
             slot_index INTEGER NOT NULL CHECK(slot_index BETWEEN 1 AND 18) 
-            slot_name TEXT NOT NULL 
-            item_entry INTEGER NOT NULL 
-            item_level INTEGER DEFAULT 0 
-            enchant_id INTEGER DEFAULT 0 
-            gem_1_id INTEGER DEFAULT 0 
-            gem_2_id INTEGER DEFAULT 0 
-            gem_3_id INTEGER DEFAULT 0 
-            gem_4_id INTEGER DEFAULT 0 
-            upgrade_level INTEGER DEFAULT 0 
-            bonus_ids TEXT DEFAULT '' 
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+            slot_name TEXT NOT NULL,
+            item_entry INTEGER NOT NULL,
+            item_level INTEGER DEFAULT 0,
+            enchant_id INTEGER DEFAULT 0,
+            gem_1_id INTEGER DEFAULT 0,
+            gem_2_id INTEGER DEFAULT 0,
+            gem_3_id INTEGER DEFAULT 0,
+            gem_4_id INTEGER DEFAULT 0,
+            upgrade_level INTEGER DEFAULT 0,
+            bonus_ids TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(snapshot_id slot_index)
         )
     """
@@ -650,12 +650,12 @@ def create_tables(db: DatabaseManager) -> None:
             guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
             encounter_id INTEGER REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
-            snapshot_time REAL NOT NULL 
+            snapshot_time REAL NOT NULL,
             source TEXT NOT NULL CHECK(source IN ('combatant_info' 'manual' 'armory')) 
-            specialization TEXT DEFAULT '' 
-            talent_loadout TEXT DEFAULT '' 
-            total_talents INTEGER DEFAULT 0 
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+            specialization TEXT DEFAULT '',
+            talent_loadout TEXT DEFAULT '',
+            total_talents INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(character_id encounter_id)
         )
     """
@@ -667,12 +667,12 @@ def create_tables(db: DatabaseManager) -> None:
         CREATE TABLE IF NOT EXISTS character_talent_selections (
             talent_id INTEGER PRIMARY KEY AUTOINCREMENT,
             snapshot_id INTEGER NOT NULL REFERENCES character_talent_snapshots(snapshot_id) 
-            talent_slot INTEGER NOT NULL 
-            talent_spell_id INTEGER NOT NULL 
-            talent_tier INTEGER DEFAULT 0 
-            talent_column INTEGER DEFAULT 0 
-            is_selected BOOLEAN DEFAULT TRUE 
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+            talent_slot INTEGER NOT NULL,
+            talent_spell_id INTEGER NOT NULL,
+            talent_tier INTEGER DEFAULT 0,
+            talent_column INTEGER DEFAULT 0,
+            is_selected BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(snapshot_id talent_slot)
         )
     """
