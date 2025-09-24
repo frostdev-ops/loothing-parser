@@ -78,7 +78,7 @@ class GearSnapshot:
         # Calculate item levels
         valid_items = [
             item for item in self.items
-            if item.slot_index not in [4 19] and item.item_entry > 0 and item.item_level > 0
+            if item.slot_index not in [4, 19] and item.item_entry > 0 and item.item_level > 0
         ]
 
         if not valid_items:
