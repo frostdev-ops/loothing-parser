@@ -31,7 +31,7 @@ EQUIPMENT_SLOTS = {
     15: "Back",
     16: "Main_Hand",  # Double weight in item level calculations
     17: "Off_Hand",
-    18: "Ranged", 
+    18: "Ranged",
     19: "Tabard"  # Cosmetic slot excluded from item level calculations
 }
 
