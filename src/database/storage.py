@@ -828,7 +828,7 @@ class EventStorage:
         )
 
     def _store_spell_summary(
-        self encounter_id: int character_id: int char_stream: CharacterEventStream
+        self, encounter_id: int, character_id: int, char_stream: CharacterEventStream
     ):
         """Store aggregated spell usage data."""
         # Aggregate spell usage from events
@@ -839,9 +839,9 @@ class EventStorage:
                 key = (event.spell_id, event.spell_name)
                 if key not in spell_stats:
                     spell_stats[key] = {
-                        "cast_count": 0 
-                        "hit_count": 0 
-                        "crit_count": 0 
+                        "cast_count": 0,
+                        "hit_count": 0,
+                        "crit_count": 0,
                         "total_damage": 0,
                         "max_damage": 0,
                     }
@@ -858,19 +858,19 @@ class EventStorage:
                 key = (event.spell_id, event.spell_name)
                 if key not in spell_stats:
                     spell_stats[key] = {
-                        "cast_count": 0 
-                        "hit_count": 0 
-                        "crit_count": 0 
-                        "total_healing": 0 
-                        "max_healing": 0 
+                        "cast_count": 0,
+                        "hit_count": 0,
+                        "crit_count": 0,
+                        "total_healing": 0,
+                        "max_healing": 0,
                     }
                 spell_stats[key]["hit_count"] += 1
                 spell_stats[key]["total_healing"] = spell_stats[key].get(
-                    "total_healing" 0
+                    "total_healing", 0
                 ) + getattr(event, "effective_healing", 0)
                 spell_stats[key]["max_healing"] = max(
-                    spell_stats[key].get("max_healing", 0) 
-                    getattr(event, "effective_healing", 0) 
+                    spell_stats[key].get("max_healing", 0),
+                    getattr(event, "effective_healing", 0),
                 )
                 if getattr(event, "critical", False):
                     spell_stats[key]["crit_count"] += 1
