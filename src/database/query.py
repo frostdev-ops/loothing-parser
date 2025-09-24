@@ -2158,7 +2158,7 @@ class QueryAPI:
             WHERE cm.character_id = %s
             AND e.start_time BETWEEN %s AND %s
         """
-        params = [character_id time_range.start.timestamp() time_range.end.timestamp()]
+        params = [character_id, time_range.start.timestamp(), time_range.end.timestamp()]
 
         if encounter_type:
             query += " AND e.encounter_type = %s"
