@@ -1967,14 +1967,14 @@ class QueryAPI:
             gear_items = []
             for item in snapshot.items:
                 gear_item = {
-                    "slot": item.slot_name 
-                    "slot_index": item.slot_index 
-                    "item_entry": item.item_entry 
-                    "item_level": item.item_level 
-                    "enchant_id": item.enchant_id 
-                    "gems": item.gem_ids 
-                    "upgrade_level": item.upgrade_level 
-                    "bonus_ids": item.bonus_ids 
+                    "slot": item.slot_name,
+                    "slot_index": item.slot_index,
+                    "item_entry": item.item_entry,
+                    "item_level": item.item_level,
+                    "enchant_id": item.enchant_id,
+                    "gems": item.gem_ids,
+                    "upgrade_level": item.upgrade_level,
+                    "bonus_ids": item.bonus_ids,
                 }
                 gear_items.append(gear_item)
 
