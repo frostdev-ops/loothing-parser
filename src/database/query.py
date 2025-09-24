@@ -227,7 +227,7 @@ class QueryAPI:
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM combat_encounters e
+            FROM encounters e
             WHERE encounter_id = %s
         """
         params = [encounter_id]
@@ -290,7 +290,7 @@ class QueryAPI:
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM combat_encounters e
+            FROM encounters e
         """
         params = []
 
@@ -405,7 +405,7 @@ class QueryAPI:
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM combat_encounters e
+            FROM encounters e
             {where_clause}
             ORDER BY start_time DESC
             LIMIT %s
@@ -868,7 +868,7 @@ class QueryAPI:
                     encounter_id, encounter_type, boss_name, difficulty,
                     start_time, end_time, success, combat_length, raid_size,
                     (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-                FROM combat_encounters e
+                FROM encounters e
             """
             params = []
 
@@ -977,7 +977,7 @@ class QueryAPI:
         where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
 
         cursor = self.db.execute(
-            f"SELECT COUNT(*) FROM combat_encounters {where_clause}",
+            f"SELECT COUNT(*) FROM encounters {where_clause}",
             params,
         )
         count = cursor.fetchone()[0]
@@ -1280,7 +1280,7 @@ class QueryAPI:
             SELECT
                 guild_id, guild_name, server, region, faction,
                 created_at, updated_at, is_active,
-                (SELECT COUNT(*) FROM combat_encounters WHERE guild_id = g.guild_id) as encounter_count
+                (SELECT COUNT(*) FROM encounters WHERE guild_id = g.guild_id) as encounter_count
             FROM guilds g
         """
         params = []
@@ -1529,7 +1529,7 @@ class QueryAPI:
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM combat_encounters e
+            FROM encounters e
             WHERE guild_id = %s
         """
         params = [guild_id]
@@ -2104,7 +2104,7 @@ class QueryAPI:
             encounter_type = None
             if encounter_id:
                 cursor = self.db.execute(
-                    "SELECT encounter_type FROM combat_encounters WHERE encounter_id = %s",
+                    "SELECT encounter_type FROM encounters WHERE encounter_id = %s",
                     (encounter_id,)
                 )
                 enc_row = cursor.fetchone()
@@ -2242,7 +2242,7 @@ class QueryAPI:
         cursor = self.db.execute(
             """
             SELECT
-                (SELECT COUNT(*) FROM combat_encounters) as total_encounters,
+                (SELECT COUNT(*) FROM encounters) as total_encounters,
                 (SELECT COUNT(*) FROM characters) as total_characters,
                 (SELECT COUNT(*) FROM character_metrics) as total_character_metrics
         """
@@ -2438,7 +2438,7 @@ class QueryAPI:
             # Create encounter metadata in PostgreSQL
             cursor = self.db.execute(
                 """
-                INSERT INTO combat_encounters (
+                INSERT INTO encounters (
                     guild_id, encounter_type, boss_name, start_time, end_time,
                     success, combat_length, created_at
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
