@@ -540,7 +540,7 @@ class EventStorage:
         return character_id
 
     def _store_character_metrics_unified(
-        self encounter_id: int character_id: int character encounter: UnifiedEncounter guild_id: int = 1
+        self, encounter_id: int, character_id: int, character, encounter: UnifiedEncounter, guild_id: int = 1
     ):
         """Store character metrics from unified encounter."""
         # Extract metrics from character and encounter metrics
@@ -549,17 +549,17 @@ class EventStorage:
         self.db.execute(
             """
             INSERT OR REPLACE INTO character_metrics (
-                guild_id encounter_id character_id damage_done healing_done 
-                damage_taken healing_received overhealing death_count 
-                activity_percentage time_alive dps hps dtps 
-                combat_time combat_dps combat_hps combat_dtps 
-                combat_activity_percentage total_events cast_count
-            ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s)
+                guild_id, encounter_id, character_id, damage_done, healing_done,
+                damage_taken, healing_received, overhealing, death_count,
+                activity_percentage, time_alive, dps, hps, dtps,
+                combat_time, combat_dps, combat_hps, combat_dtps,
+                combat_activity_percentage, total_events, cast_count
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
             (
-                safe_param(guild_id) 
-                safe_param(encounter_id) 
-                safe_param(character_id) 
+                safe_param(guild_id),
+                safe_param(encounter_id),
+                safe_param(character_id),
                 safe_param(getattr(character, "total_damage_done", 0)),
                 safe_param(getattr(character, "total_healing_done", 0)),
                 safe_param(getattr(character, "total_damage_taken", 0)),
@@ -567,29 +567,29 @@ class EventStorage:
                 safe_param(getattr(character, "total_overhealing", 0)),
                 safe_param(getattr(character, "death_count", 0)),
                 safe_param(getattr(character, "activity_percentage", 0.0)),
-                safe_param(getattr(character, "time_alive", encounter.duration)) 
+                safe_param(getattr(character, "time_alive", encounter.duration)),
                 safe_param(
                     character.get_dps(encounter.duration) if hasattr(character, "get_dps") else 0.0
-                ) 
+                ),
                 safe_param(
                     character.get_hps(encounter.duration) if hasattr(character, "get_hps") else 0.0
-                ) 
+                ),
                 safe_param(
                     character.get_dtps(encounter.duration)
                     if hasattr(character, "get_dtps")
                     else 0.0
-                ) 
-                safe_param(encounter.combat_duration) 
+                ),
+                safe_param(encounter.combat_duration),
                 safe_param(
                     character.get_combat_dps(encounter.combat_duration)
                     if hasattr(character, "get_combat_dps")
                     else 0.0
-                ) 
+                ),
                 safe_param(
                     character.get_combat_hps(encounter.combat_duration)
                     if hasattr(character, "get_combat_hps")
                     else 0.0
-                ) 
+                ),
                 safe_param(
                     character.get_combat_dtps(encounter.combat_duration)
                     if hasattr(character, "get_combat_dtps")
@@ -597,7 +597,7 @@ class EventStorage:
                 ),
                 safe_param(getattr(character, "combat_activity_percentage", 0.0)),
                 safe_param(len(getattr(character, "all_events", []))),
-                safe_param(getattr(character, "cast_count", 0)) 
+                safe_param(getattr(character, "cast_count", 0)),
             ) 
         )
 
