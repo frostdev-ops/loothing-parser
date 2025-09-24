@@ -589,13 +589,13 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS combat_periods (
             period_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
+            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
             period_index INTEGER NOT NULL,
             start_time REAL NOT NULL,
             end_time REAL NOT NULL,
             duration REAL NOT NULL,
             event_count INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """
     )
