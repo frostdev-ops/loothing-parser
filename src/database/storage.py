@@ -610,19 +610,19 @@ class EventStorage:
                 time_limit_seconds, actual_time_seconds, completed,
                 in_time, time_remaining, num_deaths, death_penalties
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
             (
-                encounter_id 
-                encounter.instance_id or 0 
-                encounter.keystone_level or 0 
-                json.dumps(encounter.affixes) if encounter.affixes else "[]" 
-                0  # time_limit_seconds - not available in unified model yet
-                encounter.duration 
-                encounter.success 
-                encounter.in_time if hasattr(encounter, "in_time") else False 
-                0  # time_remaining - calculate from duration if needed
-                0  # num_deaths - sum from character metrics
-                0  # death_penalties - calculate from deaths
+                encounter_id,
+                encounter.instance_id or 0,
+                encounter.keystone_level or 0,
+                json.dumps(encounter.affixes) if encounter.affixes else "[]",
+                0,  # time_limit_seconds - not available in unified model yet
+                encounter.duration,
+                encounter.success,
+                encounter.in_time if hasattr(encounter, "in_time") else False,
+                0,  # time_remaining - calculate from duration if needed
+                0,  # num_deaths - sum from character metrics
+                0,  # death_penalties - calculate from deaths
             ) 
         )
 
