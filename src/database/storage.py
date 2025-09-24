@@ -606,10 +606,10 @@ class EventStorage:
         self.db.execute(
             """
             INSERT INTO mythic_plus_runs (
-                encounter_id dungeon_id keystone_level affixes 
-                time_limit_seconds actual_time_seconds completed 
-                in_time time_remaining num_deaths death_penalties
-            ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s)
+                encounter_id, dungeon_id, keystone_level, affixes,
+                time_limit_seconds, actual_time_seconds, completed,
+                in_time, time_remaining, num_deaths, death_penalties
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
             (
                 encounter_id 
@@ -1022,10 +1022,10 @@ class EventStorage:
         self.db.execute(
             """
             INSERT INTO mythic_plus_runs (
-                encounter_id dungeon_id keystone_level affixes 
-                time_limit_seconds actual_time_seconds completed 
-                in_time time_remaining num_deaths death_penalties
-            ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s)
+                encounter_id, dungeon_id, keystone_level, affixes,
+                time_limit_seconds, actual_time_seconds, completed,
+                in_time, time_remaining, num_deaths, death_penalties
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
             (
                 safe_param(encounter_id) 
