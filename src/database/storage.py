@@ -1026,23 +1026,23 @@ class EventStorage:
                 time_limit_seconds, actual_time_seconds, completed,
                 in_time, time_remaining, num_deaths, death_penalties
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
             (
-                safe_param(encounter_id) 
-                safe_param(getattr(encounter, "dungeon_id", 0)), 
-                safe_param(encounter.keystone_level) 
+                safe_param(encounter_id),
+                safe_param(getattr(encounter, "dungeon_id", 0)),
+                safe_param(encounter.keystone_level),
                 safe_param(
                     json.dumps(encounter.affixes)
                     if hasattr(encounter, "affixes") and encounter.affixes
                     else "[]"
-                ) 
-                safe_param(getattr(encounter, "time_limit", 0)), 
-                safe_param(encounter.combat_duration) 
-                safe_param(encounter.success) 
-                safe_param(encounter.success)  # in_time same as success for now
-                safe_param(0.0)  # time_remaining
-                safe_param(0)  # num_deaths
-                safe_param(0.0)  # death_penalties
+                ),
+                safe_param(getattr(encounter, "time_limit", 0)),
+                safe_param(encounter.combat_duration),
+                safe_param(encounter.success),
+                safe_param(encounter.success),  # in_time same as success for now
+                safe_param(0.0),  # time_remaining
+                safe_param(0),  # num_deaths
+                safe_param(0.0),  # death_penalties
             ) 
         )
 
