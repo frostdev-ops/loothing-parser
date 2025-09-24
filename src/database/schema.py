@@ -453,16 +453,16 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS characters (
-            character_id INTEGER PRIMARY KEY AUTOINCREMENT 
-            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
-            character_guid TEXT UNIQUE NOT NULL 
-            character_name TEXT NOT NULL 
-            server TEXT 
-            region TEXT 
-            class_name TEXT 
-            spec_name TEXT 
-            first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
-            last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+            character_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
+            character_guid TEXT UNIQUE NOT NULL,
+            character_name TEXT NOT NULL,
+            server TEXT,
+            region TEXT,
+            class_name TEXT,
+            spec_name TEXT,
+            first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             encounter_count INTEGER DEFAULT 0
         )
     """
@@ -472,7 +472,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS event_blocks (
-            block_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            block_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
             block_index INTEGER NOT NULL 
@@ -492,7 +492,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS character_metrics (
-            metric_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            metric_id INTEGER PRIMARY KEY AUTOINCREMENT,
             guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
@@ -526,7 +526,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS spell_summary (
-            summary_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            summary_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
             spell_id INTEGER NOT NULL 
@@ -547,7 +547,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS mythic_plus_runs (
-            run_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            run_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER UNIQUE REFERENCES encounters(encounter_id) 
             dungeon_id INTEGER NOT NULL 
             keystone_level INTEGER NOT NULL 
@@ -568,7 +568,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS combat_segments (
-            segment_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            segment_id INTEGER PRIMARY KEY AUTOINCREMENT,
             run_id INTEGER NOT NULL REFERENCES mythic_plus_runs(run_id) 
             segment_index INTEGER NOT NULL 
             segment_type TEXT NOT NULL CHECK(segment_type IN ('boss' 'trash' 'miniboss')) 
@@ -588,7 +588,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS combat_periods (
-            period_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            period_id INTEGER PRIMARY KEY AUTOINCREMENT,
             encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
             period_index INTEGER NOT NULL 
             start_time REAL NOT NULL 
@@ -604,7 +604,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS character_gear_snapshots (
-            snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
             guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
             encounter_id INTEGER REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
@@ -623,7 +623,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS character_gear_items (
-            item_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            item_id INTEGER PRIMARY KEY AUTOINCREMENT,
             snapshot_id INTEGER NOT NULL REFERENCES character_gear_snapshots(snapshot_id) 
             slot_index INTEGER NOT NULL CHECK(slot_index BETWEEN 1 AND 18) 
             slot_name TEXT NOT NULL 
@@ -646,7 +646,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS character_talent_snapshots (
-            snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
             guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
             encounter_id INTEGER REFERENCES encounters(encounter_id) 
             character_id INTEGER NOT NULL REFERENCES characters(character_id) 
@@ -665,7 +665,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS character_talent_selections (
-            talent_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            talent_id INTEGER PRIMARY KEY AUTOINCREMENT,
             snapshot_id INTEGER NOT NULL REFERENCES character_talent_snapshots(snapshot_id) 
             talent_slot INTEGER NOT NULL 
             talent_spell_id INTEGER NOT NULL 
