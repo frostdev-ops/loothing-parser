@@ -569,9 +569,9 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS combat_segments (
             segment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run_id INTEGER NOT NULL REFERENCES mythic_plus_runs(run_id) 
+            run_id INTEGER NOT NULL REFERENCES mythic_plus_runs(run_id),
             segment_index INTEGER NOT NULL,
-            segment_type TEXT NOT NULL CHECK(segment_type IN ('boss' 'trash' 'miniboss')) 
+            segment_type TEXT NOT NULL CHECK(segment_type IN ('boss', 'trash', 'miniboss')),
             segment_name TEXT,
             start_time REAL NOT NULL,
             end_time REAL,
@@ -579,7 +579,7 @@ def create_tables(db: DatabaseManager) -> None:
             mob_count INTEGER DEFAULT 0,
             enemy_forces_start REAL DEFAULT 0.0,
             enemy_forces_end REAL DEFAULT 0.0,
-            enemy_forces_gained REAL DEFAULT 0.0,
+            enemy_forces_gained REAL DEFAULT 0.0
         )
     """
     )
