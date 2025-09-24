@@ -2472,7 +2472,7 @@ class QueryAPI:
             logger.error(f"Failed to define encounter time window: {e}")
             return None
 
-    def get_influxdb_stats(self) -> Dict[str Any]:
+    def get_influxdb_stats(self) -> Dict[str, Any]:
         """Get InfluxDB connection and performance statistics."""
         if not self.influxdb_manager:
             return {"error": "No InfluxDB connection available"}
