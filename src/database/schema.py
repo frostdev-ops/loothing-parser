@@ -427,23 +427,23 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS encounters (
             encounter_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
-            log_file_id INTEGER REFERENCES log_files(file_id) 
-            encounter_type TEXT NOT NULL CHECK(encounter_type IN ('raid' 'mythic_plus')) 
-            boss_name TEXT NOT NULL 
-            difficulty TEXT 
-            instance_id INTEGER 
-            instance_name TEXT 
-            pull_number INTEGER DEFAULT 1 
-            start_time REAL NOT NULL 
-            end_time REAL 
-            success BOOLEAN DEFAULT FALSE 
-            combat_length REAL DEFAULT 0.0 
-            raid_size INTEGER DEFAULT 0 
-            wipe_percentage REAL 
-            bloodlust_used BOOLEAN DEFAULT FALSE 
-            bloodlust_time REAL 
-            battle_resurrections INTEGER DEFAULT 0 
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
+            log_file_id INTEGER REFERENCES log_files(file_id),
+            encounter_type TEXT NOT NULL CHECK(encounter_type IN ('raid', 'mythic_plus')),
+            boss_name TEXT NOT NULL,
+            difficulty TEXT,
+            instance_id INTEGER,
+            instance_name TEXT,
+            pull_number INTEGER DEFAULT 1,
+            start_time REAL NOT NULL,
+            end_time REAL,
+            success BOOLEAN DEFAULT FALSE,
+            combat_length REAL DEFAULT 0.0,
+            raid_size INTEGER DEFAULT 0,
+            wipe_percentage REAL,
+            bloodlust_used BOOLEAN DEFAULT FALSE,
+            bloodlust_time REAL,
+            battle_resurrections INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """
