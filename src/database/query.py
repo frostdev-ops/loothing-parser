@@ -2242,8 +2242,8 @@ class QueryAPI:
         cursor = self.db.execute(
             """
             SELECT
-                (SELECT COUNT(*) FROM combat_encounters) as total_encounters 
-                (SELECT COUNT(*) FROM characters) as total_characters 
+                (SELECT COUNT(*) FROM combat_encounters) as total_encounters,
+                (SELECT COUNT(*) FROM characters) as total_characters,
                 (SELECT COUNT(*) FROM character_metrics) as total_character_metrics
         """
         )
