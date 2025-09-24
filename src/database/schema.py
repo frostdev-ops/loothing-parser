@@ -71,7 +71,7 @@ class DatabaseManager:
         try:
             config = get_database_config()
             return config.get("type") == "postgresql"
-        except:
+        except Exception:
             # If config is not available check environment directly
             return bool(os.getenv("DB_HOST") and os.getenv("DB_NAME"))
 
@@ -175,7 +175,7 @@ class DatabaseManager:
         """Get table schema information."""
         if self.backend_type == "postgresql":
             query = """
-                SELECT column_name data_type is_nullable
+                SELECT column_name, data_type, is_nullable
                 FROM information_schema.columns
                 WHERE table_name = %s
             """
@@ -232,7 +232,7 @@ def _migrate_character_schema(db: DatabaseManager) -> None:
         from src.models.character import parse_character_name
 
         characters = db.execute(
-            "SELECT character_id character_name realm FROM characters WHERE realm IS NOT NULL"
+            "SELECT character_id, character_name, realm FROM characters WHERE realm IS NOT NULL"
         )
         if not characters:
             return
