@@ -104,17 +104,17 @@ class QueryCache:
         """
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
-        self.cache: Dict[str Tuple[Any float]] = {}
+        self.cache: Dict[str, Tuple[Any, float]] = {}
         self.access_order: List[str] = []
         self.lock = threading.RLock()
 
-    def get(self key: str) -> Optional[Any]:
+    def get(self, key: str) -> Optional[Any]:
         """Get cached value if not expired."""
         with self.lock:
             if key not in self.cache:
                 return None
 
-            value timestamp = self.cache[key]
+            value, timestamp = self.cache[key]
             if time.time() - timestamp > self.ttl_seconds:
                 # Expired
                 del self.cache[key]
@@ -126,7 +126,7 @@ class QueryCache:
             self.access_order.append(key)
             return value
 
-    def put(self key: str value: Any):
+    def put(self, key: str, value: Any):
         """Cache a value with current timestamp."""
         with self.lock:
             # Remove if already exists
@@ -134,7 +134,7 @@ class QueryCache:
                 self.access_order.remove(key)
 
             # Add new entry
-            self.cache[key] = (value time.time())
+            self.cache[key] = (value, time.time())
             self.access_order.append(key)
 
             # Evict oldest if over capacity
@@ -148,13 +148,13 @@ class QueryCache:
             self.cache.clear()
             self.access_order.clear()
 
-    def stats(self) -> Dict[str Any]:
+    def stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         with self.lock:
             return {
-                "size": len(self.cache) 
-                "max_size": self.max_size 
-                "ttl_seconds": self.ttl_seconds 
+                "size": len(self.cache),
+                "max_size": self.max_size,
+                "ttl_seconds": self.ttl_seconds,
             }
 
 
@@ -166,7 +166,7 @@ class QueryAPI:
     and efficient data retrieval patterns for common use cases.
     """
 
-    def __init__(self db: DatabaseManager cache_size: int = 1000):
+    def __init__(self, db: DatabaseManager, cache_size: int = 1000):
         """
         Initialize query API.
 
@@ -178,12 +178,12 @@ class QueryAPI:
         self.cache = QueryCache(max_size=cache_size)
 
         # Initialize time-series manager if available
-        if hasattr(db 'influxdb') and db.influxdb:
+        if hasattr(db, 'influxdb') and db.influxdb:
             self.influxdb_manager = InfluxDBDirectManager(
-                url=db.influxdb.url 
-                token=db.influxdb.token 
-                org=db.influxdb.org 
-                bucket=db.influxdb.bucket
+                url=db.influxdb.url,
+                token=db.influxdb.token,
+                org=db.influxdb.org,
+                bucket=db.influxdb.bucket,
             )
         else:
             self.influxdb_manager = None
@@ -191,16 +191,16 @@ class QueryAPI:
 
         # Query statistics
         self.stats = {
-            "queries_executed": 0 
-            "cache_hits": 0 
-            "cache_misses": 0 
-            "total_query_time": 0.0 
-            "time_series_queries": 0 
-            "influxdb_query_time": 0.0 
+            "queries_executed": 0,
+            "cache_hits": 0,
+            "cache_misses": 0,
+            "total_query_time": 0.0,
+            "time_series_queries": 0,
+            "influxdb_query_time": 0.0,
         }
 
     def get_encounter(
-        self encounter_id: int guild_id: Optional[int] = None
+        self, encounter_id: int, guild_id: Optional[int] = None
     ) -> Optional[EncounterSummary]:
         """
         Get encounter summary by ID.
@@ -224,8 +224,8 @@ class QueryAPI:
         # Build query with optional guild filtering
         query = """
             SELECT
-                encounter_id encounter_type boss_name difficulty 
-                start_time end_time success combat_length raid_size 
+                encounter_id, encounter_type, boss_name, difficulty,
+                start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
             FROM combat_encounters e
             WHERE encounter_id = %s
@@ -236,34 +236,34 @@ class QueryAPI:
             query += " AND guild_id = %s"
             params.append(guild_id)
 
-        cursor = self.db.execute(query params)
+        cursor = self.db.execute(query, params)
 
         row = cursor.fetchone()
         if not row:
             return None
 
         encounter = EncounterSummary(
-            encounter_id=row[0] 
-            encounter_type=row[1] 
-            boss_name=row[2] 
-            difficulty=row[3] 
-            start_time=datetime.fromtimestamp(row[4]) if row[4] else None 
-            end_time=datetime.fromtimestamp(row[5]) if row[5] else None 
-            success=bool(row[6]) 
-            combat_length=row[7] 
-            raid_size=row[8] 
-            character_count=row[9] 
+            encounter_id=row[0],
+            encounter_type=row[1],
+            boss_name=row[2],
+            difficulty=row[3],
+            start_time=datetime.fromtimestamp(row[4]) if row[4] else None,
+            end_time=datetime.fromtimestamp(row[5]) if row[5] else None,
+            success=bool(row[6]),
+            combat_length=row[7],
+            raid_size=row[8],
+            character_count=row[9],
         )
 
         query_time = time.time() - start_time
         self.stats["total_query_time"] += query_time
         self.stats["cache_misses"] += 1
 
-        self.cache.put(cache_key encounter)
+        self.cache.put(cache_key, encounter)
         return encounter
 
     def get_recent_encounters(
-        self limit: int = 10 guild_id: Optional[int] = None
+        self, limit: int = 10, guild_id: Optional[int] = None
     ) -> List[EncounterSummary]:
         """
         Get recent encounters ordered by creation time.
@@ -287,8 +287,8 @@ class QueryAPI:
         # Build query with optional guild filtering
         query = """
             SELECT
-                encounter_id encounter_type boss_name difficulty 
-                start_time end_time success combat_length raid_size 
+                encounter_id, encounter_type, boss_name, difficulty,
+                start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
             FROM combat_encounters e
         """
@@ -301,21 +301,21 @@ class QueryAPI:
         query += " ORDER BY created_at DESC LIMIT %s"
         params.append(limit)
 
-        cursor = self.db.execute(query params)
+        cursor = self.db.execute(query, params)
 
         encounters = []
         for row in cursor:
             encounter = EncounterSummary(
-                encounter_id=row[0] 
-                encounter_type=row[1] 
-                boss_name=row[2] 
-                difficulty=row[3] 
-                start_time=datetime.fromtimestamp(row[4]) if row[4] else None 
-                end_time=datetime.fromtimestamp(row[5]) if row[5] else None 
-                success=bool(row[6]) 
-                combat_length=row[7] 
-                raid_size=row[8] 
-                character_count=row[9] 
+                encounter_id=row[0],
+                encounter_type=row[1],
+                boss_name=row[2],
+                difficulty=row[3],
+                start_time=datetime.fromtimestamp(row[4]) if row[4] else None,
+                end_time=datetime.fromtimestamp(row[5]) if row[5] else None,
+                success=bool(row[6]),
+                combat_length=row[7],
+                raid_size=row[8],
+                character_count=row[9],
             )
             encounters.append(encounter)
 
@@ -323,19 +323,19 @@ class QueryAPI:
         self.stats["total_query_time"] += query_time
         self.stats["cache_misses"] += 1
 
-        self.cache.put(cache_key encounters)
+        self.cache.put(cache_key, encounters)
         return encounters
 
     def search_encounters(
-        self 
-        boss_name: Optional[str] = None 
-        difficulty: Optional[str] = None 
-        encounter_type: Optional[str] = None 
-        success: Optional[bool] = None 
-        start_date: Optional[datetime] = None 
-        end_date: Optional[datetime] = None 
-        limit: int = 50 
-        guild_id: Optional[int] = None 
+        self,
+        boss_name: Optional[str] = None,
+        difficulty: Optional[str] = None,
+        encounter_type: Optional[str] = None,
+        success: Optional[bool] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: int = 50,
+        guild_id: Optional[int] = None,
     ) -> List[EncounterSummary]:
         """
         Search encounters with filters.
@@ -402,30 +402,30 @@ class QueryAPI:
         cursor = self.db.execute(
             f"""
             SELECT
-                encounter_id encounter_type boss_name difficulty 
-                start_time end_time success combat_length raid_size 
+                encounter_id, encounter_type, boss_name, difficulty,
+                start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
             FROM combat_encounters e
             {where_clause}
             ORDER BY start_time DESC
             LIMIT %s
-        """ 
-            params 
+        """,
+            params,
         )
 
         encounters = []
         for row in cursor:
             encounter = EncounterSummary(
-                encounter_id=row[0] 
-                encounter_type=row[1] 
-                boss_name=row[2] 
-                difficulty=row[3] 
-                start_time=datetime.fromtimestamp(row[4]) if row[4] else None 
-                end_time=datetime.fromtimestamp(row[5]) if row[5] else None 
-                success=bool(row[6]) 
-                combat_length=row[7] 
-                raid_size=row[8] 
-                character_count=row[9] 
+                encounter_id=row[0],
+                encounter_type=row[1],
+                boss_name=row[2],
+                difficulty=row[3],
+                start_time=datetime.fromtimestamp(row[4]) if row[4] else None,
+                end_time=datetime.fromtimestamp(row[5]) if row[5] else None,
+                success=bool(row[6]),
+                combat_length=row[7],
+                raid_size=row[8],
+                character_count=row[9],
             )
             encounters.append(encounter)
 
@@ -433,14 +433,14 @@ class QueryAPI:
         self.stats["total_query_time"] += query_time
         self.stats["cache_misses"] += 1
 
-        self.cache.put(cache_key encounters)
+        self.cache.put(cache_key, encounters)
         return encounters
 
     def get_character_metrics(
-        self 
-        encounter_id: int 
-        character_name: Optional[str] = None 
-        guild_id: Optional[int] = None 
+        self,
+        encounter_id: int,
+        character_name: Optional[str] = None,
+        guild_id: Optional[int] = None,
     ) -> List[CharacterMetrics]:
         """
         Get character performance metrics for an encounter.
@@ -465,9 +465,9 @@ class QueryAPI:
         # Build query with optional character filter and guild filtering
         query = """
             SELECT
-                c.character_name c.character_guid c.class_name c.spec_name 
-                m.damage_done m.healing_done m.damage_taken m.death_count 
-                m.dps m.hps m.activity_percentage m.time_alive m.total_events
+                c.character_name, c.character_guid, c.class_name, c.spec_name,
+                m.damage_done, m.healing_done, m.damage_taken, m.death_count,
+                m.dps, m.hps, m.activity_percentage, m.time_alive, m.total_events
             FROM character_metrics m
             JOIN characters c ON m.character_id = c.character_id
             WHERE m.encounter_id = %s
@@ -477,7 +477,7 @@ class QueryAPI:
         # Add guild filtering for both tables
         if guild_id is not None:
             query += " AND m.guild_id = %s AND c.guild_id = %s"
-            params.extend([guild_id guild_id])
+            params.extend([guild_id, guild_id])
 
         if character_name:
             query += " AND c.character_name LIKE %s"
@@ -485,7 +485,7 @@ class QueryAPI:
 
         query += " ORDER BY m.dps DESC"
 
-        cursor = self.db.execute(query params)
+        cursor = self.db.execute(query, params)
 
         metrics = []
         for row in cursor:
@@ -510,16 +510,16 @@ class QueryAPI:
         self.stats["total_query_time"] += query_time
         self.stats["cache_misses"] += 1
 
-        self.cache.put(cache_key metrics)
+        self.cache.put(cache_key, metrics)
         return metrics
 
     def get_top_performers(
-        self 
-        metric: str = "dps" 
-        encounter_type: Optional[str] = None 
-        boss_name: Optional[str] = None 
-        days: int = 7 
-        limit: int = 10 
+        self,
+        metric: str = "dps",
+        encounter_type: Optional[str] = None,
+        boss_name: Optional[str] = None,
+        days: int = 7,
+        limit: int = 10,
     ) -> List[CharacterMetrics]:
         """
         Get top performing characters by metric.
@@ -545,11 +545,11 @@ class QueryAPI:
 
         # Validate metric name for security
         valid_metrics = {
-            "dps" 
-            "hps" 
-            "damage_done" 
-            "healing_done" 
-            "activity_percentage" 
+            "dps",
+            "hps",
+            "damage_done",
+            "healing_done",
+            "activity_percentage",
         }
         if metric not in valid_metrics:
             raise ValueError(f"Invalid metric: {metric}")
@@ -577,17 +577,17 @@ class QueryAPI:
         cursor = self.db.execute(
             f"""
             SELECT
-                c.character_name c.character_guid c.class_name c.spec_name 
-                m.damage_done m.healing_done m.damage_taken m.death_count 
-                m.dps m.hps m.activity_percentage m.time_alive m.total_events
+                c.character_name, c.character_guid, c.class_name, c.spec_name,
+                m.damage_done, m.healing_done, m.damage_taken, m.death_count,
+                m.dps, m.hps, m.activity_percentage, m.time_alive, m.total_events
             FROM character_metrics m
             JOIN characters c ON m.character_id = c.character_id
             JOIN encounters e ON m.encounter_id = e.encounter_id
             {where_clause}
             ORDER BY m.{metric} DESC
             LIMIT %s
-        """ 
-            params 
+        """,
+            params,
         )
 
         performers = []
@@ -613,16 +613,16 @@ class QueryAPI:
         self.stats["total_query_time"] += query_time
         self.stats["cache_misses"] += 1
 
-        self.cache.put(cache_key performers)
+        self.cache.put(cache_key, performers)
         return performers
 
     def get_character_events(
-        self 
-        character_name: str 
-        encounter_id: int 
-        start_time: Optional[float] = None 
-        end_time: Optional[float] = None 
-        event_types: Optional[List[str]] = None 
+        self,
+        character_name: str,
+        encounter_id: int,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None,
+        event_types: Optional[List[str]] = None,
     ) -> List[TimestampedEvent]:
         """
         Get detailed events for a character in an encounter.
@@ -723,11 +723,11 @@ class QueryAPI:
         return filtered_events
 
     def get_spell_usage(
-        self 
-        character_name: str 
-        encounter_id: Optional[int] = None 
-        spell_name: Optional[str] = None 
-        days: int = 30 
+        self,
+        character_name: str,
+        encounter_id: Optional[int] = None,
+        spell_name: Optional[str] = None,
+        days: int = 30,
     ) -> List[SpellUsage]:
         """
         Get spell usage statistics for a character.
@@ -1545,16 +1545,16 @@ class QueryAPI:
         encounters = []
         for row in cursor:
             encounter = EncounterSummary(
-                encounter_id=row[0] 
-                encounter_type=row[1] 
-                boss_name=row[2] 
-                difficulty=row[3] 
-                start_time=datetime.fromtimestamp(row[4]) if row[4] else None 
-                end_time=datetime.fromtimestamp(row[5]) if row[5] else None 
-                success=bool(row[6]) 
-                combat_length=row[7] 
-                raid_size=row[8] 
-                character_count=row[9] 
+                encounter_id=row[0],
+                encounter_type=row[1],
+                boss_name=row[2],
+                difficulty=row[3],
+                start_time=datetime.fromtimestamp(row[4]) if row[4] else None,
+                end_time=datetime.fromtimestamp(row[5]) if row[5] else None,
+                success=bool(row[6]),
+                combat_length=row[7],
+                raid_size=row[8],
+                character_count=row[9],
             )
             encounters.append(encounter)
 
@@ -2323,7 +2323,7 @@ class QueryAPI:
                 character_id=character_id 
                 event_types=event_types 
                 start_time=start_time 
-                end_time=end_time
+                end_time=end_time 
             )
 
         except Exception as e:
@@ -2403,6 +2403,7 @@ class QueryAPI:
                 start_time=encounter.start_time 
                 end_time=encounter.end_time 
                 metric_types=metric_types 
+ 
                 group_by_character=group_by_character
             )
 
