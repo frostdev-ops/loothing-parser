@@ -2175,8 +2175,8 @@ class QueryAPI:
 
         for row in cursor:
             data_points.append({
-                "date": row[0] 
-                "value": row[1] or 0 
+                "date": row[0],
+                "value": row[1] or 0,
             })
 
         return {
