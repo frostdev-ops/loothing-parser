@@ -574,11 +574,11 @@ class InfluxDBDirectManager:
 
             # Combine results
             metrics = {
-                "damage": {} 
-                "healing": {} 
+                "damage": {},
+                "healing": {},
                 "summary": {
-                    "total_damage": 0 
-                    "total_healing": 0 
+                    "total_damage": 0,
+                    "total_healing": 0,
                     "unique_players": 0
                 }
             }
@@ -586,7 +586,7 @@ class InfluxDBDirectManager:
             # Process damage results
             for table in damage_result:
                 for record in table.records:
-                    key = record.values.get("source_name" "Unknown")
+                    key = record.values.get("source_name", "Unknown")
                     value = record.get_value() or 0
                     metrics["damage"][key] = value
                     metrics["summary"]["total_damage"] += value
@@ -594,7 +594,7 @@ class InfluxDBDirectManager:
             # Process healing results
             for table in healing_result:
                 for record in table.records:
-                    key = record.values.get("source_name" "Unknown")
+                    key = record.values.get("source_name", "Unknown")
                     value = record.get_value() or 0
                     metrics["healing"][key] = value
                     metrics["summary"]["total_healing"] += value
@@ -611,11 +611,11 @@ class InfluxDBDirectManager:
             return {}
 
     def _store_encounter_summary(
-        self 
-        encounter_id: str 
-        start_time: datetime 
-        end_time: datetime 
-        metadata: Dict[str Any]
+        self,
+        encounter_id: str,
+        start_time: datetime,
+        end_time: datetime,
+        metadata: Dict[str, Any]
     ):
         """Store encounter summary in PostgreSQL for metadata queries."""
         if not self.postgres:
@@ -625,39 +625,39 @@ class InfluxDBDirectManager:
             self.postgres.execute(
                 """
                 INSERT INTO combat_encounters (
-                    id guild_id encounter_name instance_name difficulty 
-                    start_time end_time duration_ms success player_count 
+                    id, guild_id, encounter_name, instance_name, difficulty,
+                    start_time, end_time, duration_ms, success, player_count,
                     metadata
-                ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO UPDATE SET
-                    end_time = EXCLUDED.end_time 
-                    duration_ms = EXCLUDED.duration_ms 
-                    success = EXCLUDED.success 
+                    end_time = EXCLUDED.end_time,
+                    duration_ms = EXCLUDED.duration_ms,
+                    success = EXCLUDED.success,
                     updated_at = CURRENT_TIMESTAMP
-                """ 
+                """,
                 (
-                    encounter_id 
-                    metadata.get('guild_id' 1) 
-                    metadata.get('boss_name') 
-                    metadata.get('instance_name') 
-                    metadata.get('difficulty') 
-                    start_time 
-                    end_time 
-                    int((end_time - start_time).total_seconds() * 1000) 
-                    metadata.get('success' False) 
-                    metadata.get('player_count' 0) 
+                    encounter_id,
+                    metadata.get('guild_id', 1),
+                    metadata.get('boss_name'),
+                    metadata.get('instance_name'),
+                    metadata.get('difficulty'),
+                    start_time,
+                    end_time,
+                    int((end_time - start_time).total_seconds() * 1000),
+                    metadata.get('success', False),
+                    metadata.get('player_count', 0),
                     json.dumps(metadata)
-                ) 
+                ),
                 fetch_results=False
             )
 
         except Exception as e:
             logger.warning(f"Failed to store encounter summary in PostgreSQL: {e}")
 
-    def health_check(self) -> Dict[str bool]:
+    def health_check(self) -> Dict[str, bool]:
         """Check health of time-series storage."""
         health = {
-            "influxdb": self.influx.health_check() 
+            "influxdb": self.influx.health_check(),
             "postgres": self.postgres.health_check() if self.postgres else True
         }
         return health
@@ -665,7 +665,7 @@ class InfluxDBDirectManager:
     def get_stats(self) -> Dict[str Any]:
         """Get streaming statistics."""
         return {
-            **self.stats 
+            **self.stats,
             "influxdb_health": self.influx.health_check()
         }
 
