@@ -828,13 +828,13 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_guild_encounter ON character_talent_snapshots(guild_id, encounter_id)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_character_time ON character_talent_snapshots(character_id snapshot_time DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_character_time ON character_talent_snapshots(character_id, snapshot_time DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_source ON character_talent_snapshots(source snapshot_time DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_source ON character_talent_snapshots(source, snapshot_time DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_talent_selections_snapshot ON character_talent_selections(snapshot_id talent_slot)"
+        "CREATE INDEX IF NOT EXISTS idx_talent_selections_snapshot ON character_talent_selections(snapshot_id, talent_slot)"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_talent_selections_spell ON character_talent_selections(talent_spell_id)"
