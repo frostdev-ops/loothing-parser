@@ -1953,14 +1953,14 @@ class QueryAPI:
 
             if not snapshot:
                 return {
-                    "character_name": character_name 
-                    "gear": [] 
-                    "item_level": 0 
-                    "average_item_level": 0 
-                    "total_items": 0 
-                    "snapshot_time": None 
-                    "source": None 
-                    "recommendations": [] 
+                    "character_name": character_name,
+                    "gear": [],
+                    "item_level": 0,
+                    "average_item_level": 0,
+                    "total_items": 0,
+                    "snapshot_time": None,
+                    "source": None,
+                    "recommendations": [],
                 }
 
             # Convert gear items to dictionary format
