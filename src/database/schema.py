@@ -200,7 +200,7 @@ class DatabaseManager:
         else:
             # SQLite
             result = self.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name=%s",
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
                 (table_name,)
             )
             return result is not None and len(result) > 0
