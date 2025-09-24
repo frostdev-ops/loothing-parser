@@ -313,23 +313,23 @@ class EventStorage:
             cursor = self.db.execute(
                 """
                 INSERT INTO combat_encounters (
-                    log_file_id encounter_type boss_name difficulty 
-                    instance_id instance_name start_time end_time 
-                    success combat_length raid_size
-                ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s)
+                    log_file_id, encounter_type, boss_name, difficulty,
+                    instance_id, instance_name, start_time, end_time,
+                    success, combat_length, raid_size
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
                 (
-                    safe_param(log_file_id) 
-                    safe_param(encounter_type) 
-                    safe_param(encounter.dungeon_name) 
-                    safe_param(f"+{encounter.keystone_level}") 
-                    safe_param(encounter.dungeon_id) 
-                    safe_param(encounter.dungeon_name) 
-                    safe_param(encounter.start_time.timestamp() if encounter.start_time else None) 
-                    safe_param(encounter.end_time.timestamp() if encounter.end_time else None) 
-                    safe_param(encounter.completed) 
-                    safe_param(encounter.actual_time_seconds) 
-                    safe_param(len(encounter.group_members)) 
+                    safe_param(log_file_id),
+                    safe_param(encounter_type),
+                    safe_param(encounter.dungeon_name),
+                    safe_param(f"+{encounter.keystone_level}"),
+                    safe_param(encounter.dungeon_id),
+                    safe_param(encounter.dungeon_name),
+                    safe_param(encounter.start_time.timestamp() if encounter.start_time else None),
+                    safe_param(encounter.end_time.timestamp() if encounter.end_time else None),
+                    safe_param(encounter.completed),
+                    safe_param(encounter.actual_time_seconds),
+                    safe_param(len(encounter.group_members)),
                 ) 
             )
 
