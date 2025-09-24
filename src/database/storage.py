@@ -288,7 +288,7 @@ class EventStorage:
                     success, combat_length, raid_size, wipe_percentage,
                     bloodlust_used, bloodlust_time, battle_resurrections
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
                 (
                     safe_param(log_file_id),
                     safe_param(encounter_type),
@@ -317,7 +317,7 @@ class EventStorage:
                     instance_id, instance_name, start_time, end_time,
                     success, combat_length, raid_size
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
                 (
                     safe_param(log_file_id),
                     safe_param(encounter_type),
@@ -884,7 +884,7 @@ class EventStorage:
                     cast_count, hit_count, crit_count, total_damage,
                     total_healing, max_damage, max_healing
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
                 (
                     encounter_id,
                     character_id,
@@ -938,7 +938,7 @@ class EventStorage:
                     start_time, end_time, duration, mob_count,
                     enemy_forces_start, enemy_forces_end, enemy_forces_gained
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
                 (
                     run_id,
                     i,
