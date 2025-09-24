@@ -2359,11 +2359,11 @@ class QueryAPI:
         try:
             # Use InfluxDB native time-window query
             return self.influxdb_manager.query_time_window(
-                start_time=start_time 
-                end_time=end_time 
-                character_ids=character_ids 
-                event_types=event_types 
-                guild_id=guild_id
+                start_time=start_time,
+                end_time=end_time,
+                character_ids=character_ids,
+                event_types=event_types,
+                guild_id=guild_id,
             )
 
         except Exception as e:
