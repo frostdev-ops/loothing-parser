@@ -996,7 +996,7 @@ class EventStorage:
         try:
             # Load character cache if table exists
             if self.db.table_exists("characters"):
-                cursor = self.db.execute("SELECT character_guid character_id FROM characters")
+                cursor = self.db.execute("SELECT character_guid, character_id FROM characters")
                 for row in cursor:
                     self.character_cache[row[0]] = row[1]
 
