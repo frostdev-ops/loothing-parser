@@ -2129,14 +2129,14 @@ class QueryAPI:
             return None
 
     def get_character_trends(
-        self 
-        character_name: str 
-        metric: str 
-        time_range: TimeRange 
-        interval: str 
-        encounter_type: Optional[str] = None 
-        difficulty: Optional[str] = None 
-    ) -> Optional[Dict[str Any]]:
+        self,
+        character_name: str,
+        metric: str,
+        time_range: TimeRange,
+        interval: str,
+        encounter_type: Optional[str] = None,
+        difficulty: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Get character performance trends."""
         cursor = self.db.execute(
             "SELECT character_id FROM characters WHERE character_name = %s" 
