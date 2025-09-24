@@ -1938,14 +1938,14 @@ class QueryAPI:
                 snapshot_row = cursor.fetchone()
                 if not snapshot_row:
                     return {
-                        "character_name": character_name 
-                        "gear": [] 
-                        "item_level": 0 
-                        "average_item_level": 0 
-                        "total_items": 0 
-                        "snapshot_time": None 
-                        "source": None 
-                        "recommendations": [] 
+                        "character_name": character_name,
+                        "gear": [],
+                        "item_level": 0,
+                        "average_item_level": 0,
+                        "total_items": 0,
+                        "snapshot_time": None,
+                        "source": None,
+                        "recommendations": [],
                     }
 
                 snapshot_id enc_id snapshot_time source avg_ilvl equipped_ilvl total_items = snapshot_row
