@@ -2111,7 +2111,7 @@ class QueryAPI:
                 if enc_row:
                     encounter_type = enc_row[0]
 
-            recommendations = talent_parser.generate_talent_recommendations(snapshot encounter_type)
+            recommendations = talent_parser.generate_talent_recommendations(snapshot, encounter_type)
 
             return {
                 "character_name": character_name 
