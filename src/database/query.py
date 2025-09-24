@@ -8,8 +8,8 @@ for instant data retrieval from InfluxDB event storage and PostgreSQL metadata.
 import time
 import threading
 import logging
-from typing import List Dict Any Optional Tuple Union
-from datetime import datetime timedelta
+from typing import List, Dict, Any, Optional, Tuple, Union
+from datetime import datetime, timedelta
 from dataclasses import dataclass
 from functools import lru_cache
 
