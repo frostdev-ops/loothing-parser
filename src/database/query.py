@@ -2073,7 +2073,7 @@ class QueryAPI:
                     }
 
                 snapshot_id, enc_id, snapshot_time, source, specialization, talent_loadout, total_talents = snapshot_row
-                snapshot = talent_parser.get_character_talents_by_encounter(self.db character_id enc_id)
+                snapshot = talent_parser.get_character_talents_by_encounter(self.db, character_id, enc_id)
 
             if not snapshot:
                 return {
