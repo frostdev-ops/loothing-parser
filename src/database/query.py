@@ -2320,11 +2320,11 @@ class QueryAPI:
 
             # Use InfluxDB time-window query
             return self.influxdb_manager.query_encounter_events(
-                encounter_id=encounter_id 
-                character_id=character_id 
-                event_types=event_types 
-                start_time=start_time 
-                end_time=end_time 
+                encounter_id=encounter_id,
+                character_id=character_id,
+                event_types=event_types,
+                start_time=start_time,
+                end_time=end_time,
             )
 
         except Exception as e:
