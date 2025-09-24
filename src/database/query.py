@@ -2030,7 +2030,7 @@ class QueryAPI:
             # Get character ID
             cursor = self.db.execute(
                 "SELECT character_id FROM characters WHERE character_name = %s" 
-                (character_name )
+                (character_name,)
             )
             char_row = cursor.fetchone()
             if not char_row:
