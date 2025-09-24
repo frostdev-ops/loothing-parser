@@ -1046,15 +1046,15 @@ class EventStorage:
             ) 
         )
 
-    def get_storage_stats(self) -> Dict[str Any]:
+    def get_storage_stats(self) -> Dict[str, Any]:
         """Get storage layer statistics."""
         stats = {
-            **self.stats 
+            **self.stats,
             "cache_sizes": {
-                "characters": len(self.character_cache) 
-                "processed_files": len(self.file_cache) 
-            } 
-            "influxdb_connected": self.influxdb_manager is not None 
+                "characters": len(self.character_cache),
+                "processed_files": len(self.file_cache),
+            },
+            "influxdb_connected": self.influxdb_manager is not None,
         }
 
         # Add InfluxDB-specific stats if available
