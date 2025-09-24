@@ -450,7 +450,7 @@ class EventStorage:
         return encounter_id
 
     def _store_unified_character_streams(
-        self encounter_id: int encounter: UnifiedEncounter guild_id: int = 1
+        self, encounter_id: int, encounter: UnifiedEncounter, guild_id: int = 1
     ) -> int:
         """
         Store character data from unified encounter using time-series database.
@@ -465,12 +465,12 @@ class EventStorage:
         """
         total_events = 0
 
-        for char_guid character in encounter.characters.items():
+        for char_guid, character in encounter.characters.items():
             # Ensure character exists in database
-            character_id = self._ensure_character_exists_unified(character guild_id)
+            character_id = self._ensure_character_exists_unified(character, guild_id)
 
             # Store character metrics from unified encounter in PostgreSQL
-            self._store_character_metrics_unified(encounter_id character_id character encounter guild_id)
+            self._store_character_metrics_unified(encounter_id, character_id, character, encounter, guild_id)
 
             # Extract and stream events for this character to InfluxDB
             if hasattr(encounter, "events") and encounter.events:
