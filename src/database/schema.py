@@ -289,7 +289,7 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
         db.execute(
             """
             CREATE TABLE guilds (
-                guild_id INTEGER PRIMARY KEY AUTOINCREMENT 
+                guild_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_name TEXT NOT NULL 
                 server TEXT NOT NULL 
                 region TEXT NOT NULL 
@@ -388,7 +388,7 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS guilds (
-            guild_id INTEGER PRIMARY KEY AUTOINCREMENT 
+            guild_id INTEGER PRIMARY KEY AUTOINCREMENT,
             guild_name TEXT NOT NULL 
             server TEXT NOT NULL 
             region TEXT NOT NULL 
