@@ -2211,7 +2211,7 @@ class QueryAPI:
                 # Compare specific encounter
                 cursor = self.db.execute(
                     f"SELECT {metric} FROM character_metrics WHERE character_id = %s AND encounter_id = %s" 
-                    (character_id encounter_id)
+                    (character_id, encounter_id)
                 )
                 row = cursor.fetchone()
                 if row:
