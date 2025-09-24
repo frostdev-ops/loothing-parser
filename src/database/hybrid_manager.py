@@ -349,7 +349,6 @@ class HybridDatabaseManager:
 
             if result:
                 character_id = result[0]['id']
-                # Update existing character
                 self.postgres.execute(
                     """
                     UPDATE characters SET
@@ -357,7 +356,7 @@ class HybridDatabaseManager:
                         level = %s, item_level_equipped = %s, item_level_overall = %s,
                         race = %s, updated_at = CURRENT_TIMESTAMP
                     WHERE id = %s
-                    """ 
+                    """,
                     (
                         character_data.get('class'),
                         character_data.get('spec'),
@@ -367,7 +366,7 @@ class HybridDatabaseManager:
                         character_data.get('item_level'),
                         character_data.get('race'),
                         character_id
-                    ) 
+                    ),
                     fetch_results=False
                 )
             else:
@@ -384,7 +383,7 @@ class HybridDatabaseManager:
                         item_level_equipped, item_level_overall, race
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
-                    """ 
+                    """,
                     (
                         new_id,
                         guild_id,
@@ -442,7 +441,6 @@ class HybridDatabaseManager:
                 # Generate UUID for performance record
                 perf_id = str(uuid.uuid4())
 
-                # Save to combat_performances table
                 self.postgres.execute(
                     """
                     INSERT INTO combat_performances (
@@ -453,7 +451,7 @@ class HybridDatabaseManager:
                         active_time_ms, dps, hps, dtps, activity_percentage,
                         metadata
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
-                    """ 
+                    """,
                     (
                         perf_id,
                         metric.get('guild_id', 1),
@@ -478,7 +476,7 @@ class HybridDatabaseManager:
                         metric.get('dtps', 0.0),
                         metric.get('activity_percent', 0.0),
                         json.dumps(metric.get('metadata', {}))
-                    ) 
+                    ),
                     fetch_results=False
                 )
 
