@@ -1989,11 +1989,11 @@ class QueryAPI:
 
                 for item in below_avg_slots:
                     recommendations.append({
-                        "type": "upgrade" 
-                        "slot": item.slot_name 
-                        "current_ilvl": item.item_level 
-                        "recommended_ilvl": int(snapshot.average_item_level) 
-                        "message": f"{item.slot_name} is significantly below average item level"
+                        "type": "upgrade",
+                        "slot": item.slot_name,
+                        "current_ilvl": item.item_level,
+                        "recommended_ilvl": int(snapshot.average_item_level),
+                        "message": f"{item.slot_name} is significantly below average item level",
                     })
 
                 # Check for missing enchants on enchantable slots
