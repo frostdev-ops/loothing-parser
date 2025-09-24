@@ -138,7 +138,7 @@ class EventStorage:
 
             # Store raid encounters
             for raid in raids:
-                encounter_id = self._store_encounter(raid log_file_id "raid")
+                encounter_id = self._store_encounter(raid, log_file_id, "raid")
                 total_events += self._store_character_streams(encounter_id raid.characters)
 
             # Store M+ runs
