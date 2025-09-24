@@ -15,8 +15,8 @@ from functools import lru_cache
 
 from .schema import DatabaseManager
 from .influxdb_direct_manager import InfluxDBDirectManager
-from src.models.character_events import TimestampedEvent CharacterEventStream
-from src.models.encounter_models import RaidEncounter MythicPlusRun
+from src.models.character_events import TimestampedEvent, CharacterEventStream
+from src.models.encounter_models import RaidEncounter, MythicPlusRun
 
 # Import TimeRange from common models if not already available
 try:
