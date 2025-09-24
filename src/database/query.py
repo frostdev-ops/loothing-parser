@@ -2170,7 +2170,7 @@ class QueryAPI:
 
         query += " GROUP BY DATE(e.start_time 'unixepoch') ORDER BY date"
 
-        cursor = self.db.execute(query params)
+        cursor = self.db.execute(query, params)
         data_points = []
 
         for row in cursor:
