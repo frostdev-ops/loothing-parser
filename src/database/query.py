@@ -1925,8 +1925,8 @@ class QueryAPI:
                 # Get most recent gear snapshot
                 cursor = self.db.execute(
                     """
-                    SELECT snapshot_id encounter_id snapshot_time source 
-                           average_item_level equipped_item_level total_items
+                    SELECT snapshot_id, encounter_id, snapshot_time, source,
+                           average_item_level, equipped_item_level, total_items
                     FROM character_gear_snapshots
                     WHERE character_id = %s
                     ORDER BY snapshot_time DESC
