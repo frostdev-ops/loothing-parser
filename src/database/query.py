@@ -2460,10 +2460,10 @@ class QueryAPI:
 
             # Define the time window in InfluxDB
             self.influxdb_manager.define_encounter_window(
-                encounter_id=encounter_id 
-                start_time=start_time 
-                end_time=end_time 
-                encounter_name=encounter_name
+                encounter_id=encounter_id,
+                start_time=start_time,
+                end_time=end_time,
+                encounter_name=encounter_name,
             )
 
             return encounter_id
