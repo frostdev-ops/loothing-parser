@@ -218,7 +218,7 @@ class EventStorage:
 
             # Store encounters
             for encounter in encounters:
-                encounter_id = self._store_unified_encounter(encounter log_file_id guild_id or 1)
+                encounter_id = self._store_unified_encounter(encounter, log_file_id, guild_id or 1)
                 total_events += self._store_unified_character_streams(encounter_id encounter guild_id or 1)
 
             # Update log file with final counts
