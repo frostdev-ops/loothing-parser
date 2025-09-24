@@ -287,7 +287,7 @@ class EventStorage:
                     instance_id, instance_name, pull_number, start_time, end_time,
                     success, combat_length, raid_size, wipe_percentage,
                     bloodlust_used, bloodlust_time, battle_resurrections
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
                 (
                     safe_param(log_file_id),
@@ -306,7 +306,7 @@ class EventStorage:
                     safe_param(encounter.bloodlust_used),
                     safe_param(encounter.bloodlust_time),
                     safe_param(encounter.battle_resurrections),
-                ) 
+                )
             )
         else:
             # Store M+ encounter (basic info)
@@ -330,7 +330,7 @@ class EventStorage:
                     safe_param(encounter.completed),
                     safe_param(encounter.actual_time_seconds),
                     safe_param(len(encounter.group_members)),
-                ) 
+                )
             )
 
         return cursor.lastrowid
@@ -437,7 +437,7 @@ class EventStorage:
                 created_at
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            params 
+            params
         )
 
         encounter_id = cursor.lastrowid
@@ -504,7 +504,7 @@ class EventStorage:
         # Try to find existing character
         cursor = self.db.execute(
             "SELECT character_id FROM characters WHERE character_guid = %s AND guild_id = %s",
-            (character.character_guid, guild_id) 
+            (character.character_guid, guild_id)
         )
         result = cursor.fetchone()
 
@@ -531,7 +531,7 @@ class EventStorage:
                 safe_param(getattr(character, "spec_name", None)),
                 safe_param(datetime.now().isoformat()),
                 safe_param(datetime.now().isoformat()),
-            ) 
+            )
         )
 
         character_id = cursor.lastrowid
@@ -597,7 +597,7 @@ class EventStorage:
                 safe_param(getattr(character, "combat_activity_percentage", 0.0)),
                 safe_param(len(getattr(character, "all_events", []))),
                 safe_param(getattr(character, "cast_count", 0)),
-            ) 
+            )
         )
 
     def _store_mythic_plus_metadata_unified(self, encounter_id: int, encounter: UnifiedEncounter):
@@ -622,7 +622,7 @@ class EventStorage:
                 0,  # time_remaining - calculate from duration if needed
                 0,  # num_deaths - sum from character metrics
                 0,  # death_penalties - calculate from deaths
-            ) 
+            )
         )
 
     def store_character_events(self, encounter_id: int, character_id: int, events: List) -> int:
@@ -777,7 +777,7 @@ class EventStorage:
             self.db.execute(
                 "UPDATE characters SET last_seen = CURRENT_TIMESTAMP, "
                 "encounter_count = encounter_count + 1 WHERE character_id = %s",
-                (character_id,) 
+                (character_id,)
             )
         else:
             # Create new character
@@ -794,7 +794,7 @@ class EventStorage:
                     char_stream.region,
                     char_stream.class_name,
                     char_stream.spec_name,
-                ) 
+                )
             )
             character_id = cursor.lastrowid
             self.stats["characters_stored"] += 1
@@ -832,7 +832,7 @@ class EventStorage:
                 char_stream.get_dtps(char_stream.time_alive if char_stream.time_alive > 0 else 1),
                 len(char_stream.all_events),
                 len(char_stream.casts_succeeded),
-            ) 
+            )
         )
 
     def _store_spell_summary(
@@ -905,7 +905,7 @@ class EventStorage:
                     stats.get("total_healing", 0),
                     stats.get("max_damage", 0),
                     stats.get("max_healing", 0),
-                ) 
+                )
             )
 
     def _store_mythic_plus_metadata(self, encounter_id: int, mplus: MythicPlusRun):
@@ -932,7 +932,7 @@ class EventStorage:
                 mplus.num_deaths,
                 sum(mplus.death_penalties),
                 0.0,  # enemy_forces_percent placeholder
-            ) 
+            )
         )
 
         # Store combat segments
@@ -959,7 +959,7 @@ class EventStorage:
                     segment.enemy_forces_start,
                     segment.enemy_forces_end,
                     segment.enemy_forces_gained,
-                ) 
+                )
             )
 
     def _register_log_file(
@@ -979,7 +979,7 @@ class EventStorage:
                 safe_param(file_size),
                 safe_param(encounter_count),
                 safe_param(guild_id),
-            ) 
+            )
         )
 
         file_id = cursor.lastrowid
