@@ -555,7 +555,7 @@ class EventStorage:
                 combat_time, combat_dps, combat_hps, combat_dtps,
                 combat_activity_percentage, total_events, cast_count
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
             (
                 safe_param(guild_id),
                 safe_param(encounter_id),
