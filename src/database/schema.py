@@ -731,14 +731,14 @@ def create_tables(db: DatabaseManager) -> None:
     )
     db.execute("CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)")
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name spec_name)"
+        "CREATE INDEX IF NOT EXISTS idx_character_class ON characters(class_name, spec_name)"
     )
 
     # Event blocks indices (critical for performance)
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_block_lookup ON event_blocks(encounter_id character_id block_index)"
+        "CREATE INDEX IF NOT EXISTS idx_block_lookup ON event_blocks(encounter_id, character_id, block_index)"
     )
-    db.execute("CREATE INDEX IF NOT EXISTS idx_block_time ON event_blocks(start_time end_time)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_block_time ON event_blocks(start_time, end_time)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_block_character ON event_blocks(character_id)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_block_encounter ON event_blocks(encounter_id)")
 
