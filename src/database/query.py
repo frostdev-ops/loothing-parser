@@ -2139,7 +2139,7 @@ class QueryAPI:
     ) -> Optional[Dict[str, Any]]:
         """Get character performance trends."""
         cursor = self.db.execute(
-            "SELECT character_id FROM characters WHERE character_name = %s" 
+            "SELECT character_id FROM characters WHERE character_name = %s",
             (character_name,)
         )
         char_row = cursor.fetchone()
