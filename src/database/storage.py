@@ -520,7 +520,7 @@ class EventStorage:
                 guild_id, character_guid, character_name, server, region,
                 class_name, spec_name, first_seen, last_seen
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
             (
                 safe_param(guild_id),
                 safe_param(character.character_guid),
