@@ -2279,13 +2279,13 @@ class QueryAPI:
     # Time-series query methods for InfluxDB integration
 
     def query_encounter_events(
-        self 
-        encounter_id: int 
-        character_id: Optional[int] = None 
-        event_types: Optional[List[str]] = None 
-        start_time: Optional[datetime] = None 
-        end_time: Optional[datetime] = None
-    ) -> List[Dict[str Any]]:
+        self,
+        encounter_id: int,
+        character_id: Optional[int] = None,
+        event_types: Optional[List[str]] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Query events for an encounter using time-window approach.
 
