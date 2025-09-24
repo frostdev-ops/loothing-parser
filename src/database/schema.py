@@ -527,8 +527,8 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS spell_summary (
             summary_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
-            character_id INTEGER NOT NULL REFERENCES characters(character_id) 
+            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
+            character_id INTEGER NOT NULL REFERENCES characters(character_id),
             spell_id INTEGER NOT NULL,
             spell_name TEXT NOT NULL,
             cast_count INTEGER DEFAULT 0,
@@ -538,7 +538,7 @@ def create_tables(db: DatabaseManager) -> None:
             total_healing INTEGER DEFAULT 0,
             max_damage INTEGER DEFAULT 0,
             max_healing INTEGER DEFAULT 0,
-            UNIQUE(encounter_id character_id spell_id)
+            UNIQUE(encounter_id, character_id, spell_id)
         )
     """
     )
