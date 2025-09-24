@@ -2185,13 +2185,13 @@ class QueryAPI:
         } if data_points else None
 
     def compare_characters(
-        self 
-        base_character: str 
-        compare_characters: List[str] 
-        metric: str 
-        encounter_id: Optional[int] = None 
-        time_range: Optional[TimeRange] = None 
-    ) -> Dict[str Any]:
+        self,
+        base_character: str,
+        compare_characters: List[str],
+        metric: str,
+        encounter_id: Optional[int] = None,
+        time_range: Optional[TimeRange] = None,
+    ) -> Dict[str, Any]:
         """Compare characters on a specific metric."""
         all_characters = [base_character] + compare_characters
         comparisons = {}
