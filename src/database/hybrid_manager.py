@@ -569,7 +569,7 @@ class HybridDatabaseManager:
     def table_exists(self, table_name: str) -> bool:
         """Check if a table exists in PostgreSQL."""
         try:
-            cursor = self.postgres.execute(
+            result = self.postgres.execute(
                 """
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables
@@ -579,8 +579,7 @@ class HybridDatabaseManager:
                 """,
                 (table_name,)
             )
-            result = cursor.fetchone()
-            return result[0] if result else False
+            return result[0][0] if result else False
         except Exception as e:
             logger.error(f"Failed to check table existence: {e}")
             return False
