@@ -626,7 +626,7 @@ class EventStorage:
             ) 
         )
 
-    def store_character_events(self encounter_id: int character_id: int events: List) -> int:
+    def store_character_events(self, encounter_id: int, character_id: int, events: List) -> int:
         """
         Store character events using InfluxDB time-series streaming.
 
@@ -642,14 +642,14 @@ class EventStorage:
             return 0
 
         if self.influxdb_manager:
-            return self._stream_events_to_influxdb(encounter_id character_id events)
+            return self._stream_events_to_influxdb(encounter_id, character_id, events)
         else:
             # Fallback: count events without storing them
             logger.warning(f"Events not stored for encounter {encounter_id} character {character_id} - no InfluxDB connection")
             return len(events)
 
     def _stream_character_events_to_influxdb(
-        self encounter_id: int character_id: int char_stream: CharacterEventStream
+        self, encounter_id: int, character_id: int, char_stream: CharacterEventStream
     ) -> int:
         """
         Stream character event stream directly to InfluxDB.
@@ -671,14 +671,14 @@ class EventStorage:
 
             for ts_event in char_stream.all_events:
                 event_dict = {
-                    "timestamp": ts_event.timestamp 
+                    "timestamp": ts_event.timestamp,
                     "encounter_id": encounter_id,
                     "character_id": character_id,
                     "character_guid": char_stream.character_guid,
                     "character_name": char_stream.character_name,
                     "event_type": getattr(ts_event.event, "event_type", "unknown"),
                     "event_data": asdict(ts_event.event) if hasattr(ts_event.event, "__dict__") else str(ts_event.event),
-                    "category": ts_event.category, 
+                    "category": ts_event.category,
                 }
                 events_for_influx.append(event_dict)
 
