@@ -1165,7 +1165,6 @@ class QueryAPI:
             self.cache.put(cache_key, guild)
 
         return guild
-        return guild
 
     def get_guilds(
         self,
