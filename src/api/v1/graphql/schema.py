@@ -5,7 +5,7 @@ Provides type-safe GraphQL interface with efficient data loading
 and comprehensive query capabilities.
 """
 
-from typing import List Optional Dict Any Union
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 import json
 import strawberry
@@ -13,22 +13,22 @@ from strawberry.fastapi import GraphQLRouter
 from strawberry.types import Info
 
 from .types import (
-    Character 
-    Encounter 
-    CharacterPerformance 
-    EncounterSummary 
-    Analytics 
-    Guild 
-    SpellUsage 
-    PlayerRanking 
-    TimeSeriesData 
-    PerformanceTrend 
+    Character,
+    Encounter,
+    CharacterPerformance,
+    EncounterSummary,
+    Analytics,
+    Guild,
+    SpellUsage,
+    PlayerRanking,
+    TimeSeriesData,
+    PerformanceTrend,
 )
 from .resolvers import (
-    CharacterResolver 
-    EncounterResolver 
-    AnalyticsResolver 
-    GuildResolver 
+    CharacterResolver,
+    EncounterResolver,
+    AnalyticsResolver,
+    GuildResolver,
 )
 from .realtime_resolvers import RealtimeResolver
 from ..dependencies import DatabaseDependency
@@ -42,15 +42,15 @@ class Query:
     # Character Queries
     @strawberry.field
     async def character(
-        self 
-        info: Info 
-        name: str 
-        server: Optional[str] = None 
+        self,
+        info: Info,
+        name: str,
+        server: Optional[str] = None,
     ) -> Optional[Character]:
         """Get a specific character by name and optional server."""
         db: DatabaseManager = info.context["db"]
         resolver = CharacterResolver(db)
-        return await resolver.get_character(name server)
+        return await resolver.get_character(name, server)
 
     @strawberry.field
     async def characters(

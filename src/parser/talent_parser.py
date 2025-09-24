@@ -7,7 +7,7 @@ for character talent tracking and optimization analysis.
 
 import re
 import logging
-from typing import Dict List Optional Tuple Any
+from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
