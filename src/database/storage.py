@@ -134,7 +134,7 @@ class EventStorage:
             logger.info(f"Storing {total_encounters} encounters from {log_file_path}")
 
             # Register log file
-            log_file_id = self._register_log_file(log_file_path file_hash total_encounters guild_id)
+            log_file_id = self._register_log_file(log_file_path, file_hash, total_encounters, guild_id)
 
             # Store raid encounters
             for raid in raids:
@@ -214,7 +214,7 @@ class EventStorage:
             logger.info(f"Storing {total_encounters} unified encounters from {log_file_path}")
 
             # Register log file
-            log_file_id = self._register_log_file(log_file_path file_hash total_encounters guild_id)
+            log_file_id = self._register_log_file(log_file_path, file_hash, total_encounters, guild_id)
 
             # Store encounters
             for encounter in encounters:
