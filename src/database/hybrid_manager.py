@@ -98,7 +98,7 @@ class HybridDatabaseManager:
         except Exception as e:
             logger.error(f"Failed to apply initial migration: {e}")
 
-    def execute(self query: str params=None fetch_results=True):
+    def execute(self, query: str, params=None, fetch_results=True):
         """
         Execute SQL query through PostgreSQL connection.
 
@@ -111,9 +111,9 @@ class HybridDatabaseManager:
             fetch_results: Whether to return results
 
         Returns:
-            Query results if fetch_results=True otherwise None
+            Query results if fetch_results=True, otherwise None
         """
-        return self.postgres.execute(query params fetch_results)
+        return self.postgres.execute(query, params, fetch_results)
 
     def commit(self):
         """
@@ -208,9 +208,10 @@ class HybridDatabaseManager:
             raise
 
     def save_combat_event(
-        self 
-        encounter_id: str 
-        event: Dict[str Any]
+        self,
+        encounter_id: str,
+        event: Dict[str, Any],
+        guild_id: int = None
     ) -> bool:
         """
         Save a single combat event to InfluxDB.
@@ -218,6 +219,7 @@ class HybridDatabaseManager:
         Args:
             encounter_id: Encounter identifier
             event: Combat event data
+            guild_id: Guild identifier for multi-tenant isolation
 
         Returns:
             Success status
@@ -225,27 +227,32 @@ class HybridDatabaseManager:
         try:
             # Extract event data
             timestamp = event.get('timestamp')
-            if isinstance(timestamp str):
-                timestamp = datetime.fromisoformat(timestamp.replace('Z' '+00:00'))
+            if isinstance(timestamp, str):
+                timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+
+            # Add guild_id to tags for multi-tenant isolation
+            tags = event.get('tags', {}) or {}
+            if guild_id:
+                tags['guild_id'] = str(guild_id)
 
             return self.influx.write_combat_event(
-                encounter_id=encounter_id 
-                timestamp=timestamp 
-                event_type=event.get('event_type') 
-                source_guid=event.get('source_guid') 
-                source_name=event.get('source_name') 
-                target_guid=event.get('target_guid') 
-                target_name=event.get('target_name') 
-                spell_id=event.get('spell_id') 
-                spell_name=event.get('spell_name') 
-                amount=event.get('amount') 
-                overkill=event.get('overkill') 
-                school=event.get('school') 
-                critical=event.get('critical' False) 
-                absorbed=event.get('absorbed') 
-                blocked=event.get('blocked') 
-                resisted=event.get('resisted') 
-                tags=event.get('tags') 
+                encounter_id=encounter_id,
+                timestamp=timestamp,
+                event_type=event.get('event_type'),
+                source_guid=event.get('source_guid'),
+                source_name=event.get('source_name'),
+                target_guid=event.get('target_guid'),
+                target_name=event.get('target_name'),
+                spell_id=event.get('spell_id'),
+                spell_name=event.get('spell_name'),
+                amount=event.get('amount'),
+                overkill=event.get('overkill'),
+                school=event.get('school'),
+                critical=event.get('critical', False),
+                absorbed=event.get('absorbed'),
+                blocked=event.get('blocked'),
+                resisted=event.get('resisted'),
+                tags=tags,
                 fields=event.get('fields')
             )
 
@@ -254,9 +261,10 @@ class HybridDatabaseManager:
             return False
 
     def save_combat_events_batch(
-        self 
-        encounter_id: str 
-        events: List[Dict[str Any]]
+        self,
+        encounter_id: str,
+        events: List[Dict[str, Any]],
+        guild_id: int = None
     ) -> bool:
         """
         Save multiple combat events in batch to InfluxDB.
@@ -264,6 +272,7 @@ class HybridDatabaseManager:
         Args:
             encounter_id: Encounter identifier
             events: List of combat events
+            guild_id: Guild identifier for multi-tenant isolation
 
         Returns:
             Success status
@@ -274,28 +283,33 @@ class HybridDatabaseManager:
             for event in events:
                 # Ensure timestamp is datetime
                 timestamp = event.get('timestamp')
-                if isinstance(timestamp str):
-                    timestamp = datetime.fromisoformat(timestamp.replace('Z' '+00:00'))
+                if isinstance(timestamp, str):
+                    timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+
+                # Add guild_id to tags for multi-tenant isolation
+                tags = event.get('tags', {}) or {}
+                if guild_id:
+                    tags['guild_id'] = str(guild_id)
 
                 influx_event = {
-                    'encounter_id': encounter_id 
-                    'timestamp': timestamp 
-                    'event_type': event.get('event_type') 
-                    'source_guid': event.get('source_guid') 
-                    'source_name': event.get('source_name') 
-                    'target_guid': event.get('target_guid') 
-                    'target_name': event.get('target_name') 
-                    'spell_id': event.get('spell_id') 
-                    'spell_name': event.get('spell_name') 
-                    'amount': event.get('amount') 
-                    'overkill': event.get('overkill') 
-                    'school': event.get('school') 
-                    'critical': event.get('critical' False) 
-                    'absorbed': event.get('absorbed') 
-                    'blocked': event.get('blocked') 
-                    'resisted': event.get('resisted') 
-                    'tags': event.get('tags' {}) 
-                    'fields': event.get('fields' {})
+                    'encounter_id': encounter_id,
+                    'timestamp': timestamp,
+                    'event_type': event.get('event_type'),
+                    'source_guid': event.get('source_guid'),
+                    'source_name': event.get('source_name'),
+                    'target_guid': event.get('target_guid'),
+                    'target_name': event.get('target_name'),
+                    'spell_id': event.get('spell_id'),
+                    'spell_name': event.get('spell_name'),
+                    'amount': event.get('amount'),
+                    'overkill': event.get('overkill'),
+                    'school': event.get('school'),
+                    'critical': event.get('critical', False),
+                    'absorbed': event.get('absorbed'),
+                    'blocked': event.get('blocked'),
+                    'resisted': event.get('resisted'),
+                    'tags': tags,
+                    'fields': event.get('fields', {})
                 }
                 influx_events.append(influx_event)
 

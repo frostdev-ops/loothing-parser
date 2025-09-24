@@ -485,7 +485,7 @@ class EventStorage:
                 if character_events:
                     if self.influxdb_manager:
                         events_stored = self._stream_events_to_influxdb(
-                            encounter_id character_id character_events
+                            encounter_id, character_id, character_events, guild_id
                         )
                         total_events += events_stored
                     else:
@@ -693,7 +693,7 @@ class EventStorage:
             return 0
 
     def _stream_events_to_influxdb(
-        self encounter_id: int character_id: int events: List
+        self, encounter_id: int, character_id: int, events: List, guild_id: int = None
     ) -> int:
         """
         Stream raw events directly to InfluxDB.
@@ -724,10 +724,16 @@ class EventStorage:
                 }
                 events_for_influx.append(event_dict)
 
-            # Stream to InfluxDB using batch operations
-            events_streamed = self.influxdb_manager.stream_combat_events(events_for_influx)
+            # Prepare encounter context with guild_id for multi-tenant isolation
+            encounter_context = {
+                'encounter_id': str(encounter_id),
+                'guild_id': guild_id
+            }
 
-            logger.debug(f"Streamed {events_streamed} events for encounter {encounter_id} to InfluxDB")
+            # Stream to InfluxDB using batch operations
+            events_streamed = self.influxdb_manager.stream_combat_events(events_for_influx, encounter_context)
+
+            logger.debug(f"Streamed {events_streamed} events for encounter {encounter_id} (guild {guild_id}) to InfluxDB")
             return events_streamed
 
         except Exception as e:

@@ -32,7 +32,7 @@ class DatabaseManager:
     schema operations.
     """
 
-    def __init__(self db_path: str = "combat_logs.db"):
+    def __init__(self, db_path: str = "combat_logs.db"):
         """
         Initialize database manager with automatic backend selection.
 

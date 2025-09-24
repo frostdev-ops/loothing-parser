@@ -118,6 +118,7 @@ class InfluxDBManager:
         absorbed: float = None,
         blocked: float = None,
         resisted: float = None,
+        guild_id: int = None,
         tags: Dict[str, str] = None,
         fields: Dict[str, Any] = None
     ) -> bool:
@@ -157,6 +158,10 @@ class InfluxDBManager:
             # Add tags (indexed fields for filtering)
             point.tag("encounter_id", encounter_id)
             point.tag("event_type", event_type)
+
+            # Add guild_id tag for multi-tenant isolation
+            if guild_id is not None:
+                point.tag("guild_id", str(guild_id))
 
             if source_guid:
                 point.tag("source_guid", source_guid)
@@ -225,6 +230,10 @@ class InfluxDBManager:
                 point.time(event['timestamp'], WritePrecision.MS)
                 point.tag("encounter_id", event['encounter_id'])
                 point.tag("event_type", event['event_type'])
+
+                # Add guild_id tag if available in event tags
+                if 'tags' in event and event['tags'] and 'guild_id' in event['tags']:
+                    point.tag("guild_id", event['tags']['guild_id'])
 
                 # Optional tags
                 for tag_field in ['source_guid', 'source_name', 'target_guid',
