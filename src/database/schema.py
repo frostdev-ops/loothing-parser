@@ -700,14 +700,14 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id, encounter_type, success, start_time DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id instance_name difficulty)"
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id, instance_name, difficulty)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_progression ON encounters(guild_id difficulty success start_time DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_progression ON encounters(guild_id, difficulty, success, start_time DESC)"
     )
 
     # Legacy single-tenant indexes (for backward compatibility during migration)
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time end_time)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name difficulty)")
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type success)"
