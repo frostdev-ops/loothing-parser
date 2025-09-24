@@ -2180,8 +2180,8 @@ class QueryAPI:
             })
 
         return {
-            "metric": metric 
-            "data_points": data_points 
+            "metric": metric,
+            "data_points": data_points,
         } if data_points else None
 
     def compare_characters(
