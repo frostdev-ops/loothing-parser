@@ -410,13 +410,13 @@ def create_tables(db: DatabaseManager) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS log_files (
-            file_id INTEGER PRIMARY KEY AUTOINCREMENT 
-            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
-            file_path TEXT UNIQUE NOT NULL 
-            file_hash TEXT UNIQUE NOT NULL 
-            file_size INTEGER NOT NULL 
-            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
-            event_count INTEGER DEFAULT 0 
+            file_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
+            file_path TEXT UNIQUE NOT NULL,
+            file_hash TEXT UNIQUE NOT NULL,
+            file_size INTEGER NOT NULL,
+            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            event_count INTEGER DEFAULT 0,
             encounter_count INTEGER DEFAULT 0
         )
     """
