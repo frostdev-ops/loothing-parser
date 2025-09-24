@@ -14,6 +14,9 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# Current database schema version (v2 adds multi-tenant guild support)
+CURRENT_SCHEMA_VERSION = 2
+
 # Check if we should use PostgreSQL adapter
 try:
     from ..config import get_database_config
