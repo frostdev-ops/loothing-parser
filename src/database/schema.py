@@ -797,15 +797,15 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_combat_periods_encounter ON combat_periods(encounter_id, period_index)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_combat_periods_time ON combat_periods(start_time end_time)"
+        "CREATE INDEX IF NOT EXISTS idx_combat_periods_time ON combat_periods(start_time, end_time)"
     )
 
     # Gear tracking indices (multi-tenant aware)
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_guild_character ON character_gear_snapshots(guild_id character_id snapshot_time DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_guild_character ON character_gear_snapshots(guild_id, character_id, snapshot_time DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_guild_encounter ON character_gear_snapshots(guild_id encounter_id)"
+        "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_guild_encounter ON character_gear_snapshots(guild_id, encounter_id)"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_gear_snapshots_character_time ON character_gear_snapshots(character_id snapshot_time DESC)"
