@@ -678,15 +678,15 @@ class InfluxDBDirectManager:
         logger.info("InfluxDB Direct Manager closed")
 
     # Backward compatibility methods for existing code
-    def execute(self query: str params=None fetch_results=True):
+    def execute(self, query: str, params=None, fetch_results=True):
         """Backward compatibility - delegate to PostgreSQL for metadata queries."""
         if self.postgres:
-            return self.postgres.execute(query params fetch_results)
+            return self.postgres.execute(query, params, fetch_results)
         else:
             logger.warning("PostgreSQL not available for metadata queries")
             return [] if fetch_results else None
 
     def commit(self):
         """Backward compatibility - commit PostgreSQL transactions."""
-        if self.postgres and hasattr(self.postgres 'commit'):
+        if self.postgres and hasattr(self.postgres, 'commit'):
             return self.postgres.commit()
