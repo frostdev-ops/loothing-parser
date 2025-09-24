@@ -367,7 +367,7 @@ class InfluxDBDirectManager:
                 .tag("boss_name", encounter_metadata.get('boss_name', '')) \
                 .tag("difficulty", encounter_metadata.get('difficulty', '')) \
                 .tag("guild_id", str(encounter_metadata.get('guild_id', 1))) \
-                .field("success" False) \
+                .field("success", False) \
                 .time(encounter_start, WritePrecision.MS)
 
             end_point = Point("encounter_boundary") \
@@ -400,15 +400,15 @@ class InfluxDBDirectManager:
             raise
 
     def query_encounter_events(
-        self 
-        encounter_id: str = None 
-        start_time: datetime = None 
-        end_time: datetime = None 
-        event_types: List[str] = None 
-        player_name: str = None 
-        boss_name: str = None 
+        self,
+        encounter_id: str = None,
+        start_time: datetime = None,
+        end_time: datetime = None,
+        event_types: List[str] = None,
+        player_name: str = None,
+        boss_name: str = None,
         limit: int = None
-    ) -> List[Dict[str Any]]:
+    ) -> List[Dict[str, Any]]:
         """
         Query combat events using time windows.
 
@@ -438,7 +438,7 @@ class InfluxDBDirectManager:
                 '''
 
                 boundary_result = self.influx.query_api.query(
-                    org=self.influx.org 
+                    org=self.influx.org,
                     query=boundary_query
                 )
 
@@ -458,8 +458,8 @@ class InfluxDBDirectManager:
                 end_time = datetime.now()
 
             query_parts = [
-                f'from(bucket: "{self.influx.bucket}")' 
-                f'|> range(start: {start_time.isoformat()}Z stop: {end_time.isoformat()}Z)' 
+                f'from(bucket: "{self.influx.bucket}")',
+                f'|> range(start: {start_time.isoformat()}Z, stop: {end_time.isoformat()}Z)',
                 '|> filter(fn: (r) => r._measurement == "combat_events")'
             ]
 
@@ -484,25 +484,25 @@ class InfluxDBDirectManager:
 
             # Execute time-series query
             flux_query = "\n".join(query_parts)
-            result = self.influx.query_api.query(org=self.influx.org query=flux_query)
+            result = self.influx.query_api.query(org=self.influx.org, query=flux_query)
 
             # Parse results into events
             events = []
             for table in result:
                 for record in table.records:
                     event = {
-                        "timestamp": record.get_time() 
-                        "encounter_id": record.values.get("encounter_id") 
-                        "event_type": record.values.get("event_type") 
-                        "source_guid": record.values.get("source_guid") 
-                        "source_name": record.values.get("source_name") 
-                        "target_guid": record.values.get("target_guid") 
-                        "target_name": record.values.get("target_name") 
-                        "spell_id": record.values.get("spell_id") 
-                        "spell_name": record.values.get("spell_name") 
-                        "amount": record.get_value() if record.get_field() == "amount" else None 
-                        "critical": record.values.get("critical") 
-                        "school": record.values.get("school") 
+                        "timestamp": record.get_time(),
+                        "encounter_id": record.values.get("encounter_id"),
+                        "event_type": record.values.get("event_type"),
+                        "source_guid": record.values.get("source_guid"),
+                        "source_name": record.values.get("source_name"),
+                        "target_guid": record.values.get("target_guid"),
+                        "target_name": record.values.get("target_name"),
+                        "spell_id": record.values.get("spell_id"),
+                        "spell_name": record.values.get("spell_name"),
+                        "amount": record.get_value() if record.get_field() == "amount" else None,
+                        "critical": record.values.get("critical"),
+                        "school": record.values.get("school")
                     }
                     events.append(event)
 
@@ -514,12 +514,12 @@ class InfluxDBDirectManager:
             return []
 
     def aggregate_encounter_metrics(
-        self 
-        encounter_id: str = None 
-        start_time: datetime = None 
-        end_time: datetime = None 
+        self,
+        encounter_id: str = None,
+        start_time: datetime = None,
+        end_time: datetime = None,
         group_by: List[str] = None
-    ) -> Dict[str Any]:
+    ) -> Dict[str, Any]:
         """
         Real-time aggregation of encounter metrics using Flux queries.
 
@@ -548,7 +548,7 @@ class InfluxDBDirectManager:
 
             damage_query = f'''
                 from(bucket: "{self.influx.bucket}")
-                |> range(start: {start_time.isoformat()}Z stop: {end_time.isoformat()}Z)
+                |> range(start: {start_time.isoformat()}Z, stop: {end_time.isoformat()}Z)
                 |> filter(fn: (r) => r._measurement == "combat_events")
                 |> filter(fn: (r) => r.event_type =~ /.*DAMAGE.*/)
                 |> filter(fn: (r) => r._field == "amount")
@@ -559,7 +559,7 @@ class InfluxDBDirectManager:
 
             healing_query = f'''
                 from(bucket: "{self.influx.bucket}")
-                |> range(start: {start_time.isoformat()}Z stop: {end_time.isoformat()}Z)
+                |> range(start: {start_time.isoformat()}Z, stop: {end_time.isoformat()}Z)
                 |> filter(fn: (r) => r._measurement == "combat_events")
                 |> filter(fn: (r) => r.event_type =~ /.*HEAL.*/)
                 |> filter(fn: (r) => r._field == "amount")
@@ -569,8 +569,8 @@ class InfluxDBDirectManager:
             '''
 
             # Execute parallel aggregations
-            damage_result = self.influx.query_api.query(org=self.influx.org query=damage_query)
-            healing_result = self.influx.query_api.query(org=self.influx.org query=healing_query)
+            damage_result = self.influx.query_api.query(org=self.influx.org, query=damage_query)
+            healing_result = self.influx.query_api.query(org=self.influx.org, query=healing_query)
 
             # Combine results
             metrics = {
