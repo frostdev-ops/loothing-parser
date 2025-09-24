@@ -719,15 +719,15 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_character_guild_name ON characters(guild_id, character_name, server)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_guild_class ON characters(guild_id class_name spec_name)"
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_class ON characters(guild_id, class_name, spec_name)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_guild_active ON characters(guild_id last_seen DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_active ON characters(guild_id, last_seen DESC)"
     )
 
     # Legacy character indices (for backward compatibility)
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name server region)"
+        "CREATE INDEX IF NOT EXISTS idx_character_name ON characters(character_name, server, region)"
     )
     db.execute("CREATE INDEX IF NOT EXISTS idx_character_guid ON characters(character_guid)")
     db.execute(
