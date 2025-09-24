@@ -2068,8 +2068,8 @@ class QueryAPI:
                         "talents": [], 
                         "total_talents": 0,
                         "snapshot_time": None, 
-                        "source": None 
-                        "recommendations": [] 
+                        "source": None,
+                        "recommendations": [], 
                     }
 
                 snapshot_id enc_id snapshot_time source specialization talent_loadout total_talents = snapshot_row
