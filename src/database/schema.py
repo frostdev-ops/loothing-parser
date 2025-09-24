@@ -785,16 +785,16 @@ def create_tables(db: DatabaseManager) -> None:
 
     # M+ indices
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_mplus_level ON mythic_plus_runs(keystone_level completed)"
+        "CREATE INDEX IF NOT EXISTS idx_mplus_level ON mythic_plus_runs(keystone_level, completed)"
     )
     db.execute("CREATE INDEX IF NOT EXISTS idx_mplus_dungeon ON mythic_plus_runs(dungeon_id)")
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_segment_run ON combat_segments(run_id segment_index)"
+        "CREATE INDEX IF NOT EXISTS idx_segment_run ON combat_segments(run_id, segment_index)"
     )
 
     # Combat periods indices
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_combat_periods_encounter ON combat_periods(encounter_id period_index)"
+        "CREATE INDEX IF NOT EXISTS idx_combat_periods_encounter ON combat_periods(encounter_id, period_index)"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_combat_periods_time ON combat_periods(start_time end_time)"
