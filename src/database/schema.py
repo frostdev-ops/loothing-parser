@@ -605,16 +605,16 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS character_gear_snapshots (
             snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
-            encounter_id INTEGER REFERENCES encounters(encounter_id) 
-            character_id INTEGER NOT NULL REFERENCES characters(character_id) 
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
+            encounter_id INTEGER REFERENCES encounters(encounter_id),
+            character_id INTEGER NOT NULL REFERENCES characters(character_id),
             snapshot_time REAL NOT NULL,
-            source TEXT NOT NULL CHECK(source IN ('combatant_info' 'manual' 'armory')) 
+            source TEXT NOT NULL CHECK(source IN ('combatant_info', 'manual', 'armory')),
             average_item_level REAL DEFAULT 0.0,
             equipped_item_level REAL DEFAULT 0.0,
             total_items INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(character_id encounter_id)
+            UNIQUE(character_id, encounter_id)
         )
     """
     )
