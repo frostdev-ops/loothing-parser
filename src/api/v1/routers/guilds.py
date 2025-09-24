@@ -43,7 +43,7 @@ async def list_guilds(
         # Get total count for pagination
         if is_active is not None:
             cursor = db.execute(
-                "SELECT COUNT(*) FROM guilds WHERE is_active = ?",
+                "SELECT COUNT(*) FROM guilds WHERE is_active = %s",
                 (is_active,)
             )
         else:
@@ -94,7 +94,7 @@ async def create_guild(
         cursor = db.execute(
             """
             SELECT guild_id FROM guilds
-            WHERE guild_name = ? AND server = ? AND region = ?
+            WHERE guild_name = %s AND server = %s AND region = %s
             """,
             (guild_name, server, region)
         )
@@ -151,8 +151,8 @@ async def get_guild(
                 SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_encounters,
                 COUNT(DISTINCT boss_name) as unique_bosses,
                 COUNT(DISTINCT DATE(start_time, 'unixepoch')) as raid_days
-            FROM encounters
-            WHERE guild_id = ?
+            FROM combat_encounters
+            WHERE guild_id = %s
             """,
             (guild_id,)
         )
@@ -387,19 +387,19 @@ async def get_guild_raid_encounters(
                 encounter_id, boss_name, difficulty, instance_name,
                 start_time, end_time, success, combat_length, raid_size,
                 wipe_percentage, bloodlust_used, battle_resurrections
-            FROM encounters
-            WHERE guild_id = ? AND encounter_type = 'raid'
+            FROM combat_encounters
+            WHERE guild_id = %s AND encounter_type = 'raid'
         """
         params = [guild_id]
 
         if difficulty:
-            query += " AND difficulty = ?"
+            query += " AND difficulty = %s"
             params.append(difficulty)
 
         if success_only:
             query += " AND success = 1"
 
-        query += " ORDER BY start_time DESC LIMIT ?"
+        query += " ORDER BY start_time DESC LIMIT %s"
         params.append(limit)
 
         cursor = db.execute(query, params)
@@ -458,20 +458,20 @@ async def get_guild_mythic_plus_encounters(
                 e.success, e.combat_length, e.raid_size,
                 m.keystone_level, m.in_time, m.time_remaining,
                 m.num_deaths, m.enemy_forces_percent
-            FROM encounters e
+            FROM combat_encounters e
             LEFT JOIN mythic_plus_runs m ON e.encounter_id = m.encounter_id
-            WHERE e.guild_id = ? AND e.encounter_type = 'mythic_plus'
+            WHERE e.guild_id = %s AND e.encounter_type = 'mythic_plus'
         """
         params = [guild_id]
 
         if min_level:
-            query += " AND m.keystone_level >= ?"
+            query += " AND m.keystone_level >= %s"
             params.append(min_level)
 
         if in_time_only:
             query += " AND m.in_time = 1"
 
-        query += " ORDER BY e.start_time DESC LIMIT ?"
+        query += " ORDER BY e.start_time DESC LIMIT %s"
         params.append(limit)
 
         cursor = db.execute(query, params)
@@ -514,7 +514,7 @@ async def get_guild_roster(
         cursor = db.execute(
             """
             SELECT guild_id FROM guilds
-            WHERE guild_name = ? AND (server = ? OR ? IS NULL)
+            WHERE guild_name = %s AND (server = %s OR %s IS NULL)
             """,
             (guild_name, server, server)
         )
@@ -533,7 +533,7 @@ async def get_guild_roster(
             """
             SELECT character_name, class, level, spec, role, last_seen
             FROM characters
-            WHERE guild_id = ?
+            WHERE guild_id = %s
             ORDER BY character_name
             """,
             (guild_id,)
@@ -577,7 +577,7 @@ async def get_guild_attendance(
 
         # Find guild by name
         cursor = db.execute(
-            "SELECT guild_id FROM guilds WHERE guild_name = ?",
+            "SELECT guild_id FROM guilds WHERE guild_name = %s",
             (guild_name,)
         )
         guild_row = cursor.fetchone()
@@ -599,7 +599,7 @@ async def get_guild_attendance(
             LEFT JOIN encounter_participants ep ON c.character_id = ep.character_id
             LEFT JOIN encounters e ON ep.encounter_id = e.encounter_id
                 AND e.start_time >= strftime('%s', 'now', '-{} days')
-            WHERE c.guild_id = ?
+            WHERE c.guild_id = %s
             GROUP BY c.character_id, c.character_name
             ORDER BY raid_days DESC, c.character_name
             """.format(days),
@@ -613,8 +613,8 @@ async def get_guild_attendance(
         cursor_total = db.execute(
             """
             SELECT COUNT(DISTINCT DATE(start_time, 'unixepoch')) as total_raid_days
-            FROM encounters
-            WHERE guild_id = ? AND start_time >= strftime('%s', 'now', '-{} days')
+            FROM combat_encounters
+            WHERE guild_id = %s AND start_time >= strftime('%s', 'now', '-{} days')
             """.format(days),
             (guild_id,)
         )
@@ -660,7 +660,7 @@ async def get_guild_performance(
 
         # Find guild by name
         cursor = db.execute(
-            "SELECT guild_id FROM guilds WHERE guild_name = ?",
+            "SELECT guild_id FROM guilds WHERE guild_name = %s",
             (guild_name,)
         )
         guild_row = cursor.fetchone()
@@ -687,7 +687,7 @@ async def get_guild_performance(
             LEFT JOIN encounter_participants ep ON c.character_id = ep.character_id
             LEFT JOIN encounters e ON ep.encounter_id = e.encounter_id
                 AND e.start_time >= strftime('%s', 'now', '-{} days')
-            WHERE c.guild_id = ?
+            WHERE c.guild_id = %s
             GROUP BY c.character_id, c.character_name, c.class, c.spec
             HAVING encounters > 0
             ORDER BY avg_dps DESC

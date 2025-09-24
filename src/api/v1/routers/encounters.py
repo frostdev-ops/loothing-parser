@@ -77,6 +77,38 @@ async def list_encounters(
         # Get total count for pagination
         total_count = query_api.get_encounters_count(filters=filters)
 
+        # Convert EncounterSummary to EncounterDetail
+        encounter_details = []
+        for enc in encounters:
+            # Get character metrics for participants
+            metrics = query_api.get_character_metrics(enc.encounter_id)
+            participant_names = [m.character_name for m in metrics]
+
+            # Calculate totals
+            total_damage = sum(m.damage_done for m in metrics)
+            total_healing = sum(m.healing_done for m in metrics)
+            total_deaths = sum(m.death_count for m in metrics)
+
+            detail = EncounterDetail(
+                encounter_id=enc.encounter_id,
+                encounter_type=enc.encounter_type,
+                boss_name=enc.boss_name,
+                difficulty=enc.difficulty or "",
+                zone_name=enc.boss_name,  # Use boss_name as zone for now
+                start_time=enc.start_time,
+                end_time=enc.end_time,
+                duration=enc.combat_length,
+                combat_duration=enc.combat_length,
+                success=enc.success,
+                wipe_percentage=None,
+                participants=participant_names,
+                raid_size=enc.raid_size,
+                total_damage=total_damage,
+                total_healing=total_healing,
+                total_deaths=total_deaths,
+            )
+            encounter_details.append(detail)
+
         # Calculate pagination metadata
         has_next = offset + limit < total_count
         has_previous = offset > 0
@@ -84,7 +116,7 @@ async def list_encounters(
         total_pages = (total_count + limit - 1) // limit
 
         return PaginatedResponse(
-            items=encounters,
+            items=encounter_details,
             pagination={
                 "total": total_count,
                 "limit": limit,

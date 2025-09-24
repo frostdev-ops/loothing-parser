@@ -32,7 +32,7 @@ class GuildMember(BaseModel):
     notes: Optional[str] = Field(None, description="Additional notes about the member")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "character_name": "Playername",
                 "class_info": {"id": 8, "name": "Mage", "color": "#69CCF0"},
@@ -72,7 +72,7 @@ class GuildRoster(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "guild_name": "Example Guild",
                 "server": {"name": "Stormrage", "region": "US"},
@@ -100,7 +100,7 @@ class AttendanceRecord(BaseModel):
     absence_reason: Optional[str] = Field(None, description="Reason for absence if applicable")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "character_name": "Playername",
                 "event_date": "2023-10-15T20:00:00Z",
@@ -144,7 +144,7 @@ class AttendanceTracking(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "guild_name": "Example Guild",
                 "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
@@ -186,7 +186,7 @@ class GuildPerformanceMetrics(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
                 "encounter_type": "raid",
@@ -234,7 +234,7 @@ class GuildPerformance(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "guild_name": "Example Guild",
                 "analysis_period": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
@@ -262,7 +262,7 @@ class RaidCompositionSlot(BaseModel):
     notes: Optional[str] = Field(None, description="Notes about this slot")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "role": "tank",
                 "class_name": "Warrior",
@@ -305,7 +305,7 @@ class RaidComposition(BaseModel):
     last_used: Optional[datetime] = Field(None, description="When composition was last used")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "composition_name": "Heroic Raszageth Comp",
                 "encounter_type": "raid",
@@ -325,5 +325,43 @@ class RaidComposition(BaseModel):
                 "composition_score": 92.5,
                 "synergies": ["Warrior + Death Knight tank synergy", "Mage + Priest DPS buffs"],
                 "potential_issues": ["Limited ranged DPS for air phase"],
+            }
+        }
+
+
+class GuildSettings(BaseModel):
+    """Guild settings configuration model."""
+
+    raid_schedule: Optional[str] = Field(None, description="Guild raid schedule (e.g., 'Tue/Thu/Sun 8-11 EST')")
+    loot_system: Optional[str] = Field(None, description="Loot distribution system (e.g., 'EPGP', 'DKP', 'Loot Council')")
+    public_logs: Optional[bool] = Field(None, description="Whether guild logs are publicly visible")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "raid_schedule": "Tue/Thu/Sun 8-11 EST",
+                "loot_system": "EPGP",
+                "public_logs": False,
+            }
+        }
+
+
+class GuildSettingsResponse(BaseModel):
+    """Guild settings response model."""
+
+    guild_id: int = Field(..., description="Guild ID")
+    settings: GuildSettings = Field(..., description="Guild settings")
+    updated_at: datetime = Field(..., description="When settings were last updated")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "guild_id": 1,
+                "settings": {
+                    "raid_schedule": "Tue/Thu/Sun 8-11 EST",
+                    "loot_system": "EPGP",
+                    "public_logs": False,
+                },
+                "updated_at": "2023-10-15T20:30:00Z",
             }
         }

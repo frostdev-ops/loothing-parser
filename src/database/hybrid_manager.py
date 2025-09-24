@@ -98,6 +98,36 @@ class HybridDatabaseManager:
         except Exception as e:
             logger.error(f"Failed to apply initial migration: {e}")
 
+    def execute(self, query: str, params=None, fetch_results=True):
+        """
+        Execute SQL query through PostgreSQL connection.
+
+        This method provides backward compatibility for code expecting
+        a unified database interface with an execute() method.
+
+        Args:
+            query: SQL query to execute
+            params: Query parameters
+            fetch_results: Whether to return results
+
+        Returns:
+            Query results if fetch_results=True, otherwise None
+        """
+        return self.postgres.execute(query, params, fetch_results)
+
+    def commit(self):
+        """
+        Commit transaction through PostgreSQL connection.
+
+        This method provides backward compatibility for code expecting
+        a unified database interface with a commit() method.
+        """
+        if hasattr(self.postgres, 'commit'):
+            return self.postgres.commit()
+        else:
+            # PostgreSQL connections usually auto-commit unless in transaction
+            logger.debug("PostgreSQL connection does not require explicit commit")
+
     def save_encounter(
         self,
         encounter_data: Dict[str, Any],
@@ -495,7 +525,7 @@ class HybridDatabaseManager:
         """
         try:
             result = self.postgres.execute(
-                "SELECT * FROM encounters WHERE id = %s",
+                "SELECT * FROM combat_encounters WHERE id = %s",
                 (encounter_id,)
             )
             return result[0] if result else None
@@ -515,6 +545,32 @@ class HybridDatabaseManager:
             "postgresql": self.postgres.health_check(),
             "influxdb": self.influx.health_check()
         }
+
+    def rollback(self):
+        """Rollback PostgreSQL transaction."""
+        if hasattr(self.postgres, 'rollback'):
+            return self.postgres.rollback()
+        else:
+            logger.warning("PostgreSQL manager does not support rollback")
+
+    def table_exists(self, table_name: str) -> bool:
+        """Check if a table exists in PostgreSQL."""
+        try:
+            cursor = self.postgres.execute(
+                """
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_name = %s
+                )
+                """,
+                (table_name,)
+            )
+            result = cursor.fetchone()
+            return result[0] if result else False
+        except Exception as e:
+            logger.error(f"Failed to check table existence: {e}")
+            return False
 
     def close(self):
         """Close all database connections."""

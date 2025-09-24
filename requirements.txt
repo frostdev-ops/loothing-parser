@@ -9,6 +9,20 @@ python-dateutil>=2.8.0
 # Database
 alembic>=1.12.0
 
+# PostgreSQL support for Docker
+psycopg2-binary>=2.9.0
+
+# InfluxDB support for time-series data
+influxdb-client>=1.38.0
+influxdb-client[async]>=1.38.0
+
+# Redis support
+redis>=4.5.0
+hiredis>=2.0.0
+
+# HTTP client for async requests
+httpx>=0.24.0
+
 # Streaming server
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0

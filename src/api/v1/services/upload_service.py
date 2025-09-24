@@ -33,6 +33,7 @@ class UploadStatus:
     file_name: str
     file_size: int
     file_hash: Optional[str] = None
+    guild_id: Optional[int] = None
     status: str = "pending"  # pending, processing, completed, error
     progress: float = 0.0
     encounters_found: int = 0
@@ -75,6 +76,9 @@ class UploadService:
         # Ensure database schema is created
         create_tables(db)
 
+        # Ensure default guild exists for backward compatibility
+        self._ensure_default_guild(db)
+
         self.storage = EventStorage(db)
         self.processor = UnifiedParallelProcessor()
         self.max_file_size = max_file_size
@@ -97,6 +101,12 @@ class UploadService:
     def _init_upload_tables(self):
         """Initialize database tables for upload tracking."""
         try:
+            # Skip table creation if using PostgreSQL or HybridDatabaseManager (tables already exist)
+            if (hasattr(self.db, 'db_type') and self.db.db_type == 'postgresql') or \
+               (hasattr(self.db, 'postgres') and hasattr(self.db, 'influx')):
+                logger.info("Using PostgreSQL/Hybrid manager - skipping upload table creation (using existing schema)")
+                return
+
             self.db.execute(
                 """
                 CREATE TABLE IF NOT EXISTS uploads (
@@ -190,7 +200,7 @@ class UploadService:
         """Check if file has already been uploaded."""
         try:
             result = self.db.execute(
-                "SELECT * FROM uploads WHERE file_hash = ? ORDER BY created_at DESC LIMIT 1",
+                "SELECT * FROM uploads WHERE file_hash = %s ORDER BY created_at DESC LIMIT 1",
                 (file_hash,),
             ).fetchone()
 
@@ -225,11 +235,20 @@ class UploadService:
         try:
             self.db.execute(
                 """
-                INSERT OR REPLACE INTO uploads (
+                INSERT INTO uploads (
                     upload_id, file_name, file_size, file_hash, status, progress,
                     encounters_found, characters_found, events_processed,
                     error_message, start_time, end_time
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (upload_id) DO UPDATE SET
+                    status = EXCLUDED.status,
+                    progress = EXCLUDED.progress,
+                    encounters_found = EXCLUDED.encounters_found,
+                    characters_found = EXCLUDED.characters_found,
+                    events_processed = EXCLUDED.events_processed,
+                    error_message = EXCLUDED.error_message,
+                    start_time = EXCLUDED.start_time,
+                    end_time = EXCLUDED.end_time
             """,
                 (
                     status.upload_id,
@@ -301,6 +320,7 @@ class UploadService:
             storage_result = self.storage.store_unified_encounters(
                 encounters=encounters,
                 log_file_path=str(file_path),
+                guild_id=status.guild_id,
             )
 
             # Update final status
@@ -335,12 +355,38 @@ class UploadService:
             except Exception as e:
                 logger.warning(f"Failed to clean up temporary file {file_path}: {e}")
 
-    async def upload_file(self, file: UploadFile, process_async: bool = True) -> UploadStatus:
+    def _ensure_default_guild(self, db: DatabaseManager) -> None:
+        """Ensure a default guild exists for backward compatibility."""
+        try:
+            # Skip guild creation for PostgreSQL/HybridDatabaseManager - assume guilds exist in main DB
+            if (hasattr(db, 'db_type') and db.db_type == 'postgresql') or \
+               (hasattr(db, 'postgres') and hasattr(db, 'influx')):
+                logger.info("Using PostgreSQL/Hybrid manager - skipping default guild creation (using existing data)")
+                return
+
+            # Check if guild with ID=1 exists (PostgreSQL/SQLite)
+            cursor = db.execute("SELECT guild_id FROM guilds WHERE guild_id = %s", (1,))
+            if not cursor.fetchone():
+                # Insert default guild
+                db.execute("""
+                    INSERT INTO guilds (guild_id, guild_name, server, region, faction)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (guild_id) DO NOTHING
+                """, (1, 'Default Guild', 'Unknown', 'US', None))
+                if hasattr(db, 'commit'):
+                    db.commit()
+                logger.info("Created default guild with ID=1")
+        except Exception as e:
+            logger.warning(f"Could not ensure default guild: {e}")
+            # Non-critical, continue
+
+    async def upload_file(self, file: UploadFile, guild_id: Optional[int] = None, process_async: bool = True) -> UploadStatus:
         """
         Upload and process a combat log file.
 
         Args:
             file: Uploaded file
+            guild_id: Guild ID for multi-tenant isolation
             process_async: Whether to process asynchronously
 
         Returns:
@@ -369,6 +415,7 @@ class UploadService:
                 file_name=file.filename,
                 file_size=file_path.stat().st_size,
                 file_hash=file_hash,
+                guild_id=guild_id,
                 status="pending",
             )
 
@@ -391,7 +438,7 @@ class UploadService:
             logger.error(f"Upload failed: {e}")
             raise
 
-    def get_upload_status(self, upload_id: str) -> Optional[UploadStatus]:
+    def get_upload_status(self, upload_id: str, guild_id: Optional[int] = None) -> Optional[UploadStatus]:
         """Get current status of an upload."""
         # Check in-memory first
         if upload_id in self.active_uploads:
@@ -400,7 +447,7 @@ class UploadService:
         # Check database
         try:
             result = self.db.execute(
-                "SELECT * FROM uploads WHERE upload_id = ?", (upload_id,)
+                "SELECT * FROM uploads WHERE upload_id = %s", (upload_id,)
             ).fetchone()
 
             if result:
@@ -438,10 +485,10 @@ class UploadService:
             params = []
 
             if status_filter:
-                query += " WHERE status = ?"
+                query += " WHERE status = %s"
                 params.append(status_filter)
 
-            query += " ORDER BY created_at DESC LIMIT ?"
+            query += " ORDER BY created_at DESC LIMIT %s"
             params.append(limit)
 
             results = self.db.execute(query, params).fetchall()

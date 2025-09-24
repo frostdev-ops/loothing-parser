@@ -92,7 +92,7 @@ async def get_log_status(
     Returns:
         Current processing status and progress
     """
-    status = upload_service.get_upload_status(upload_id, guild_id=auth.guild_id)
+    status = upload_service.get_upload_status(upload_id)
 
     if not status:
         raise HTTPException(
@@ -295,7 +295,7 @@ async def delete_upload_record(
             raise HTTPException(status_code=404, detail="Upload not found")
 
         # Delete from database
-        upload_service.db.execute("DELETE FROM uploads WHERE upload_id = ?", (upload_id,))
+        upload_service.db.execute("DELETE FROM uploads WHERE upload_id = %s", (upload_id,))
 
         # Remove from active uploads if present
         if upload_id in upload_service.active_uploads:

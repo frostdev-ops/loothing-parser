@@ -601,7 +601,7 @@ class AnalyticsResolver(BaseResolver):
                     e.duration,
                     e.elapsed_time,
                     COUNT(DISTINCT cm.character_id) as player_count
-                FROM encounters e
+                FROM combat_encounters e
                 LEFT JOIN character_metrics cm ON e.id = cm.encounter_id
                 WHERE e.start_time BETWEEN ? AND ?
                 {}

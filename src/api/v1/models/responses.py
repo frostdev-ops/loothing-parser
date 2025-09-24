@@ -34,7 +34,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     sort: Optional[Dict[str, SortOrder]] = Field(None, description="Applied sorting")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "items": [],
                 "pagination": {
@@ -60,7 +60,7 @@ class TimeSeriesPoint(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional point metadata")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "timestamp": "2023-10-15T14:30:00Z",
                 "value": 125000.5,
@@ -80,7 +80,7 @@ class TimeSeriesResponse(BaseModel):
     total_points: int = Field(..., description="Total number of data points")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "series_name": "DPS Over Time",
                 "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
@@ -106,7 +106,7 @@ class AggregationResult(BaseModel):
     count: int = Field(..., description="Number of items in this group")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "group_by": {"class_name": "Mage", "difficulty": "HEROIC"},
                 "metrics": {"avg_dps": 125000.5, "max_dps": 150000.0, "min_dps": 100000.0},
@@ -126,7 +126,7 @@ class AggregationResponse(BaseModel):
     total_groups: int = Field(..., description="Total number of groups")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "query": "Average DPS by class and difficulty",
                 "group_by_fields": ["class_name", "difficulty"],
@@ -153,7 +153,7 @@ class ComparisonItem(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "identifier": "encounter_12345",
                 "name": "Heroic Raszageth - Pull #3",
@@ -173,7 +173,7 @@ class ComparisonResponse(BaseModel):
     insights: Optional[List[str]] = Field(None, description="Automated insights from comparison")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "comparison_type": "encounter_attempts",
                 "baseline": {
@@ -205,7 +205,7 @@ class RankingEntry(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional data")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "rank": 1,
                 "identifier": "player_12345",
@@ -228,7 +228,7 @@ class RankingResponse(BaseModel):
     total_entries: int = Field(..., description="Total number of ranked entries")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "ranking_type": "character_dps",
                 "metric": "average_dps",
@@ -260,7 +260,7 @@ class ErrorResponse(BaseModel):
     request_id: Optional[str] = Field(None, description="Request tracking ID")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "error": "ValidationError",
                 "message": "Invalid character name format",
@@ -286,7 +286,7 @@ class StatusResponse(BaseModel):
     performance: Optional[Dict[str, float]] = Field(None, description="Performance metrics")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "status": "operational",
                 "version": "1.0.0",

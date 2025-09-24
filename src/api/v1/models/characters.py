@@ -41,7 +41,7 @@ class CharacterProfile(BaseModel):
     activity_streak: int = Field(0, description="Consecutive days with activity", ge=0)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "character_id": 12345,
                 "character_guid": "Player-1234-56789ABC",
@@ -108,7 +108,7 @@ class CharacterPerformance(BaseModel):
     dispels: int = Field(0, description="Number of dispels performed", ge=0)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "character_name": "Playername",
                 "encounter_id": 12345,
@@ -149,7 +149,7 @@ class CharacterHistoryEntry(BaseModel):
     duration: float = Field(0.0, description="Encounter duration in seconds", ge=0)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "date": "2023-10-15T20:30:00Z",
                 "encounter_id": 12345,
@@ -181,7 +181,7 @@ class CharacterHistory(BaseModel):
     total_deaths: int = Field(0, description="Total deaths in period", ge=0)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "character_name": "Playername",
                 "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
@@ -223,7 +223,7 @@ class CharacterRanking(BaseModel):
     total_parses: int = Field(..., description="Total number of parses", ge=1)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "character_name": "Playername",
                 "metric": "dps",
@@ -248,7 +248,7 @@ class CharacterGearItem(BaseModel):
     upgrade_level: int = Field(0, description="Item upgrade level", ge=0)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "slot": "Head",
                 "item": {
@@ -280,7 +280,7 @@ class CharacterGear(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "character_name": "Playername",
                 "snapshot_time": "2023-10-15T20:30:00Z",
@@ -320,7 +320,7 @@ class CharacterTalentRow(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "row": 1,
                 "selected_talent": {
@@ -354,7 +354,7 @@ class CharacterTalents(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "character_name": "Playername",
                 "specialization": "Fire",

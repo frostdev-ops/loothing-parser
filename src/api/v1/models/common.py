@@ -33,7 +33,7 @@ class TimeRange(BaseModel):
         return v
 
     class Config:
-        schema_extra = {"example": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"}}
+        json_schema_extra = {"example": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"}}
 
 
 class PaginationMeta(BaseModel):
@@ -72,7 +72,7 @@ class PaginationMeta(BaseModel):
         return v
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "total": 250,
                 "limit": 20,
@@ -100,7 +100,7 @@ class FilterCriteria(BaseModel):
         return v
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {"field": "difficulty", "operator": "in", "value": ["HEROIC", "MYTHIC"]}
         }
 
@@ -114,7 +114,7 @@ class ServerInfo(BaseModel):
     timezone: Optional[str] = Field(None, description="Server timezone")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Stormrage",
                 "region": "US",
@@ -135,7 +135,7 @@ class WoWClass(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": 1,
                 "name": "Warrior",
@@ -162,7 +162,7 @@ class ItemInfo(BaseModel):
     icon: Optional[str] = Field(None, description="Item icon name")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": 195480,
                 "name": "Primal Berserk Spaulders",
@@ -185,7 +185,7 @@ class SpellInfo(BaseModel):
     cast_time: Optional[int] = Field(None, description="Cast time in milliseconds")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": 190411,
                 "name": "Incarnation: Chosen of Elune",
@@ -210,6 +210,6 @@ class PerformanceMetric(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {"value": 125000.5, "percentile": 95.3, "rank": 2, "total_participants": 20}
         }

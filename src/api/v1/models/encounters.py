@@ -40,7 +40,7 @@ class EncounterDetail(BaseModel):
     total_deaths: int = Field(0, description="Total number of deaths")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "encounter_id": 12345,
                 "encounter_type": "raid",
@@ -74,7 +74,7 @@ class EncounterReplay(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "encounter_id": 12345,
                 "events": [
@@ -110,7 +110,7 @@ class EncounterTimeline(BaseModel):
     death_events: List[Dict[str, Any]] = Field(default_factory=list, description="Death events")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "encounter_id": 12345,
                 "phases": [
@@ -140,7 +140,7 @@ class EncounterComparison(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "encounters": [],
                 "metrics_comparison": {
@@ -167,7 +167,7 @@ class DeathAnalysis(BaseModel):
     avoidable_deaths: int = Field(0, description="Number of avoidable deaths")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "encounter_id": 12345,
                 "total_deaths": 3,
@@ -206,7 +206,7 @@ class ResourceUsage(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "encounter_id": 12345,
                 "cooldown_usage": [

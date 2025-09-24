@@ -24,7 +24,7 @@ class PerformanceTrend(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "metric_name": "average_dps",
                 "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
@@ -50,7 +50,7 @@ class ProgressionTracking(BaseModel):
     progression_rate: float = Field(..., description="Rate of progression", ge=0)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "guild_name": "Example Guild",
                 "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
@@ -85,7 +85,7 @@ class ClassBalanceEntry(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "class_name": "Mage",
                 "spec_name": "Fire",
@@ -110,7 +110,7 @@ class ClassBalance(BaseModel):
     outliers: List[str] = Field(default_factory=list, description="Classes/specs that are outliers")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "analysis_type": "dps_balance",
                 "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
@@ -134,7 +134,7 @@ class SpellUsageEntry(BaseModel):
     usage_frequency: float = Field(..., description="How often this spell is used", ge=0, le=100)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "spell_id": 133,
                 "spell_name": "Fireball",
@@ -161,7 +161,7 @@ class SpellUsageStats(BaseModel):
     spell_diversity_score: float = Field(..., description="Spell diversity score (0-1)", ge=0, le=1)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "class_name": "Mage",
                 "time_range": {"start": "2023-10-01T00:00:00Z", "end": "2023-10-31T23:59:59Z"},
@@ -185,7 +185,7 @@ class DamageSource(BaseModel):
     crit_rate: float = Field(0.0, description="Critical strike rate", ge=0, le=100)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "source_type": "spell",
                 "source_name": "Fireball",
@@ -214,7 +214,7 @@ class DamageBreakdown(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "encounter_id": 12345,
                 "character_name": "Playername",

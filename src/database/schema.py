@@ -170,16 +170,37 @@ class DatabaseManager:
 
     def get_table_info(self, table_name: str) -> List[Dict[str, Any]]:
         """Get table schema information."""
-        cursor = self.execute(f"PRAGMA table_info({table_name})")
-        return [dict(row) for row in cursor.fetchall()]
+        if self.backend_type == "postgresql":
+            query = """
+                SELECT column_name, data_type, is_nullable
+                FROM information_schema.columns
+                WHERE table_name = %s
+            """
+            result = self.execute(query, (table_name,))
+            return result if result else []
+        else:
+            # SQLite
+            result = self.execute(f"PRAGMA table_info({table_name})")
+            return result if result else []
 
     def table_exists(self, table_name: str) -> bool:
         """Check if table exists."""
-        cursor = self.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (table_name,),
-        )
-        return cursor.fetchone() is not None
+        if self.backend_type == "postgresql":
+            query = """
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = %s
+                )
+            """
+            result = self.execute(query, (table_name,))
+            return result and len(result) > 0 and result[0].get('exists', False)
+        else:
+            # SQLite
+            result = self.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=%s",
+                (table_name,),
+            )
+            return result is not None and len(result) > 0
 
 
 def _migrate_character_schema(db: DatabaseManager) -> None:
@@ -194,41 +215,51 @@ def _migrate_character_schema(db: DatabaseManager) -> None:
         return
 
     # Check if old schema exists (has realm column but no server/region)
-    cursor = db.execute("PRAGMA table_info(characters)")
-    columns = {row[1]: row[2] for row in cursor.fetchall()}
+    table_info = db.execute("PRAGMA table_info(characters)")
+    columns = {row['name']: row['type'] for row in table_info} if table_info else {}
 
     if "realm" in columns and "server" not in columns:
         logger.info("Migrating characters table to new schema with server/region columns")
 
         # Add new columns
-        db.execute("ALTER TABLE characters ADD COLUMN server TEXT")
-        db.execute("ALTER TABLE characters ADD COLUMN region TEXT")
+        db.execute("ALTER TABLE characters ADD COLUMN server TEXT", fetch_results=False)
+        db.execute("ALTER TABLE characters ADD COLUMN region TEXT", fetch_results=False)
 
         # Migrate existing data: parse realm column for server-region format
         from src.models.character import parse_character_name
 
-        cursor = db.execute(
+        characters = db.execute(
             "SELECT character_id, character_name, realm FROM characters WHERE realm IS NOT NULL"
         )
-        for char_id, char_name, realm in cursor.fetchall():
+        if not characters:
+            return
+
+        for char_row in characters:
+            char_id = char_row['character_id']
+            realm = char_row['realm']
             # Try to parse the realm as server-region or just server
             if realm and "-" in realm:
                 parts = realm.split("-")
                 if len(parts) == 2:
                     server, region = parts
                     db.execute(
-                        "UPDATE characters SET server = ?, region = ? WHERE character_id = ?",
+                        "UPDATE characters SET server = %s, region = %s WHERE character_id = %s",
                         (server, region, char_id),
+                        fetch_results=False,
                     )
                 else:
                     # Just use as server
                     db.execute(
-                        "UPDATE characters SET server = ? WHERE character_id = ?", (realm, char_id)
+                        "UPDATE characters SET server = %s WHERE character_id = %s",
+                        (realm, char_id),
+                        fetch_results=False,
                     )
             else:
                 # Use as server
                 db.execute(
-                    "UPDATE characters SET server = ? WHERE character_id = ?", (realm, char_id)
+                    "UPDATE characters SET server = ? WHERE character_id = ?",
+                    (realm, char_id),
+                    fetch_results=False,
                 )
 
         logger.info("Character schema migration completed")
@@ -242,10 +273,10 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
         db: Database manager instance
     """
     # Check current schema version
-    cursor = db.execute("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
-    current_version = cursor.fetchone()
+    result = db.execute("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
+    current_version_row = result[0] if result else None
 
-    if current_version and current_version[0] >= 2:
+    if current_version_row and current_version_row.get('version', 0) >= 2:
         return  # Already at v2 or higher
 
     logger.info("Migrating database to version 2 (guild multi-tenancy)")
@@ -282,8 +313,8 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
     for table in tables_to_migrate:
         if db.table_exists(table):
             # Check if guild_id column already exists
-            cursor = db.execute(f"PRAGMA table_info({table})")
-            columns = {row[1]: row[2] for row in cursor.fetchall()}
+            table_info = db.execute(f"PRAGMA table_info({table})")
+            columns = {row['name']: row['type'] for row in table_info} if table_info else {}
 
             if "guild_id" not in columns:
                 logger.info(f"Adding guild_id column to {table}")
@@ -334,7 +365,13 @@ def create_tables(db: DatabaseManager) -> None:
         db: Database manager instance
     """
 
-    # Schema version tracking
+    # Skip table creation if using PostgreSQL or HybridDatabaseManager (tables already exist in main database)
+    if (hasattr(db, 'db_type') and db.db_type == 'postgresql') or \
+       (hasattr(db, 'postgres') and hasattr(db, 'influx')):
+        logger.info("Using PostgreSQL/Hybrid manager - skipping table creation (using existing database schema)")
+        return
+
+    # Schema version tracking (SQLite only)
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS schema_version (
@@ -831,11 +868,11 @@ def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
         "character_talent_selections",
     ]
     for table in tables:
-        cursor = db.execute(f"SELECT COUNT(*) FROM {table}")
-        stats[f"{table}_count"] = cursor.fetchone()[0]
+        result = db.execute(f"SELECT COUNT(*) FROM {table}")
+        stats[f"{table}_count"] = result[0][0] if result else 0
 
     # Storage statistics
-    cursor = db.execute(
+    result = db.execute(
         """
         SELECT
             SUM(compressed_size) as total_compressed,
@@ -845,32 +882,32 @@ def get_database_stats(db: DatabaseManager) -> Dict[str, Any]:
         FROM event_blocks
     """
     )
-    row = cursor.fetchone()
-    if row and row[0]:
+    if result and result[0] and result[0][0]:
+        row = result[0]
         stats.update(
             {
                 "total_compressed_bytes": row[0],
                 "total_uncompressed_bytes": row[1],
-                "average_compression_ratio": round(row[2], 3),
+                "average_compression_ratio": round(row[2], 3) if row[2] else 0,
                 "total_blocks": row[3],
             }
         )
 
     # Recent activity
-    cursor = db.execute(
+    result = db.execute(
         """
         SELECT COUNT(*)
-        FROM encounters
+        FROM combat_encounters
         WHERE created_at > datetime('now', '-7 days')
     """
     )
-    stats["encounters_last_7_days"] = cursor.fetchone()[0]
+    stats["encounters_last_7_days"] = result[0][0] if result else 0
 
     # Database file size
-    cursor = db.execute("PRAGMA page_count")
-    page_count = cursor.fetchone()[0]
-    cursor = db.execute("PRAGMA page_size")
-    page_size = cursor.fetchone()[0]
+    result = db.execute("PRAGMA page_count")
+    page_count = result[0][0] if result else 0
+    result = db.execute("PRAGMA page_size")
+    page_size = result[0][0] if result else 0
     stats["database_size_bytes"] = page_count * page_size
 
     return stats

@@ -261,7 +261,7 @@ class GearParser:
             if not snapshot_id:
                 # If using REPLACE, get the existing ID
                 cursor = db.execute(
-                    "SELECT snapshot_id FROM character_gear_snapshots WHERE character_id = ? AND encounter_id = ?",
+                    "SELECT snapshot_id FROM character_gear_snapshots WHERE character_id = %s AND encounter_id = %s",
                     (snapshot.character_id, snapshot.encounter_id)
                 )
                 row = cursor.fetchone()
@@ -272,7 +272,7 @@ class GearParser:
                 return None
 
             # Clear existing gear items for this snapshot
-            db.execute("DELETE FROM character_gear_items WHERE snapshot_id = ?", (snapshot_id,))
+            db.execute("DELETE FROM character_gear_items WHERE snapshot_id = %s", (snapshot_id,))
 
             # Insert gear items
             for item in snapshot.items:
@@ -324,7 +324,7 @@ class GearParser:
                 SELECT snapshot_id, guild_id, snapshot_time, source,
                        average_item_level, equipped_item_level, total_items
                 FROM character_gear_snapshots
-                WHERE character_id = ? AND encounter_id = ?
+                WHERE character_id = %s AND encounter_id = %s
                 """,
                 (character_id, encounter_id)
             )
@@ -342,7 +342,7 @@ class GearParser:
                        enchant_id, gem_1_id, gem_2_id, gem_3_id, gem_4_id,
                        upgrade_level, bonus_ids
                 FROM character_gear_items
-                WHERE snapshot_id = ?
+                WHERE snapshot_id = %s
                 ORDER BY slot_index
                 """,
                 (snapshot_id,)

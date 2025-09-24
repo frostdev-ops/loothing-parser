@@ -190,7 +190,7 @@ class TalentParser:
             if not snapshot_id:
                 # If using REPLACE, get the existing ID
                 cursor = db.execute(
-                    "SELECT snapshot_id FROM character_talent_snapshots WHERE character_id = ? AND encounter_id = ?",
+                    "SELECT snapshot_id FROM character_talent_snapshots WHERE character_id = %s AND encounter_id = %s",
                     (snapshot.character_id, snapshot.encounter_id)
                 )
                 row = cursor.fetchone()
@@ -201,7 +201,7 @@ class TalentParser:
                 return None
 
             # Clear existing talent selections for this snapshot
-            db.execute("DELETE FROM character_talent_selections WHERE snapshot_id = ?", (snapshot_id,))
+            db.execute("DELETE FROM character_talent_selections WHERE snapshot_id = %s", (snapshot_id,))
 
             # Insert talent selections
             for talent in snapshot.talents:
@@ -244,7 +244,7 @@ class TalentParser:
                 SELECT snapshot_id, guild_id, snapshot_time, source,
                        specialization, talent_loadout, total_talents
                 FROM character_talent_snapshots
-                WHERE character_id = ? AND encounter_id = ?
+                WHERE character_id = %s AND encounter_id = %s
                 """,
                 (character_id, encounter_id)
             )
@@ -262,7 +262,7 @@ class TalentParser:
                 SELECT talent_slot, talent_spell_id, talent_tier,
                        talent_column, is_selected
                 FROM character_talent_selections
-                WHERE snapshot_id = ?
+                WHERE snapshot_id = %s
                 ORDER BY talent_slot
                 """,
                 (snapshot_id,)

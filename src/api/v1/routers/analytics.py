@@ -144,7 +144,7 @@ async def get_progression_tracking(
                 e.kill as is_kill,
                 e.duration,
                 e.elapsed_time
-            FROM encounters e
+            FROM combat_encounters e
             WHERE e.start_time BETWEEN ? AND ?
             {}
             ORDER BY e.start_time DESC
@@ -342,7 +342,7 @@ async def get_spell_usage_stats(
             LIMIT 50
         """.format(
             f"AND c.class_name = ?" if class_name else "",
-            f"AND c.name = ?" if character_name else "",
+            f"AND c.character_name = ?" if character_name else "",
         )
 
         params = [start_date.isoformat(), end_date.isoformat()]

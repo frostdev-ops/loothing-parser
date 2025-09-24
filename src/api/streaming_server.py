@@ -36,7 +36,8 @@ from .models import (
 from .auth import auth_manager, authenticate_api_key, AuthResponse
 from ..streaming.processor import StreamProcessor
 from ..streaming.session import SessionManager, StreamSession, SessionStatus
-from src.database.schema import DatabaseManager, create_tables
+from src.database.postgres_adapter import DatabaseManager
+from src.database.schema import create_tables
 from src.database.query import QueryAPI
 from src.config.loader import load_and_apply_config
 

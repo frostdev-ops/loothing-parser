@@ -1,8 +1,8 @@
 """
-High-speed query API for WoW combat log database.
+High-speed query API for WoW combat log database with time-series support.
 
-Provides optimized queries with caching and efficient decompression
-for instant data retrieval from the compressed event storage.
+Provides optimized queries with caching and efficient time-series queries
+for instant data retrieval from InfluxDB event storage and PostgreSQL metadata.
 """
 
 import time
@@ -11,11 +11,9 @@ from typing import List, Dict, Any, Optional, Tuple, Union
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from functools import lru_cache
-from concurrent.futures import ThreadPoolExecutor
-import threading
 
 from .schema import DatabaseManager
-from .compression import EventCompressor, compression_stats
+from .influxdb_direct_manager import InfluxDBDirectManager
 from src.models.character_events import TimestampedEvent, CharacterEventStream
 from src.models.encounter_models import RaidEncounter, MythicPlusRun
 
@@ -161,9 +159,9 @@ class QueryCache:
 
 class QueryAPI:
     """
-    High-performance query interface for combat log database.
+    High-performance query interface for combat log database with time-series support.
 
-    Provides optimized queries with automatic caching, parallel decompression,
+    Provides optimized queries with automatic caching, time-series queries from InfluxDB,
     and efficient data retrieval patterns for common use cases.
     """
 
@@ -172,15 +170,23 @@ class QueryAPI:
         Initialize query API.
 
         Args:
-            db: Database manager instance
+            db: Database manager instance (hybrid manager with InfluxDB)
             cache_size: Maximum number of cached query results
         """
         self.db = db
         self.cache = QueryCache(max_size=cache_size)
-        self.decompressor = EventCompressor()
 
-        # Thread pool for parallel decompression
-        self.executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="query")
+        # Initialize time-series manager if available
+        if hasattr(db, 'influxdb') and db.influxdb:
+            self.influxdb_manager = InfluxDBDirectManager(
+                url=db.influxdb.url,
+                token=db.influxdb.token,
+                org=db.influxdb.org,
+                bucket=db.influxdb.bucket
+            )
+        else:
+            self.influxdb_manager = None
+            logger.warning("No InfluxDB connection available for time-series queries")
 
         # Query statistics
         self.stats = {
@@ -188,7 +194,8 @@ class QueryAPI:
             "cache_hits": 0,
             "cache_misses": 0,
             "total_query_time": 0.0,
-            "events_decompressed": 0,
+            "time_series_queries": 0,
+            "influxdb_query_time": 0.0,
         }
 
     def get_encounter(
@@ -219,7 +226,7 @@ class QueryAPI:
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM encounters e
+            FROM combat_encounters e
             WHERE encounter_id = ?
         """
         params = [encounter_id]
@@ -282,7 +289,7 @@ class QueryAPI:
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM encounters e
+            FROM combat_encounters e
         """
         params = []
 
@@ -397,7 +404,7 @@ class QueryAPI:
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM encounters e
+            FROM combat_encounters e
             {where_clause}
             ORDER BY start_time DESC
             LIMIT ?
@@ -859,7 +866,7 @@ class QueryAPI:
                     encounter_id, encounter_type, boss_name, difficulty,
                     start_time, end_time, success, combat_length, raid_size,
                     (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-                FROM encounters e
+                FROM combat_encounters e
             """
             params = []
 
@@ -968,7 +975,7 @@ class QueryAPI:
         where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
 
         cursor = self.db.execute(
-            f"SELECT COUNT(*) FROM encounters {where_clause}",
+            f"SELECT COUNT(*) FROM combat_encounters {where_clause}",
             params,
         )
         count = cursor.fetchone()[0]
@@ -1271,7 +1278,7 @@ class QueryAPI:
             SELECT
                 guild_id, guild_name, server, region, faction,
                 created_at, updated_at, is_active,
-                (SELECT COUNT(*) FROM encounters WHERE guild_id = g.guild_id) as encounter_count
+                (SELECT COUNT(*) FROM combat_encounters WHERE guild_id = g.guild_id) as encounter_count
             FROM guilds g
         """
         params = []
@@ -1520,7 +1527,7 @@ class QueryAPI:
                 encounter_id, encounter_type, boss_name, difficulty,
                 start_time, end_time, success, combat_length, raid_size,
                 (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM encounters e
+            FROM combat_encounters e
             WHERE guild_id = ?
         """
         params = [guild_id]
@@ -2095,7 +2102,7 @@ class QueryAPI:
             encounter_type = None
             if encounter_id:
                 cursor = self.db.execute(
-                    "SELECT encounter_type FROM encounters WHERE encounter_id = ?",
+                    "SELECT encounter_type FROM combat_encounters WHERE encounter_id = ?",
                     (encounter_id,)
                 )
                 enc_row = cursor.fetchone()
@@ -2233,45 +2240,248 @@ class QueryAPI:
         cursor = self.db.execute(
             """
             SELECT
-                (SELECT COUNT(*) FROM encounters) as total_encounters,
+                (SELECT COUNT(*) FROM combat_encounters) as total_encounters,
                 (SELECT COUNT(*) FROM characters) as total_characters,
-                (SELECT COUNT(*) FROM event_blocks) as total_blocks,
-                (SELECT COALESCE(SUM(event_count), 0) FROM event_blocks) as total_events,
-                (SELECT COALESCE(SUM(compressed_size), 0) FROM event_blocks) as total_compressed_bytes,
-                (SELECT COALESCE(SUM(uncompressed_size), 0) FROM event_blocks) as total_uncompressed_bytes
+                (SELECT COUNT(*) FROM character_metrics) as total_character_metrics
         """
         )
         row = cursor.fetchone()
 
-        compression_ratio = 0.0
-        total_compressed = row[4] or 0
-        total_uncompressed = row[5] or 0
-        if total_uncompressed > 0:
-            compression_ratio = total_compressed / total_uncompressed
-
-        return {
+        stats = {
             "database": {
                 "total_encounters": row[0] or 0,
                 "total_characters": row[1] or 0,
-                "total_blocks": row[2] or 0,
-                "total_events": row[3] or 0,
-                "total_compressed_bytes": total_compressed,
-                "total_uncompressed_bytes": total_uncompressed,
-                "compression_ratio": compression_ratio,
-                "space_saved_mb": (
-                    (total_uncompressed - total_compressed) / (1024 * 1024)
-                    if total_uncompressed > 0
-                    else 0
-                ),
+                "total_character_metrics": row[2] or 0,
             },
             "query_api": self.stats,
             "cache": self.cache.stats(),
         }
 
+        # Add InfluxDB stats if available
+        if self.influxdb_manager:
+            try:
+                influx_stats = self.get_influxdb_stats()
+                stats["influxdb"] = influx_stats
+            except Exception as e:
+                logger.warning(f"Could not retrieve InfluxDB stats: {e}")
+                stats["influxdb"] = {"error": str(e)}
+        else:
+            stats["influxdb"] = {"error": "No InfluxDB connection available"}
+
+        return stats
+
     def clear_cache(self):
         """Clear all cached query results."""
         self.cache.clear()
 
+    # Time-series query methods for InfluxDB integration
+
+    def query_encounter_events(
+        self,
+        encounter_id: int,
+        character_id: Optional[int] = None,
+        event_types: Optional[List[str]] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Query events for an encounter using time-window approach.
+
+        Args:
+            encounter_id: Encounter ID to query
+            character_id: Optional character ID filter
+            event_types: Optional list of event types to filter
+            start_time: Optional start time override
+            end_time: Optional end time override
+
+        Returns:
+            List of event dictionaries
+        """
+        if not self.influxdb_manager:
+            logger.warning("Cannot query encounter events without InfluxDB connection")
+            return []
+
+        try:
+            # Get encounter time window from metadata if not provided
+            if not start_time or not end_time:
+                encounter = self.get_encounter(encounter_id)
+                if not encounter:
+                    logger.error(f"Encounter {encounter_id} not found")
+                    return []
+
+                start_time = start_time or encounter.start_time
+                end_time = end_time or encounter.end_time
+
+            if not start_time or not end_time:
+                logger.error(f"Cannot determine time window for encounter {encounter_id}")
+                return []
+
+            # Use InfluxDB time-window query
+            return self.influxdb_manager.query_encounter_events(
+                encounter_id=encounter_id,
+                character_id=character_id,
+                event_types=event_types,
+                start_time=start_time,
+                end_time=end_time
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to query encounter events: {e}")
+            return []
+
+    def query_time_window_events(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        character_ids: Optional[List[int]] = None,
+        event_types: Optional[List[str]] = None,
+        guild_id: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Query events within a specific time window using InfluxDB.
+
+        Args:
+            start_time: Start of time window
+            end_time: End of time window
+            character_ids: Optional character ID filters
+            event_types: Optional event type filters
+            guild_id: Optional guild ID filter
+
+        Returns:
+            List of event dictionaries
+        """
+        if not self.influxdb_manager:
+            logger.warning("Cannot query time window events without InfluxDB connection")
+            return []
+
+        try:
+            # Use InfluxDB native time-window query
+            return self.influxdb_manager.query_time_window(
+                start_time=start_time,
+                end_time=end_time,
+                character_ids=character_ids,
+                event_types=event_types,
+                guild_id=guild_id
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to query time window events: {e}")
+            return []
+
+    def aggregate_encounter_metrics(
+        self,
+        encounter_id: int,
+        metric_types: Optional[List[str]] = None,
+        group_by_character: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Aggregate metrics for an encounter using InfluxDB time-series functions.
+
+        Args:
+            encounter_id: Encounter ID to aggregate
+            metric_types: Optional list of metrics to calculate
+            group_by_character: Whether to group results by character
+
+        Returns:
+            Dictionary of aggregated metrics
+        """
+        if not self.influxdb_manager:
+            logger.warning("Cannot aggregate encounter metrics without InfluxDB connection")
+            return {}
+
+        try:
+            # Get encounter time window
+            encounter = self.get_encounter(encounter_id)
+            if not encounter:
+                logger.error(f"Encounter {encounter_id} not found")
+                return {}
+
+            # Use InfluxDB aggregation functions
+            return self.influxdb_manager.aggregate_encounter_metrics(
+                encounter_id=encounter_id,
+                start_time=encounter.start_time,
+                end_time=encounter.end_time,
+                metric_types=metric_types,
+                group_by_character=group_by_character
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to aggregate encounter metrics: {e}")
+            return {}
+
+    def define_encounter_time_window(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        encounter_name: str,
+        guild_id: Optional[int] = None
+    ) -> Optional[int]:
+        """
+        Define a new encounter as a time window and return its ID.
+
+        Args:
+            start_time: Start of encounter
+            end_time: End of encounter
+            encounter_name: Name/identifier for the encounter
+            guild_id: Optional guild ID
+
+        Returns:
+            Encounter ID if successful, None otherwise
+        """
+        if not self.influxdb_manager:
+            logger.warning("Cannot define encounter time window without InfluxDB connection")
+            return None
+
+        try:
+            # Create encounter metadata in PostgreSQL
+            cursor = self.db.execute(
+                """
+                INSERT INTO combat_encounters (
+                    guild_id, encounter_type, boss_name, start_time, end_time,
+                    success, combat_length, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING encounter_id
+                """,
+                (
+                    guild_id,
+                    "time_window",
+                    encounter_name,
+                    start_time.timestamp(),
+                    end_time.timestamp(),
+                    True,  # Assume successful for time-window definitions
+                    (end_time - start_time).total_seconds(),
+                    datetime.now().isoformat(),
+                ),
+            )
+
+            encounter_id = cursor.fetchone()[0]
+
+            # Define the time window in InfluxDB
+            self.influxdb_manager.define_encounter_window(
+                encounter_id=encounter_id,
+                start_time=start_time,
+                end_time=end_time,
+                encounter_name=encounter_name
+            )
+
+            return encounter_id
+
+        except Exception as e:
+            logger.error(f"Failed to define encounter time window: {e}")
+            return None
+
+    def get_influxdb_stats(self) -> Dict[str, Any]:
+        """Get InfluxDB connection and performance statistics."""
+        if not self.influxdb_manager:
+            return {"error": "No InfluxDB connection available"}
+
+        try:
+            return self.influxdb_manager.get_stats()
+        except Exception as e:
+            logger.error(f"Failed to get InfluxDB stats: {e}")
+            return {"error": str(e)}
+
     def close(self):
         """Close query API and cleanup resources."""
-        self.executor.shutdown(wait=True)
+        if self.influxdb_manager:
+            self.influxdb_manager.close()

@@ -14,6 +14,7 @@ Usage:
 
 import asyncio
 import json
+import os
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
@@ -466,9 +467,14 @@ def example_8_data_export_and_analysis(api: WoWAnalyticsAPI):
 
 def main():
     """Run all examples."""
-    # Configuration
-    API_BASE_URL = "https://api.example.com/api/v1"
-    API_KEY = "your_api_key_here"  # Replace with your actual API key
+    # Configuration - Replace with your actual values
+    API_BASE_URL = os.getenv("API_BASE_URL", "https://localhost:8000/api/v1")
+    API_KEY = os.getenv("API_KEY")  # Set your API key in environment variables
+
+    if not API_KEY:
+        print("❌ Error: API_KEY environment variable is required")
+        print("Set it with: export API_KEY=your_actual_api_key")
+        return
 
     # Initialize API client
     api = WoWAnalyticsAPI(API_BASE_URL, API_KEY)

@@ -1,8 +1,8 @@
 """
-Storage layer for WoW combat log events with compression and batching.
+Storage layer for WoW combat log events with time-series streaming.
 
-Handles efficient storage of character event streams into SQLite database
-with automatic compression and batch operations for high performance.
+Handles efficient storage of character event streams directly into InfluxDB
+for time-series native operations with metadata in PostgreSQL.
 """
 
 import hashlib
@@ -15,7 +15,7 @@ from datetime import datetime
 from dataclasses import asdict
 
 from .schema import DatabaseManager
-from .compression import EventCompressor, compression_stats
+from .influxdb_direct_manager import InfluxDBDirectManager
 from src.models.character_events import CharacterEventStream, TimestampedEvent
 from src.models.encounter_models import RaidEncounter, MythicPlusRun
 from src.models.unified_encounter import UnifiedEncounter, EncounterType
@@ -54,14 +54,14 @@ def safe_param(value):
 
 class EventStorage:
     """
-    High-performance storage layer for combat log events.
+    High-performance storage layer for combat log events using time-series database.
 
     Features:
-    - Automatic event compression (70-80% size reduction)
-    - Batched database operations for speed
+    - Direct event streaming to InfluxDB for time-series queries
+    - Metadata storage in PostgreSQL for relational data
     - Duplicate detection via file hashing
     - Character/encounter metadata caching
-    - Transaction safety and rollback
+    - Time-window based encounter definitions
     """
 
     def __init__(self, db: DatabaseManager):
@@ -69,25 +69,31 @@ class EventStorage:
         Initialize event storage.
 
         Args:
-            db: Database manager instance
+            db: Database manager instance (hybrid manager with InfluxDB)
         """
         self.db = db
-        self.compressor = EventCompressor()
+
+        # Initialize time-series manager if available
+        if hasattr(db, 'influxdb') and db.influxdb:
+            self.influxdb_manager = InfluxDBDirectManager(
+                url=db.influxdb.url,
+                token=db.influxdb.token,
+                org=db.influxdb.org,
+                bucket=db.influxdb.bucket
+            )
+        else:
+            self.influxdb_manager = None
+            logger.warning("No InfluxDB connection available, events will not be stored in time-series format")
 
         # Caches for fast lookups
         self.character_cache: Dict[str, int] = {}  # guid -> character_id
         self.file_cache: Set[str] = set()  # processed file hashes
-
-        # Batch tracking
-        self.pending_blocks: List[Dict[str, Any]] = []
-        self.batch_size = 100  # Blocks per transaction
 
         # Performance tracking
         self.stats = {
             "encounters_stored": 0,
             "characters_stored": 0,
             "events_stored": 0,
-            "blocks_stored": 0,
             "storage_time": 0.0,
         }
 
@@ -99,6 +105,7 @@ class EventStorage:
         raids: List[RaidEncounter],
         mythic_plus: List[MythicPlusRun],
         log_file_path: str,
+        guild_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Store raid encounters and M+ runs in database.
@@ -127,7 +134,7 @@ class EventStorage:
             logger.info(f"Storing {total_encounters} encounters from {log_file_path}")
 
             # Register log file
-            log_file_id = self._register_log_file(log_file_path, file_hash, total_encounters)
+            log_file_id = self._register_log_file(log_file_path, file_hash, total_encounters, guild_id)
 
             # Store raid encounters
             for raid in raids:
@@ -142,12 +149,9 @@ class EventStorage:
                 )
                 self._store_mythic_plus_metadata(encounter_id, mplus)
 
-            # Flush any pending blocks
-            self._flush_pending_blocks()
-
             # Update log file with final counts
             self.db.execute(
-                "UPDATE log_files SET event_count = ?, encounter_count = ? WHERE file_id = ?",
+                "UPDATE log_files SET event_count = %s, encounter_count = %s WHERE file_id = %s",
                 (total_events, total_encounters, log_file_id),
             )
 
@@ -182,6 +186,7 @@ class EventStorage:
         self,
         encounters: List[UnifiedEncounter],
         log_file_path: str,
+        guild_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Store unified encounters in database.
@@ -209,19 +214,16 @@ class EventStorage:
             logger.info(f"Storing {total_encounters} unified encounters from {log_file_path}")
 
             # Register log file
-            log_file_id = self._register_log_file(log_file_path, file_hash, total_encounters)
+            log_file_id = self._register_log_file(log_file_path, file_hash, total_encounters, guild_id)
 
             # Store encounters
             for encounter in encounters:
-                encounter_id = self._store_unified_encounter(encounter, log_file_id)
-                total_events += self._store_unified_character_streams(encounter_id, encounter)
-
-            # Flush any pending blocks
-            self._flush_pending_blocks()
+                encounter_id = self._store_unified_encounter(encounter, log_file_id, guild_id or 1)
+                total_events += self._store_unified_character_streams(encounter_id, encounter, guild_id or 1)
 
             # Update log file with final counts
             self.db.execute(
-                "UPDATE log_files SET event_count = ?, encounter_count = ? WHERE file_id = ?",
+                "UPDATE log_files SET event_count = %s, encounter_count = %s WHERE file_id = %s",
                 (total_events, total_encounters, log_file_id),
             )
 
@@ -280,7 +282,7 @@ class EventStorage:
             # Store raid encounter
             cursor = self.db.execute(
                 """
-                INSERT INTO encounters (
+                INSERT INTO combat_encounters (
                     log_file_id, encounter_type, boss_name, difficulty,
                     instance_id, instance_name, pull_number, start_time, end_time,
                     success, combat_length, raid_size, wipe_percentage,
@@ -310,7 +312,7 @@ class EventStorage:
             # Store M+ encounter (basic info)
             cursor = self.db.execute(
                 """
-                INSERT INTO encounters (
+                INSERT INTO combat_encounters (
                     log_file_id, encounter_type, boss_name, difficulty,
                     instance_id, instance_name, start_time, end_time,
                     success, combat_length, raid_size
@@ -337,7 +339,7 @@ class EventStorage:
         self, encounter_id: int, characters: Dict[str, CharacterEventStream]
     ) -> int:
         """
-        Store character event streams for an encounter.
+        Store character event streams for an encounter using time-series database.
 
         Args:
             encounter_id: Database encounter ID
@@ -355,27 +357,33 @@ class EventStorage:
             # Ensure character exists in database
             character_id = self._ensure_character_exists(char_stream)
 
-            # Store character metrics
+            # Store character metrics in PostgreSQL
             self._store_character_metrics(encounter_id, character_id, char_stream)
 
-            # Store spell usage summary
+            # Store spell usage summary in PostgreSQL
             self._store_spell_summary(encounter_id, character_id, char_stream)
 
-            # Compress and store event blocks
-            events_stored = self._store_event_blocks(
-                encounter_id, character_id, char_stream.all_events
-            )
-            total_events += events_stored
+            # Stream events to InfluxDB if available
+            if self.influxdb_manager:
+                events_streamed = self._stream_character_events_to_influxdb(
+                    encounter_id, character_id, char_stream
+                )
+                total_events += events_streamed
+            else:
+                # Fallback: count events without storing them
+                total_events += len(char_stream.all_events)
+                logger.warning(f"Events not stored for character {char_guid} - no InfluxDB connection")
 
         return total_events
 
-    def _store_unified_encounter(self, encounter: UnifiedEncounter, log_file_id: int) -> int:
+    def _store_unified_encounter(self, encounter: UnifiedEncounter, log_file_id: int, guild_id: int = 1) -> int:
         """
         Store unified encounter metadata and return encounter_id.
 
         Args:
             encounter: UnifiedEncounter object to store
             log_file_id: ID of source log file
+            guild_id: Guild ID for multi-tenant support
 
         Returns:
             encounter_id from database
@@ -400,6 +408,7 @@ class EventStorage:
 
         # Prepare all parameters with safe_param to ensure SQLite compatibility
         params = (
+            safe_param(guild_id),  # Add guild_id as first parameter
             safe_param(log_file_id),
             safe_param(encounter_type),
             safe_param(boss_name),
@@ -421,12 +430,12 @@ class EventStorage:
 
         cursor = self.db.execute(
             """
-            INSERT INTO encounters (
-                log_file_id, encounter_type, boss_name, difficulty,
+            INSERT INTO combat_encounters (
+                guild_id, log_file_id, encounter_type, boss_name, difficulty,
                 instance_id, instance_name, start_time, end_time,
                 success, combat_length, raid_size,
                 created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             params,
         )
@@ -441,14 +450,15 @@ class EventStorage:
         return encounter_id
 
     def _store_unified_character_streams(
-        self, encounter_id: int, encounter: UnifiedEncounter
+        self, encounter_id: int, encounter: UnifiedEncounter, guild_id: int = 1
     ) -> int:
         """
-        Store character data from unified encounter.
+        Store character data from unified encounter using time-series database.
 
         Args:
             encounter_id: Database encounter ID
             encounter: UnifiedEncounter with character data
+            guild_id: Guild ID for multi-tenant support
 
         Returns:
             Total number of events stored
@@ -457,12 +467,12 @@ class EventStorage:
 
         for char_guid, character in encounter.characters.items():
             # Ensure character exists in database
-            character_id = self._ensure_character_exists_unified(character)
+            character_id = self._ensure_character_exists_unified(character, guild_id)
 
-            # Store character metrics from unified encounter
-            self._store_character_metrics_unified(encounter_id, character_id, character, encounter)
+            # Store character metrics from unified encounter in PostgreSQL
+            self._store_character_metrics_unified(encounter_id, character_id, character, encounter, guild_id)
 
-            # Extract and store events for this character from the unified encounter
+            # Extract and stream events for this character to InfluxDB
             if hasattr(encounter, "events") and encounter.events:
                 # Filter events for this character
                 character_events = [
@@ -473,14 +483,19 @@ class EventStorage:
                 ]
 
                 if character_events:
-                    events_stored = self.store_character_events(
-                        encounter_id, character_id, character_events
-                    )
-                    total_events += events_stored
+                    if self.influxdb_manager:
+                        events_stored = self._stream_events_to_influxdb(
+                            encounter_id, character_id, character_events
+                        )
+                        total_events += events_stored
+                    else:
+                        # Fallback: count events without storing them
+                        total_events += len(character_events)
+                        logger.warning(f"Events not stored for character {char_guid} - no InfluxDB connection")
 
         return total_events
 
-    def _ensure_character_exists_unified(self, character) -> int:
+    def _ensure_character_exists_unified(self, character, guild_id: int = 1) -> int:
         """Ensure character exists in database for unified encounter."""
         # Check cache first
         if character.character_guid in self.character_cache:
@@ -488,8 +503,8 @@ class EventStorage:
 
         # Try to find existing character
         cursor = self.db.execute(
-            "SELECT character_id FROM characters WHERE character_guid = ?",
-            (character.character_guid,),
+            "SELECT character_id FROM characters WHERE character_guid = %s AND guild_id = %s",
+            (character.character_guid, guild_id),
         )
         result = cursor.fetchone()
 
@@ -502,11 +517,12 @@ class EventStorage:
         cursor = self.db.execute(
             """
             INSERT INTO characters (
-                character_guid, character_name, server, region,
+                guild_id, character_guid, character_name, server, region,
                 class_name, spec_name, first_seen, last_seen
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
+                safe_param(guild_id),
                 safe_param(character.character_guid),
                 safe_param(character.character_name),
                 safe_param(getattr(character, "server", None)),
@@ -524,7 +540,7 @@ class EventStorage:
         return character_id
 
     def _store_character_metrics_unified(
-        self, encounter_id: int, character_id: int, character, encounter: UnifiedEncounter
+        self, encounter_id: int, character_id: int, character, encounter: UnifiedEncounter, guild_id: int = 1
     ):
         """Store character metrics from unified encounter."""
         # Extract metrics from character and encounter metrics
@@ -533,14 +549,15 @@ class EventStorage:
         self.db.execute(
             """
             INSERT OR REPLACE INTO character_metrics (
-                encounter_id, character_id, damage_done, healing_done,
+                guild_id, encounter_id, character_id, damage_done, healing_done,
                 damage_taken, healing_received, overhealing, death_count,
                 activity_percentage, time_alive, dps, hps, dtps,
                 combat_time, combat_dps, combat_hps, combat_dtps,
                 combat_activity_percentage, total_events, cast_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
+                safe_param(guild_id),
                 safe_param(encounter_id),
                 safe_param(character_id),
                 safe_param(getattr(character, "total_damage_done", 0)),
@@ -611,7 +628,7 @@ class EventStorage:
 
     def store_character_events(self, encounter_id: int, character_id: int, events: List) -> int:
         """
-        Store character events using the event blocks storage system.
+        Store character events using InfluxDB time-series streaming.
 
         Args:
             encounter_id: Database encounter ID
@@ -624,133 +641,99 @@ class EventStorage:
         if not events:
             return 0
 
-        # Import TimestampedEvent here to avoid circular imports
-        from ..models.character_events import TimestampedEvent
+        if self.influxdb_manager:
+            return self._stream_events_to_influxdb(encounter_id, character_id, events)
+        else:
+            # Fallback: count events without storing them
+            logger.warning(f"Events not stored for encounter {encounter_id} character {character_id} - no InfluxDB connection")
+            return len(events)
 
-        # Wrap raw events in TimestampedEvent objects
-        timestamped_events = []
-        for event in events:
-            if hasattr(event, "timestamp"):
-                # Determine basic category based on event type
-                category = "other"
-                if hasattr(event, "event_type"):
-                    if "_DAMAGE" in event.event_type:
-                        category = "damage"
-                    elif "_HEAL" in event.event_type:
-                        category = "healing"
-                    elif "_AURA_" in event.event_type:
-                        category = "aura"
-
-                ts_event = TimestampedEvent(
-                    timestamp=event.timestamp.timestamp(),
-                    datetime=event.timestamp,
-                    event=event,
-                    category=category,
-                )
-                timestamped_events.append(ts_event)
-
-        return self._store_event_blocks(encounter_id, character_id, timestamped_events)
-
-    def _store_event_blocks(
-        self, encounter_id: int, character_id: int, events: List[TimestampedEvent]
+    def _stream_character_events_to_influxdb(
+        self, encounter_id: int, character_id: int, char_stream: CharacterEventStream
     ) -> int:
         """
-        Compress and store events in blocks.
+        Stream character event stream directly to InfluxDB.
 
         Args:
             encounter_id: Database encounter ID
             character_id: Database character ID
-            events: List of timestamped events
+            char_stream: Character event stream with all events
 
         Returns:
-            Number of events stored
+            Number of events streamed
         """
-        if not events:
+        if not self.influxdb_manager or not char_stream.all_events:
             return 0
 
-        # Split events into blocks for compression
-        block_size = self.compressor.BLOCK_SIZE
-        blocks_created = 0
-        total_events = len(events)
+        try:
+            # Convert CharacterEventStream events to the format expected by InfluxDB
+            events_for_influx = []
 
-        for i in range(0, len(events), block_size):
-            block_events = events[i : i + block_size]
-            block_index = blocks_created
+            for ts_event in char_stream.all_events:
+                event_dict = {
+                    "timestamp": ts_event.timestamp,
+                    "encounter_id": encounter_id,
+                    "character_id": character_id,
+                    "character_guid": char_stream.character_guid,
+                    "character_name": char_stream.character_name,
+                    "event_type": getattr(ts_event.event, "event_type", "unknown"),
+                    "event_data": asdict(ts_event.event) if hasattr(ts_event.event, "__dict__") else str(ts_event.event),
+                    "category": ts_event.category,
+                }
+                events_for_influx.append(event_dict)
 
-            # Compress events
-            compressed_data, metadata = self.compressor.compress_events(block_events)
+            # Stream to InfluxDB using batch operations
+            events_streamed = self.influxdb_manager.stream_combat_events(events_for_influx)
 
-            # Add to pending blocks (will be flushed in batches)
-            block_record = {
-                "encounter_id": encounter_id,
-                "character_id": character_id,
-                "block_index": block_index,
-                "start_time": metadata["start_time"],
-                "end_time": metadata["end_time"],
-                "event_count": metadata["event_count"],
-                "compressed_data": compressed_data,
-                "uncompressed_size": metadata["uncompressed_size"],
-                "compressed_size": metadata["compressed_size"],
-                "compression_ratio": metadata["compression_ratio"],
-            }
+            logger.debug(f"Streamed {events_streamed} events for character {char_stream.character_name} to InfluxDB")
+            return events_streamed
 
-            self.pending_blocks.append(block_record)
-            blocks_created += 1
+        except Exception as e:
+            logger.error(f"Failed to stream events to InfluxDB: {e}")
+            return 0
 
-            # Update global compression stats
-            compression_stats.add_compression(
-                metadata["uncompressed_size"],
-                metadata["compressed_size"],
-                metadata["event_count"],
-                metadata["compression_time"],
-            )
+    def _stream_events_to_influxdb(
+        self, encounter_id: int, character_id: int, events: List
+    ) -> int:
+        """
+        Stream raw events directly to InfluxDB.
 
-            # Flush blocks if batch is full
-            if len(self.pending_blocks) >= self.batch_size:
-                self._flush_pending_blocks()
+        Args:
+            encounter_id: Database encounter ID
+            character_id: Database character ID
+            events: List of raw events
 
-        self.stats["blocks_stored"] += blocks_created
-        return total_events
+        Returns:
+            Number of events streamed
+        """
+        if not self.influxdb_manager or not events:
+            return 0
 
-    def _flush_pending_blocks(self):
-        """Flush pending event blocks to database in a batch."""
-        if not self.pending_blocks:
-            return
+        try:
+            # Convert raw events to InfluxDB format
+            events_for_influx = []
 
-        start_time = time.time()
+            for event in events:
+                event_dict = {
+                    "timestamp": getattr(event, "timestamp", time.time()),
+                    "encounter_id": encounter_id,
+                    "character_id": character_id,
+                    "character_guid": getattr(event, "source_guid", None) or getattr(event, "dest_guid", None),
+                    "event_type": getattr(event, "event_type", "unknown"),
+                    "event_data": asdict(event) if hasattr(event, "__dict__") else str(event),
+                }
+                events_for_influx.append(event_dict)
 
-        # Batch insert all pending blocks
-        block_data = [
-            (
-                block["encounter_id"],
-                block["character_id"],
-                block["block_index"],
-                block["start_time"],
-                block["end_time"],
-                block["event_count"],
-                block["compressed_data"],
-                block["uncompressed_size"],
-                block["compressed_size"],
-                block["compression_ratio"],
-            )
-            for block in self.pending_blocks
-        ]
+            # Stream to InfluxDB using batch operations
+            events_streamed = self.influxdb_manager.stream_combat_events(events_for_influx)
 
-        self.db.executemany(
-            """
-            INSERT INTO event_blocks (
-                encounter_id, character_id, block_index, start_time, end_time,
-                event_count, compressed_data, uncompressed_size,
-                compressed_size, compression_ratio
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            block_data,
-        )
+            logger.debug(f"Streamed {events_streamed} events for encounter {encounter_id} to InfluxDB")
+            return events_streamed
 
-        flush_time = time.time() - start_time
-        logger.debug(f"Flushed {len(self.pending_blocks)} blocks in {flush_time:.3f}s")
+        except Exception as e:
+            logger.error(f"Failed to stream events to InfluxDB: {e}")
+            return 0
 
-        self.pending_blocks.clear()
 
     def _ensure_character_exists(self, char_stream: CharacterEventStream) -> int:
         """
@@ -770,7 +753,7 @@ class EventStorage:
 
         # Check database
         cursor = self.db.execute(
-            "SELECT character_id FROM characters WHERE character_guid = ?", (char_guid,)
+            "SELECT character_id FROM characters WHERE character_guid = %s", (char_guid,)
         )
         row = cursor.fetchone()
 
@@ -779,7 +762,7 @@ class EventStorage:
 
             # Update last seen
             self.db.execute(
-                "UPDATE characters SET last_seen = CURRENT_TIMESTAMP, encounter_count = encounter_count + 1 WHERE character_id = ?",
+                "UPDATE characters SET last_seen = CURRENT_TIMESTAMP, encounter_count = encounter_count + 1 WHERE character_id = %s",
                 (character_id,),
             )
         else:
@@ -965,20 +948,21 @@ class EventStorage:
                 ),
             )
 
-    def _register_log_file(self, file_path: str, file_hash: str, encounter_count: int) -> int:
+    def _register_log_file(self, file_path: str, file_hash: str, encounter_count: int, guild_id: Optional[int] = None) -> int:
         """Register log file and return file_id."""
         file_size = Path(file_path).stat().st_size
 
         cursor = self.db.execute(
             """
-            INSERT INTO log_files (file_path, file_hash, file_size, encounter_count)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO log_files (file_path, file_hash, file_size, encounter_count, guild_id)
+            VALUES (%s, %s, %s, %s, %s)
         """,
             (
                 safe_param(file_path),
                 safe_param(file_hash),
                 safe_param(file_size),
                 safe_param(encounter_count),
+                safe_param(guild_id),
             ),
         )
 
@@ -1058,12 +1042,22 @@ class EventStorage:
 
     def get_storage_stats(self) -> Dict[str, Any]:
         """Get storage layer statistics."""
-        return {
+        stats = {
             **self.stats,
-            "compression_stats": compression_stats.get_stats(),
             "cache_sizes": {
                 "characters": len(self.character_cache),
                 "processed_files": len(self.file_cache),
             },
-            "pending_blocks": len(self.pending_blocks),
+            "influxdb_connected": self.influxdb_manager is not None,
         }
+
+        # Add InfluxDB-specific stats if available
+        if self.influxdb_manager:
+            try:
+                influx_stats = self.influxdb_manager.get_stats()
+                stats["influxdb_stats"] = influx_stats
+            except Exception as e:
+                logger.warning(f"Could not retrieve InfluxDB stats: {e}")
+                stats["influxdb_stats"] = {"error": str(e)}
+
+        return stats
