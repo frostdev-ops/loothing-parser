@@ -151,8 +151,8 @@ class EventStorage:
 
             # Update log file with final counts
             self.db.execute(
-                "UPDATE log_files SET event_count = %s encounter_count = %s WHERE file_id = %s" 
-                (total_events total_encounters log_file_id) 
+                "UPDATE log_files SET event_count = %s, encounter_count = %s WHERE file_id = %s",
+                (total_events, total_encounters, log_file_id)
             )
 
             # Commit transaction
