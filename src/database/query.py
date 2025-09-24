@@ -1899,8 +1899,8 @@ class QueryAPI:
         }
 
     def get_character_gear(
-        self character_name: str encounter_id: Optional[int] = None
-    ) -> Optional[Dict[str Any]]:
+        self, character_name: str, encounter_id: Optional[int] = None
+    ) -> Optional[Dict[str, Any]]:
         """Get character gear information."""
         try:
             # Get character ID
