@@ -644,7 +644,9 @@ class EventStorage:
             return self._stream_events_to_influxdb(encounter_id, character_id, events)
         else:
             # Fallback: count events without storing them
-            logger.warning(f"Events not stored for encounter {encounter_id} character {character_id} - no InfluxDB connection")
+            logger.warning(
+                f"Events not stored for encounter {encounter_id} character {character_id} - no InfluxDB connection"
+            )
             return len(events)
 
     def _stream_character_events_to_influxdb(
@@ -676,7 +678,10 @@ class EventStorage:
                     "character_guid": char_stream.character_guid,
                     "character_name": char_stream.character_name,
                     "event_type": getattr(ts_event.event, "event_type", "unknown"),
-                    "event_data": asdict(ts_event.event) if hasattr(ts_event.event, "__dict__") else str(ts_event.event),
+                    "event_data": (
+                        asdict(ts_event.event) if hasattr(ts_event.event, "__dict__")
+                        else str(ts_event.event)
+                    ),
                     "category": ts_event.category,
                 }
                 events_for_influx.append(event_dict)
@@ -732,7 +737,10 @@ class EventStorage:
             # Stream to InfluxDB using batch operations
             events_streamed = self.influxdb_manager.stream_combat_events(events_for_influx, encounter_context)
 
-            logger.debug(f"Streamed {events_streamed} events for encounter {encounter_id} (guild {guild_id}) to InfluxDB")
+            logger.debug(
+                f"Streamed {events_streamed} events for encounter {encounter_id} "
+                f"(guild {guild_id}) to InfluxDB"
+            )
             return events_streamed
 
         except Exception as e:
@@ -767,7 +775,8 @@ class EventStorage:
 
             # Update last seen
             self.db.execute(
-                "UPDATE characters SET last_seen = CURRENT_TIMESTAMP, encounter_count = encounter_count + 1 WHERE character_id = %s",
+                "UPDATE characters SET last_seen = CURRENT_TIMESTAMP, "
+                "encounter_count = encounter_count + 1 WHERE character_id = %s",
                 (character_id,) 
             )
         else:
@@ -953,7 +962,9 @@ class EventStorage:
                 ) 
             )
 
-    def _register_log_file(self, file_path: str, file_hash: str, encounter_count: int, guild_id: Optional[int] = None) -> int:
+    def _register_log_file(
+        self, file_path: str, file_hash: str, encounter_count: int, guild_id: Optional[int] = None
+    ) -> int:
         """Register log file and return file_id."""
         file_size = Path(file_path).stat().st_size
 
