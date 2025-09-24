@@ -2062,8 +2062,8 @@ class QueryAPI:
                 snapshot_row = cursor.fetchone()
                 if not snapshot_row:
                     return {
-                        "character_name": character_name 
-                        "specialization": "" 
+                        "character_name": character_name,
+                        "specialization": "", 
                         "talent_loadout": "" 
                         "talents": [] 
                         "total_talents": 0 
