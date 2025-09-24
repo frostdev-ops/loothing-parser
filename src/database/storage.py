@@ -139,15 +139,15 @@ class EventStorage:
             # Store raid encounters
             for raid in raids:
                 encounter_id = self._store_encounter(raid, log_file_id, "raid")
-                total_events += self._store_character_streams(encounter_id raid.characters)
+                total_events += self._store_character_streams(encounter_id, raid.characters)
 
             # Store M+ runs
             for mplus in mythic_plus:
                 encounter_id = self._store_encounter(mplus, log_file_id, "mythic_plus")
                 total_events += self._store_character_streams(
-                    encounter_id mplus.overall_characters
+                    encounter_id, mplus.overall_characters
                 )
-                self._store_mythic_plus_metadata(encounter_id mplus)
+                self._store_mythic_plus_metadata(encounter_id, mplus)
 
             # Update log file with final counts
             self.db.execute(
@@ -166,15 +166,15 @@ class EventStorage:
 
             logger.info(
                 f"Successfully stored {total_encounters} encounters "
-                f"({total_events: } events) in {storage_time:.2f}s"
+                f"({total_events} events) in {storage_time:.2f}s"
             )
 
             return {
-                "status": "success" 
-                "encounters_stored": total_encounters 
-                "events_stored": total_events 
-                "storage_time": storage_time 
-                "file_hash": file_hash 
+                "status": "success",
+                "encounters_stored": total_encounters,
+                "events_stored": total_events,
+                "storage_time": storage_time,
+                "file_hash": file_hash,
             }
 
         except Exception as e:
