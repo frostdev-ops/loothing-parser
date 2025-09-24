@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from .schema import DatabaseManager
+from .existing_schema_adapter import ExistingSchemaAdapter
 from .influxdb_direct_manager import InfluxDBDirectManager
 from src.models.character_events import TimestampedEvent, CharacterEventStream
 from src.models.encounter_models import RaidEncounter, MythicPlusRun
@@ -168,13 +169,14 @@ class QueryAPI:
 
     def __init__(self, db: DatabaseManager, cache_size: int = 1000):
         """
-        Initialize query API.
+        Initialize query API with existing schema adapter.
 
         Args:
             db: Database manager instance (hybrid manager with InfluxDB)
             cache_size: Maximum number of cached query results
         """
         self.db = db
+        self.adapter = ExistingSchemaAdapter(db.get_connection())
         self.cache = QueryCache(max_size=cache_size)
 
         # Initialize time-series manager if available
@@ -203,7 +205,7 @@ class QueryAPI:
         self, encounter_id: int, guild_id: Optional[int] = None
     ) -> Optional[EncounterSummary]:
         """
-        Get encounter summary by ID.
+        Get encounter summary by ID using existing schema adapter.
 
         Args:
             encounter_id: Database encounter ID
@@ -221,38 +223,27 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        # Build query with optional guild filtering
-        query = """
-            SELECT
-                encounter_id, encounter_type, boss_name, difficulty,
-                start_time, end_time, success, combat_length, raid_size,
-                (SELECT COUNT(*) FROM character_metrics WHERE encounter_id = e.encounter_id) as character_count
-            FROM encounters e
-            WHERE encounter_id = %s
-        """
-        params = [encounter_id]
+        # Use adapter to get encounter from existing schema
+        encounter_data = self.adapter.get_encounter(str(encounter_id), guild_id)
 
-        if guild_id is not None:
-            query += " AND guild_id = %s"
-            params.append(guild_id)
-
-        cursor = self.db.execute(query, params)
-
-        row = cursor.fetchone()
-        if not row:
+        if not encounter_data:
             return None
 
+        # Get character count from combat_performances table via adapter
+        character_metrics = self.adapter.get_character_metrics(str(encounter_id), guild_id)
+        character_count = len(character_metrics)
+
         encounter = EncounterSummary(
-            encounter_id=row[0],
-            encounter_type=row[1],
-            boss_name=row[2],
-            difficulty=row[3],
-            start_time=datetime.fromtimestamp(row[4]) if row[4] else None,
-            end_time=datetime.fromtimestamp(row[5]) if row[5] else None,
-            success=bool(row[6]),
-            combat_length=row[7],
-            raid_size=row[8],
-            character_count=row[9],
+            encounter_id=int(encounter_data['encounter_id']),
+            encounter_type=encounter_data['encounter_type'],
+            boss_name=encounter_data['boss_name'],
+            difficulty=encounter_data['difficulty'],
+            start_time=datetime.fromtimestamp(encounter_data['start_time']) if encounter_data.get('start_time') else None,
+            end_time=datetime.fromtimestamp(encounter_data['end_time']) if encounter_data.get('end_time') else None,
+            success=bool(encounter_data.get('success', False)),
+            combat_length=encounter_data.get('combat_length', 0.0),
+            raid_size=encounter_data.get('raid_size', 0),
+            character_count=character_count,
         )
 
         query_time = time.time() - start_time
@@ -443,7 +434,7 @@ class QueryAPI:
         guild_id: Optional[int] = None,
     ) -> List[CharacterMetrics]:
         """
-        Get character performance metrics for an encounter.
+        Get character performance metrics for an encounter using existing schema adapter.
 
         Args:
             encounter_id: Database encounter ID
@@ -462,47 +453,25 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        # Build query with optional character filter and guild filtering
-        query = """
-            SELECT
-                c.character_name, c.character_guid, c.class_name, c.spec_name,
-                m.damage_done, m.healing_done, m.damage_taken, m.death_count,
-                m.dps, m.hps, m.activity_percentage, m.time_alive, m.total_events
-            FROM character_metrics m
-            JOIN characters c ON m.character_id = c.character_id
-            WHERE m.encounter_id = %s
-        """
-        params = [encounter_id]
-
-        # Add guild filtering for both tables
-        if guild_id is not None:
-            query += " AND m.guild_id = %s AND c.guild_id = %s"
-            params.extend([guild_id, guild_id])
-
-        if character_name:
-            query += " AND c.character_name LIKE %s"
-            params.append(f"%{character_name}%")
-
-        query += " ORDER BY m.dps DESC"
-
-        cursor = self.db.execute(query, params)
+        # Use adapter to get character metrics from existing schema
+        metrics_data = self.adapter.get_character_metrics(str(encounter_id), guild_id, character_name)
 
         metrics = []
-        for row in cursor:
+        for row in metrics_data:
             metric = CharacterMetrics(
-                character_name=row[0],
-                character_guid=row[1],
-                class_name=row[2],
-                spec_name=row[3],
-                damage_done=row[4],
-                healing_done=row[5],
-                damage_taken=row[6],
-                death_count=row[7],
-                dps=row[8],
-                hps=row[9],
-                activity_percentage=row[10],
-                time_alive=row[11],
-                total_events=row[12],
+                character_name=row.get('character_name', ''),
+                character_guid=row.get('character_guid', ''),
+                class_name=row.get('class_name'),
+                spec_name=row.get('spec_name'),
+                damage_done=int(row.get('damage_done', 0)),
+                healing_done=int(row.get('healing_done', 0)),
+                damage_taken=int(row.get('damage_taken', 0)),
+                death_count=int(row.get('death_count', 0)),
+                dps=float(row.get('dps', 0.0)),
+                hps=float(row.get('hps', 0.0)),
+                activity_percentage=float(row.get('activity_percentage', 0.0)),
+                time_alive=float(row.get('time_alive', 0.0)),
+                total_events=int(row.get('total_events', 0)),
             )
             metrics.append(metric)
 
@@ -1048,7 +1017,7 @@ class QueryAPI:
         guild_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Get a list of characters with optional filtering.
+        Get a list of characters with optional filtering using existing schema adapter.
 
         Args:
             limit: Maximum number of characters to return
@@ -1061,71 +1030,54 @@ class QueryAPI:
         Returns:
             List of character profiles
         """
-        conditions = []
-        params = []
+        # Use adapter to get characters from existing schema
+        characters_data = self.adapter.get_characters(guild_id, limit, offset)
 
-        if guild_id is not None:
-            conditions.append("guild_id = %s")
-            params.append(guild_id)
-
-        if filters:
-            if filters.get('server'):
-                conditions.append("server = %s")
-                params.append(filters['server'])
-
-            if filters.get('class_name'):
-                conditions.append("class_name = %s")
-                params.append(filters['class_name'])
-
-            if filters.get('min_encounters'):
-                conditions.append("encounter_count >= %s")
-                params.append(filters['min_encounters'])
-
-        where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
-
-        # Map sort fields to database columns
-        sort_map = {
-            "last_seen": "last_seen",
-            "total_encounters": "encounter_count",
-            "average_dps": "encounter_count",  # Use encounter_count as fallback since average_dps doesn't exist
-        }
-        order_by = f"ORDER BY {sort_map.get(sort_by, 'last_seen')} {sort_order}"
-
-        cursor = self.db.execute(
-            f"""
-            SELECT
-                character_id,
-                character_name,
-                server,
-                region,
-                class_name,
-                spec_name,
-                encounter_count,
-                last_seen,
-                guild_id
-            FROM characters
-            {where_clause}
-            {order_by}
-            LIMIT %s OFFSET %s
-            """,
-            params + [limit, offset]
-        )
-
+        # Convert adapter output to expected format
         characters = []
-        for row in cursor.fetchall():
+        for char_data in characters_data:
             characters.append({
-                "character_id": row[0],
-                "name": row[1],
-                "server": row[2] or "Unknown",
-                "region": row[3] or "US",
-                "class_name": row[4] or "Unknown",
-                "spec": row[5] or "Unknown",
-                "encounter_count": row[6] or 0,
-                "average_dps": 0.0,  # Not in table default value
-                "average_hps": 0.0,  # Not in table default value
-                "last_seen": row[7],
-                "guild_id": row[8],
+                "character_id": char_data.get('character_id', ''),
+                "name": char_data.get('name', char_data.get('character_name', '')),
+                "server": char_data.get('server', 'Unknown'),
+                "region": char_data.get('region', 'US'),
+                "class_name": char_data.get('class_name', 'Unknown'),
+                "spec": char_data.get('spec_name', char_data.get('spec', 'Unknown')),
+                "encounter_count": char_data.get('encounter_count', 0),
+                "average_dps": char_data.get('average_dps', 0.0),
+                "average_hps": char_data.get('average_hps', 0.0),
+                "last_seen": char_data.get('last_seen'),
+                "guild_id": char_data.get('guild_id'),
             })
+
+        # Apply client-side filtering if needed (adapter doesn't support all filters)
+        if filters:
+            filtered_characters = []
+            for char in characters:
+                include_char = True
+
+                if filters.get('server') and char['server'] != filters['server']:
+                    include_char = False
+                if filters.get('class_name') and char['class_name'] != filters['class_name']:
+                    include_char = False
+                if filters.get('min_encounters') and char['encounter_count'] < filters['min_encounters']:
+                    include_char = False
+
+                if include_char:
+                    filtered_characters.append(char)
+
+            characters = filtered_characters
+
+        # Apply client-side sorting if needed
+        sort_key_map = {
+            "last_seen": lambda x: x.get('last_seen') or 0,
+            "total_encounters": lambda x: x.get('encounter_count') or 0,
+            "average_dps": lambda x: x.get('average_dps') or 0.0,
+        }
+
+        if sort_by in sort_key_map:
+            reverse = (sort_order.lower() == 'desc')
+            characters.sort(key=sort_key_map[sort_by], reverse=reverse)
 
         return characters
 
