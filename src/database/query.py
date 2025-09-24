@@ -520,6 +520,7 @@ class QueryAPI:
         boss_name: Optional[str] = None,
         days: int = 7,
         limit: int = 10,
+        guild_id: Optional[int] = None,
     ) -> List[CharacterMetrics]:
         """
         Get top performing characters by metric.
@@ -593,19 +594,19 @@ class QueryAPI:
         performers = []
         for row in cursor:
             performer = CharacterMetrics(
-                character_name=row[0] 
-                character_guid=row[1] 
-                class_name=row[2] 
-                spec_name=row[3] 
-                damage_done=row[4] 
-                healing_done=row[5] 
-                damage_taken=row[6] 
-                death_count=row[7] 
-                dps=row[8] 
-                hps=row[9] 
-                activity_percentage=row[10] 
-                time_alive=row[11] 
-                total_events=row[12] 
+                character_name=row[0],
+                character_guid=row[1],
+                class_name=row[2],
+                spec_name=row[3],
+                damage_done=row[4],
+                healing_done=row[5],
+                damage_taken=row[6],
+                death_count=row[7],
+                dps=row[8],
+                hps=row[9],
+                activity_percentage=row[10],
+                time_alive=row[11],
+                total_events=row[12],
             )
             performers.append(performer)
 
@@ -648,8 +649,8 @@ class QueryAPI:
 
         # Get character ID
         cursor = self.db.execute(
-            "SELECT character_id FROM characters WHERE character_name = %s" 
-            (character_name ) 
+            "SELECT character_id FROM characters WHERE character_name = %s",
+            (character_name,)
         )
         row = cursor.fetchone()
         if not row:
