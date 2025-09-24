@@ -1858,8 +1858,8 @@ class QueryAPI:
         """Get character ranking for a metric."""
         # Simplified ranking - would need more complex calculation in production
         cursor = self.db.execute(
-            "SELECT character_id FROM characters WHERE character_name = %s" 
-            (character_name )
+            "SELECT character_id FROM characters WHERE character_name = %s",
+            (character_name,)
         )
         char_row = cursor.fetchone()
         if not char_row:
