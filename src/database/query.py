@@ -2198,8 +2198,8 @@ class QueryAPI:
 
         for char_name in all_characters:
             cursor = self.db.execute(
-                "SELECT character_id FROM characters WHERE character_name = %s" 
-                (char_name )
+                "SELECT character_id FROM characters WHERE character_name = %s",
+                (char_name,)
             )
             char_row = cursor.fetchone()
             if not char_row:
