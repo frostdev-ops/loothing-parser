@@ -2251,12 +2251,12 @@ class QueryAPI:
 
         stats = {
             "database": {
-                "total_encounters": row[0] or 0 
-                "total_characters": row[1] or 0 
-                "total_character_metrics": row[2] or 0 
-            } 
-            "query_api": self.stats 
-            "cache": self.cache.stats() 
+                "total_encounters": row[0] or 0,
+                "total_characters": row[1] or 0,
+                "total_character_metrics": row[2] or 0,
+            },
+            "query_api": self.stats,
+            "cache": self.cache.stats(),
         }
 
         # Add InfluxDB stats if available
