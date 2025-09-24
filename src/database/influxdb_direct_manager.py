@@ -10,12 +10,12 @@ This manager implements the pure time-series architecture where:
 
 import os
 import logging
-from typing import List Dict Any Optional Generator
-from datetime import datetime timedelta
+from typing import List, Dict, Any, Optional, Generator
+from datetime import datetime, timedelta
 import json
 import uuid
-from influxdb_client import InfluxDBClient Point WritePrecision
-from influxdb_client.client.write_api import SYNCHRONOUS ASYNCHRONOUS
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS, ASYNCHRONOUS
 from influxdb_client.client.query_api import QueryApi
 from influxdb_client.client.exceptions import InfluxDBError
 
