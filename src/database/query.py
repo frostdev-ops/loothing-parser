@@ -2091,11 +2091,11 @@ class QueryAPI:
             talent_selections = []
             for talent in snapshot.talents:
                 talent_data = {
-                    "slot": talent.talent_slot 
-                    "spell_id": talent.talent_spell_id 
-                    "tier": talent.talent_tier 
-                    "column": talent.talent_column 
-                    "selected": talent.is_selected 
+                    "slot": talent.talent_slot,
+                    "spell_id": talent.talent_spell_id,
+                    "tier": talent.talent_tier,
+                    "column": talent.talent_column,
+                    "selected": talent.is_selected,
                 }
                 talent_selections.append(talent_data)
 
