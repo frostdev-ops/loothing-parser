@@ -22,16 +22,16 @@ EQUIPMENT_SLOTS = {
     6: "Waist",
     7: "Legs",
     8: "Feet",
-    9: "Wrist", 
-    10: "Hands" 
-    11: "Finger_1" 
-    12: "Finger_2" 
-    13: "Trinket_1" 
-    14: "Trinket_2" 
-    15: "Back" 
-    16: "Main_Hand"  # Double weight in item level calculations
-    17: "Off_Hand" 
-    18: "Ranged" 
+    9: "Wrist",
+    10: "Hands",
+    11: "Finger_1",
+    12: "Finger_2",
+    13: "Trinket_1",
+    14: "Trinket_2",
+    15: "Back",
+    16: "Main_Hand",  # Double weight in item level calculations
+    17: "Off_Hand",
+    18: "Ranged", 
     19: "Tabard"  # Cosmetic slot excluded from item level calculations
 }
 
