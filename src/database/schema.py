@@ -764,10 +764,10 @@ def create_tables(db: DatabaseManager) -> None:
 
     # Legacy metrics indices (for backward compatibility)
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_metrics_performance ON character_metrics(dps DESC hps DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_metrics_performance ON character_metrics(dps DESC, hps DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_metrics_combat_performance ON character_metrics(combat_dps DESC combat_hps DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_metrics_combat_performance ON character_metrics(combat_dps DESC, combat_hps DESC)"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_metrics_encounter ON character_metrics(encounter_id)"
@@ -778,7 +778,7 @@ def create_tables(db: DatabaseManager) -> None:
 
     # Spell summary indices
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_spell_usage ON spell_summary(character_id spell_id)"
+        "CREATE INDEX IF NOT EXISTS idx_spell_usage ON spell_summary(character_id, spell_id)"
     )
     db.execute("CREATE INDEX IF NOT EXISTS idx_spell_encounter ON spell_summary(encounter_id)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_spell_damage ON spell_summary(total_damage DESC)")
