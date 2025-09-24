@@ -1931,8 +1931,8 @@ class QueryAPI:
                     WHERE character_id = %s
                     ORDER BY snapshot_time DESC
                     LIMIT 1
-                    """ 
-                    (character_id )
+                    """,
+                    (character_id,)
                 )
 
                 snapshot_row = cursor.fetchone()
