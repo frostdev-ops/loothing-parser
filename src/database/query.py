@@ -1875,7 +1875,7 @@ class QueryAPI:
             WHERE cm.character_id = %s
             AND e.start_time BETWEEN %s AND %s
         """
-        params = [character_id time_range.start.timestamp() time_range.end.timestamp()]
+        params = [character_id, time_range.start.timestamp(), time_range.end.timestamp()]
 
         if encounter_type:
             query += " AND e.encounter_type = %s"
@@ -1885,7 +1885,7 @@ class QueryAPI:
             query += " AND e.difficulty = %s"
             params.append(difficulty)
 
-        cursor = self.db.execute(query params)
+        cursor = self.db.execute(query, params)
         row = cursor.fetchone()
 
         if not row or row[0] is None:
