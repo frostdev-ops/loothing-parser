@@ -2104,8 +2104,8 @@ class QueryAPI:
             encounter_type = None
             if encounter_id:
                 cursor = self.db.execute(
-                    "SELECT encounter_type FROM combat_encounters WHERE encounter_id = %s" 
-                    (encounter_id )
+                    "SELECT encounter_type FROM combat_encounters WHERE encounter_id = %s",
+                    (encounter_id,)
                 )
                 enc_row = cursor.fetchone()
                 if enc_row:
