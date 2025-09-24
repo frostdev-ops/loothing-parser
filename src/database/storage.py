@@ -880,23 +880,23 @@ class EventStorage:
             self.db.execute(
                 """
                 INSERT OR REPLACE INTO spell_summary (
-                    encounter_id character_id spell_id spell_name 
-                    cast_count hit_count crit_count total_damage 
-                    total_healing max_damage max_healing
-                ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s)
+                    encounter_id, character_id, spell_id, spell_name,
+                    cast_count, hit_count, crit_count, total_damage,
+                    total_healing, max_damage, max_healing
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
                 (
-                    encounter_id 
-                    character_id 
-                    spell_id 
-                    spell_name or "Unknown" 
-                    stats.get("cast_count" 0) 
-                    stats["hit_count"] 
-                    stats["crit_count"] 
-                    stats.get("total_damage" 0) 
-                    stats.get("total_healing" 0) 
-                    stats.get("max_damage" 0) 
-                    stats.get("max_healing" 0) 
+                    encounter_id,
+                    character_id,
+                    spell_id,
+                    spell_name or "Unknown",
+                    stats.get("cast_count", 0),
+                    stats["hit_count"],
+                    stats["crit_count"],
+                    stats.get("total_damage", 0),
+                    stats.get("total_healing", 0),
+                    stats.get("max_damage", 0),
+                    stats.get("max_healing", 0),
                 ) 
             )
 
