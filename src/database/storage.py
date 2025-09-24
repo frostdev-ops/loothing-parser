@@ -376,7 +376,7 @@ class EventStorage:
 
         return total_events
 
-    def _store_unified_encounter(self encounter: UnifiedEncounter log_file_id: int guild_id: int = 1) -> int:
+    def _store_unified_encounter(self, encounter: UnifiedEncounter, log_file_id: int, guild_id: int = 1) -> int:
         """
         Store unified encounter metadata and return encounter_id.
 
@@ -399,7 +399,7 @@ class EventStorage:
             difficulty = encounter.difficulty
 
         # Add type validation for instance_id before SQL operation
-        if encounter.instance_id is not None and not isinstance(encounter.instance_id int):
+        if encounter.instance_id is not None and not isinstance(encounter.instance_id, int):
             logger.error(
                 f"instance_id has unexpected type: {type(encounter.instance_id)} "
                 f"value: {encounter.instance_id} for encounter: {boss_name}"
@@ -408,34 +408,34 @@ class EventStorage:
 
         # Prepare all parameters with safe_param to ensure SQLite compatibility
         params = (
-            safe_param(guild_id)  # Add guild_id as first parameter
-            safe_param(log_file_id) 
-            safe_param(encounter_type) 
-            safe_param(boss_name) 
-            safe_param(difficulty) 
-            safe_param(encounter.instance_id) 
-            safe_param(encounter.instance_name) 
-            safe_param(encounter.start_time.timestamp() if encounter.start_time else None) 
-            safe_param(encounter.end_time.timestamp() if encounter.end_time else None) 
-            safe_param(encounter.success) 
-            safe_param(encounter.combat_duration) 
-            safe_param(len(encounter.characters) if encounter.characters else 0) 
-            safe_param(datetime.now().isoformat()) 
+            safe_param(guild_id),  # Add guild_id as first parameter
+            safe_param(log_file_id),
+            safe_param(encounter_type),
+            safe_param(boss_name),
+            safe_param(difficulty),
+            safe_param(encounter.instance_id),
+            safe_param(encounter.instance_name),
+            safe_param(encounter.start_time.timestamp() if encounter.start_time else None),
+            safe_param(encounter.end_time.timestamp() if encounter.end_time else None),
+            safe_param(encounter.success),
+            safe_param(encounter.combat_duration),
+            safe_param(len(encounter.characters) if encounter.characters else 0),
+            safe_param(datetime.now().isoformat()),
         )
 
         # Debug logging to identify parameter types
         logger.debug(f"SQL parameters for encounter {boss_name}:")
-        for i param in enumerate(params 1):
+        for i, param in enumerate(params, 1):
             logger.debug(f"  Parameter {i}: {type(param)} = {param}")
 
         cursor = self.db.execute(
             """
             INSERT INTO combat_encounters (
-                guild_id log_file_id encounter_type boss_name difficulty 
-                instance_id instance_name start_time end_time 
-                success combat_length raid_size 
+                guild_id, log_file_id, encounter_type, boss_name, difficulty,
+                instance_id, instance_name, start_time, end_time,
+                success, combat_length, raid_size,
                 created_at
-            ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s %s %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
             params 
         )
@@ -445,7 +445,7 @@ class EventStorage:
 
         # Store M+ specific data if needed
         if encounter_type == "mythic_plus" and encounter.keystone_level:
-            self._store_mythic_plus_metadata_unified(encounter_id encounter)
+            self._store_mythic_plus_metadata_unified(encounter_id, encounter)
 
         return encounter_id
 
