@@ -262,10 +262,10 @@ class EventStorage:
             raise
 
     def _store_encounter(
-        self 
-        encounter: Union[RaidEncounter MythicPlusRun] 
-        log_file_id: int 
-        encounter_type: str 
+        self,
+        encounter: Union[RaidEncounter, MythicPlusRun],
+        log_file_id: int,
+        encounter_type: str
     ) -> int:
         """
         Store encounter metadata and return encounter_id.
@@ -283,29 +283,29 @@ class EventStorage:
             cursor = self.db.execute(
                 """
                 INSERT INTO combat_encounters (
-                    log_file_id encounter_type boss_name difficulty 
-                    instance_id instance_name pull_number start_time end_time 
-                    success combat_length raid_size wipe_percentage 
-                    bloodlust_used bloodlust_time battle_resurrections
-                ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s)
+                    log_file_id, encounter_type, boss_name, difficulty,
+                    instance_id, instance_name, pull_number, start_time, end_time,
+                    success, combat_length, raid_size, wipe_percentage,
+                    bloodlust_used, bloodlust_time, battle_resurrections
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
                 (
-                    safe_param(log_file_id) 
-                    safe_param(encounter_type) 
-                    safe_param(encounter.boss_name) 
-                    safe_param(encounter.difficulty.name if encounter.difficulty else None) 
-                    safe_param(encounter.instance_id) 
-                    safe_param(encounter.instance_name) 
-                    safe_param(encounter.pull_number) 
-                    safe_param(encounter.start_time.timestamp() if encounter.start_time else None) 
-                    safe_param(encounter.end_time.timestamp() if encounter.end_time else None) 
-                    safe_param(encounter.success) 
-                    safe_param(encounter.combat_length) 
-                    safe_param(encounter.raid_size) 
-                    safe_param(encounter.wipe_percentage) 
-                    safe_param(encounter.bloodlust_used) 
-                    safe_param(encounter.bloodlust_time) 
-                    safe_param(encounter.battle_resurrections) 
+                    safe_param(log_file_id),
+                    safe_param(encounter_type),
+                    safe_param(encounter.boss_name),
+                    safe_param(encounter.difficulty.name if encounter.difficulty else None),
+                    safe_param(encounter.instance_id),
+                    safe_param(encounter.instance_name),
+                    safe_param(encounter.pull_number),
+                    safe_param(encounter.start_time.timestamp() if encounter.start_time else None),
+                    safe_param(encounter.end_time.timestamp() if encounter.end_time else None),
+                    safe_param(encounter.success),
+                    safe_param(encounter.combat_length),
+                    safe_param(encounter.raid_size),
+                    safe_param(encounter.wipe_percentage),
+                    safe_param(encounter.bloodlust_used),
+                    safe_param(encounter.bloodlust_time),
+                    safe_param(encounter.battle_resurrections),
                 ) 
             )
         else:
