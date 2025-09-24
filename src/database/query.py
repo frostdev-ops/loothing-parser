@@ -2400,12 +2400,11 @@ class QueryAPI:
 
             # Use InfluxDB aggregation functions
             return self.influxdb_manager.aggregate_encounter_metrics(
-                encounter_id=encounter_id 
-                start_time=encounter.start_time 
-                end_time=encounter.end_time 
-                metric_types=metric_types 
- 
-                group_by_character=group_by_character
+                encounter_id=encounter_id,
+                start_time=encounter.start_time,
+                end_time=encounter.end_time,
+                metric_types=metric_types,
+                group_by_character=group_by_character,
             )
 
         except Exception as e:
