@@ -2049,8 +2049,8 @@ class QueryAPI:
                 # Get most recent talent snapshot
                 cursor = self.db.execute(
                     """
-                    SELECT snapshot_id encounter_id snapshot_time source 
-                           specialization talent_loadout total_talents
+                    SELECT snapshot_id, encounter_id, snapshot_time, source,
+                           specialization, talent_loadout, total_talents
                     FROM character_talent_snapshots
                     WHERE character_id = %s
                     ORDER BY snapshot_time DESC
