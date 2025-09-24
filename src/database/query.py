@@ -1173,7 +1173,7 @@ class QueryAPI:
         is_active: Optional[bool] = None,
     ) -> List[Dict[str, Any]]:
         """
-        List all guilds with pagination.
+        List all guilds with pagination using existing schema adapter.
 
         Args:
             limit: Maximum number of guilds to return
@@ -1192,38 +1192,16 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        query = """
-            SELECT
-                guild_id, guild_name, server, region, faction,
-                created_at, updated_at, is_active,
-                (SELECT COUNT(*) FROM encounters WHERE guild_id = g.guild_id) as encounter_count
-            FROM guilds g
-        """
-        params = []
+        # Use adapter to get guilds from existing schema
+        guilds = self.adapter.get_guilds(limit, offset)
 
+        # Apply filtering if needed
         if is_active is not None:
-            query += " WHERE is_active = %s"
-            params.append(is_active)
-
-        query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
-
-        cursor = self.db.execute(query, params)
-
-        guilds = []
-        for row in cursor:
-            guild = {
-                "guild_id": row[0],
-                "guild_name": row[1],
-                "server": row[2],
-                "region": row[3],
-                "faction": row[4],
-                "created_at": row[5],
-                "updated_at": row[6],
-                "is_active": bool(row[7]),
-                "encounter_count": row[8],
-            }
-            guilds.append(guild)
+            filtered_guilds = []
+            for guild in guilds:
+                if guild.get('is_active') == is_active:
+                    filtered_guilds.append(guild)
+            guilds = filtered_guilds
 
         query_time = time.time() - start_time
         self.stats["total_query_time"] += query_time
