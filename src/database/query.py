@@ -1948,8 +1948,8 @@ class QueryAPI:
                         "recommendations": [],
                     }
 
-                snapshot_id enc_id snapshot_time source avg_ilvl equipped_ilvl total_items = snapshot_row
-                snapshot = gear_parser.get_character_gear_by_encounter(self.db character_id enc_id)
+                snapshot_id, enc_id, snapshot_time, source, avg_ilvl, equipped_ilvl, total_items = snapshot_row
+                snapshot = gear_parser.get_character_gear_by_encounter(self.db, character_id, enc_id)
 
             if not snapshot:
                 return {
