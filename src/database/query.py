@@ -1997,7 +1997,7 @@ class QueryAPI:
                     })
 
                 # Check for missing enchants on enchantable slots
-                enchantable_slots = ["Main_Hand" "Off_Hand" "Chest" "Legs" "Feet" "Hands" "Wrist" "Back"]
+                enchantable_slots = ["Main_Hand", "Off_Hand", "Chest", "Legs", "Feet", "Hands", "Wrist", "Back"]
                 for item in snapshot.items:
                     if item.slot_name in enchantable_slots and item.enchant_id == 0:
                         recommendations.append({
