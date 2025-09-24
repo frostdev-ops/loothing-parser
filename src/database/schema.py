@@ -328,8 +328,8 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
 
     # Create new multi-tenant indexes
     indexes_to_create = [
-        "CREATE INDEX IF NOT EXISTS idx_guild_lookup ON guilds(guild_name server region)" 
-        "CREATE INDEX IF NOT EXISTS idx_guild_active ON guilds(is_active created_at)" 
+        "CREATE INDEX IF NOT EXISTS idx_guild_lookup ON guilds(guild_name, server, region)",
+        "CREATE INDEX IF NOT EXISTS idx_guild_active ON guilds(is_active, created_at)", 
         "CREATE INDEX IF NOT EXISTS idx_log_guild ON log_files(guild_id processed_at DESC)" 
         "CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id start_time DESC)" 
         "CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id boss_name difficulty start_time DESC)" 
