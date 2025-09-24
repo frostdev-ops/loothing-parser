@@ -2114,14 +2114,14 @@ class QueryAPI:
             recommendations = talent_parser.generate_talent_recommendations(snapshot, encounter_type)
 
             return {
-                "character_name": character_name 
-                "specialization": snapshot.specialization 
-                "talent_loadout": snapshot.talent_loadout 
-                "talents": talent_selections 
-                "total_talents": snapshot.total_talents 
-                "snapshot_time": snapshot.snapshot_time 
-                "source": snapshot.source 
-                "recommendations": recommendations 
+                "character_name": character_name,
+                "specialization": snapshot.specialization,
+                "talent_loadout": snapshot.talent_loadout,
+                "talents": talent_selections,
+                "total_talents": snapshot.total_talents,
+                "snapshot_time": snapshot.snapshot_time,
+                "source": snapshot.source,
+                "recommendations": recommendations,
             }
 
         except Exception as e:
