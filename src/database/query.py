@@ -2439,9 +2439,9 @@ class QueryAPI:
             cursor = self.db.execute(
                 """
                 INSERT INTO combat_encounters (
-                    guild_id encounter_type boss_name start_time end_time 
-                    success combat_length created_at
-                ) VALUES (%s%s %s %s %s %s %s %s %s)
+                    guild_id, encounter_type, boss_name, start_time, end_time,
+                    success, combat_length, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING encounter_id
                 """ 
                 (
