@@ -817,15 +817,15 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_gear_items_snapshot ON character_gear_items(snapshot_id, slot_index)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_gear_items_item ON character_gear_items(item_entry item_level DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_gear_items_item ON character_gear_items(item_entry, item_level DESC)"
     )
 
     # Talent tracking indices (multi-tenant aware)
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_guild_character ON character_talent_snapshots(guild_id character_id snapshot_time DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_guild_character ON character_talent_snapshots(guild_id, character_id, snapshot_time DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_guild_encounter ON character_talent_snapshots(guild_id encounter_id)"
+        "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_guild_encounter ON character_talent_snapshots(guild_id, encounter_id)"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_talent_snapshots_character_time ON character_talent_snapshots(character_id snapshot_time DESC)"
