@@ -495,7 +495,7 @@ class EventStorage:
 
         return total_events
 
-    def _ensure_character_exists_unified(self character guild_id: int = 1) -> int:
+    def _ensure_character_exists_unified(self, character, guild_id: int = 1) -> int:
         """Ensure character exists in database for unified encounter."""
         # Check cache first
         if character.character_guid in self.character_cache:
@@ -503,8 +503,8 @@ class EventStorage:
 
         # Try to find existing character
         cursor = self.db.execute(
-            "SELECT character_id FROM characters WHERE character_guid = %s AND guild_id = %s" 
-            (character.character_guid guild_id) 
+            "SELECT character_id FROM characters WHERE character_guid = %s AND guild_id = %s",
+            (character.character_guid, guild_id) 
         )
         result = cursor.fetchone()
 
@@ -517,20 +517,20 @@ class EventStorage:
         cursor = self.db.execute(
             """
             INSERT INTO characters (
-                guild_id character_guid character_name server region 
-                class_name spec_name first_seen last_seen
-            ) VALUES (%s%s %s %s %s %s %s %s %s %s)
+                guild_id, character_guid, character_name, server, region,
+                class_name, spec_name, first_seen, last_seen
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
             (
-                safe_param(guild_id) 
-                safe_param(character.character_guid) 
-                safe_param(character.character_name) 
+                safe_param(guild_id),
+                safe_param(character.character_guid),
+                safe_param(character.character_name),
                 safe_param(getattr(character, "server", None)),
                 safe_param(getattr(character, "region", None)),
                 safe_param(getattr(character, "class_name", None)),
-                safe_param(getattr(character, "spec_name", None)) 
-                safe_param(datetime.now().isoformat()) 
-                safe_param(datetime.now().isoformat()) 
+                safe_param(getattr(character, "spec_name", None)),
+                safe_param(datetime.now().isoformat()),
+                safe_param(datetime.now().isoformat()),
             ) 
         )
 
