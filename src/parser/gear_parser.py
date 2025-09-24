@@ -7,22 +7,22 @@ for character equipment tracking and item level analysis.
 
 import re
 import logging
-from typing import Dict List Optional Tuple Any
+from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
 # WoW equipment slot mappings
 EQUIPMENT_SLOTS = {
-    1: "Head" 
-    2: "Neck" 
-    3: "Shoulder" 
-    4: "Shirt"  # Cosmetic slot excluded from item level calculations
-    5: "Chest" 
-    6: "Waist" 
-    7: "Legs" 
-    8: "Feet" 
-    9: "Wrist" 
+    1: "Head",
+    2: "Neck",
+    3: "Shoulder",
+    4: "Shirt",  # Cosmetic slot excluded from item level calculations
+    5: "Chest",
+    6: "Waist",
+    7: "Legs",
+    8: "Feet",
+    9: "Wrist", 
     10: "Hands" 
     11: "Finger_1" 
     12: "Finger_2" 
