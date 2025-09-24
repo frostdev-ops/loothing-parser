@@ -1013,7 +1013,7 @@ class EventStorage:
             f"{len(self.file_cache)} processed files"
         )
 
-    def _store_mythic_plus_metadata_unified(self encounter_id: int encounter: UnifiedEncounter):
+    def _store_mythic_plus_metadata_unified(self, encounter_id: int, encounter: UnifiedEncounter):
         """Store mythic+ specific metadata for unified encounter."""
         if not encounter.keystone_level:
             return
