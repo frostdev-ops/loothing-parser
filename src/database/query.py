@@ -2233,8 +2233,8 @@ class QueryAPI:
                     comparisons[char_name] = row[0]
 
         return {
-            "metric": metric 
-            "comparisons": comparisons 
+            "metric": metric,
+            "comparisons": comparisons,
         }
 
     def get_database_stats(self) -> Dict[str Any]:
