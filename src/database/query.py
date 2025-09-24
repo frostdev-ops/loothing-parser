@@ -1137,7 +1137,7 @@ class QueryAPI:
 
     def get_guild(self, guild_id: int) -> Optional[Dict[str, Any]]:
         """
-        Get guild by ID.
+        Get guild by ID using existing schema adapter.
 
         Args:
             guild_id: Guild database ID
@@ -1154,37 +1154,17 @@ class QueryAPI:
         start_time = time.time()
         self.stats["queries_executed"] += 1
 
-        cursor = self.db.execute(
-            """
-            SELECT
-                guild_id, guild_name, server, region, faction,
-                created_at, updated_at, is_active
-            FROM guilds
-            WHERE guild_id = %s
-            """,
-            (guild_id,)
-        )
-
-        row = cursor.fetchone()
-        if not row:
-            return None
-
-        guild = {
-            "guild_id": row[0],
-            "guild_name": row[1],
-            "server": row[2],
-            "region": row[3],
-            "faction": row[4],
-            "created_at": row[5],
-            "updated_at": row[6],
-            "is_active": bool(row[7]),
-        }
+        # Use adapter to get guild from existing schema
+        guild = self.adapter.get_guild(guild_id)
 
         query_time = time.time() - start_time
         self.stats["total_query_time"] += query_time
-        self.stats["cache_misses"] += 1
 
-        self.cache.put(cache_key, guild)
+        if guild:
+            self.stats["cache_misses"] += 1
+            self.cache.put(cache_key, guild)
+
+        return guild
         return guild
 
     def get_guilds(
