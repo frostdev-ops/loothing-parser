@@ -2443,7 +2443,7 @@ class QueryAPI:
                     success, combat_length, created_at
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING encounter_id
-                """ 
+                """,
                 (
                     guild_id,
                     "time_window",
