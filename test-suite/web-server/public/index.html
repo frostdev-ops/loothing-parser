@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WoW Combat Log Parser - Test Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link href="css/dashboard.css" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+          <i class="fas fa-chart-line me-2"></i>
+          WoW Combat Parser - Test Suite
+        </a>
+        <div class="d-flex align-items-center">
+          <span class="badge bg-success me-3" id="connection-status">
+            <i class="fas fa-circle"></i> Connected
+          </span>
+          <a href="/upload" class="btn btn-primary btn-sm">
+            <i class="fas fa-upload me-1"></i>
+            Upload Log
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+      <!-- System Status Cards -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card bg-primary text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4 class="card-title" id="db-encounters-count">-</h4>
+                  <p class="card-text">Total Encounters</p>
+                </div>
+                <div class="align-self-center">
+                  <i class="fas fa-sword fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-success text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4 class="card-title" id="influx-events-count">-</h4>
+                  <p class="card-text">Combat Events</p>
+                </div>
+                <div class="align-self-center">
+                  <i class="fas fa-bolt fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-info text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4 class="card-title" id="db-characters-count">-</h4>
+                  <p class="card-text">Characters</p>
+                </div>
+                <div class="align-self-center">
+                  <i class="fas fa-users fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-warning text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4 class="card-title" id="ws-connections-count">-</h4>
+                  <p class="card-text">Live Connections</p>
+                </div>
+                <div class="align-self-center">
+                  <i class="fas fa-wifi fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Database Status -->
+      <div class="row mb-4">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-database me-2"></i>
+                Database Status
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="d-flex align-items-center">
+                    <div class="status-indicator me-3" id="postgres-status">
+                      <i class="fas fa-circle text-muted"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0">PostgreSQL</h6>
+                      <small class="text-muted">Relational Database</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="d-flex align-items-center">
+                    <div class="status-indicator me-3" id="influxdb-status">
+                      <i class="fas fa-circle text-muted"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0">InfluxDB</h6>
+                      <small class="text-muted">Time-Series Database</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="d-flex align-items-center">
+                    <div class="status-indicator me-3" id="redis-status">
+                      <i class="fas fa-circle text-muted"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0">Redis</h6>
+                      <small class="text-muted">Cache & Sessions</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Encounters -->
+      <div class="row mb-4">
+        <div class="col-md-12">
+          <div class="card">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              <h5 class="card-title mb-0">
+                <i class="fas fa-history me-2"></i>
+                Recent Encounters
+              </h5>
+              <button
+                class="btn btn-outline-primary btn-sm"
+                id="refresh-encounters"
+              >
+                <i class="fas fa-sync-alt me-1"></i>
+                Refresh
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover" id="encounters-table">
+                  <thead>
+                    <tr>
+                      <th>Encounter</th>
+                      <th>Zone</th>
+                      <th>Difficulty</th>
+                      <th>Duration</th>
+                      <th>Success</th>
+                      <th>Start Time</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colspan="7" class="text-center">
+                        <div
+                          class="spinner-border spinner-border-sm me-2"
+                          role="status"
+                        >
+                          <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Loading encounters...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Activity Feed -->
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-rss me-2"></i>
+                Live Activity Feed
+              </h5>
+            </div>
+            <div class="card-body">
+              <div id="activity-feed" class="activity-feed">
+                <div class="activity-item">
+                  <i class="fas fa-info-circle text-info"></i>
+                  <span>Waiting for activity...</span>
+                  <small class="text-muted ms-auto" id="current-time"></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/dashboard.js"></script>
+  </body>
+</html>

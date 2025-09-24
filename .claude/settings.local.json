@@ -23,7 +23,10 @@
       "Bash(getenforce)",
       "Bash(aa-status:*)",
       "Bash(docker run:*)",
-      "Bash(docker:*)"
+      "Bash(docker:*)",
+      "Bash(git fetch:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
     ],
     "deny": [],
     "ask": []

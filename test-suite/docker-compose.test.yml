@@ -1,0 +1,260 @@
+version: '3.8'
+
+# ========================================
+# WoW Combat Log Parser - Test Suite
+# Complete testing environment with all databases and web interface
+# ========================================
+
+services:
+  # PostgreSQL - Primary relational database
+  postgres:
+    image: postgres:15-alpine
+    container_name: wow-test-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-combat_logs_test}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testpassword123}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+      - ./init-scripts/postgres:/docker-entrypoint-initdb.d:ro
+      - ../src/database/migrations:/migrations:ro
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-combat_logs_test}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # InfluxDB v2 - Time-series database
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: wow-test-influxdb
+    restart: unless-stopped
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USERNAME:-admin}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASSWORD:-testpassword123}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG:-wow-guild}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET:-combat-events}
+      DOCKER_INFLUXDB_INIT_RETENTION: ${INFLUX_RETENTION:-30d}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN:-test-token-12345678901234567890}
+    ports:
+      - "${INFLUX_PORT:-8086}:8086"
+    volumes:
+      - influxdb-test-data:/var/lib/influxdb2
+      - influxdb-test-config:/etc/influxdb2
+      - ./init-scripts/influxdb:/docker-entrypoint-initdb.d:ro
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Redis - Caching layer
+  redis:
+    image: redis:7-alpine
+    container_name: wow-test-redis
+    restart: unless-stopped
+    command: redis-server /etc/redis/redis.conf
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-test-data:/data
+      - ./init-scripts/redis/redis.conf:/etc/redis/redis.conf:ro
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Node.js Web Server - Upload and visualization interface
+  web-server:
+    build:
+      context: ./web-server
+      dockerfile: Dockerfile
+    container_name: wow-test-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+
+      # Database connections
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-combat_logs_test}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testpassword123}
+
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_TOKEN: ${INFLUX_TOKEN:-test-token-12345678901234567890}
+      INFLUX_ORG: ${INFLUX_ORG:-wow-guild}
+      INFLUX_BUCKET: ${INFLUX_BUCKET:-combat-events}
+
+      REDIS_URL: redis://redis:6379
+
+      # Python API backend
+      PARSER_API_URL: http://python-api:8000
+      API_KEY: ${API_KEY:-test-api-key-123}
+
+      # Upload settings
+      MAX_FILE_SIZE: 500MB
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./test-data:/app/test-data:ro
+      - web-uploads:/app/uploads
+      - ./web-server:/app
+      - /app/node_modules  # Anonymous volume for node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Python API Backend (existing parser service)
+  python-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: wow-test-api
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      LOG_LEVEL: debug
+      API_KEY: ${API_KEY:-test-api-key-123}
+
+      # Database connections for hybrid manager
+      DB_TYPE: hybrid
+
+      # PostgreSQL
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-combat_logs_test}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-testpassword123}
+
+      # InfluxDB
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_TOKEN: ${INFLUX_TOKEN:-test-token-12345678901234567890}
+      INFLUX_ORG: ${INFLUX_ORG:-wow-guild}
+      INFLUX_BUCKET: ${INFLUX_BUCKET:-combat-events}
+
+      # Redis for caching
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+
+      PYTHONPATH: /app
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ../src:/app/src:ro
+      - ../examples:/app/examples:ro
+      - api-logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # pgAdmin - PostgreSQL management interface
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: wow-test-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - test-network
+    profiles: ["admin"]
+
+  # Grafana - Metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: wow-test-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_AUTH_ANONYMOUS_ENABLED: true
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_INSTALL_PLUGINS: redis-datasource
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - grafana-test-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+      - redis
+    networks:
+      - test-network
+    profiles: ["monitoring"]
+
+# Persistent volumes for test data
+volumes:
+  postgres-test-data:
+    driver: local
+  influxdb-test-data:
+    driver: local
+  influxdb-test-config:
+    driver: local
+  redis-test-data:
+    driver: local
+  web-uploads:
+    driver: local
+  api-logs:
+    driver: local
+  pgadmin-data:
+    driver: local
+  grafana-test-data:
+    driver: local
+
+# Network for service communication
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
