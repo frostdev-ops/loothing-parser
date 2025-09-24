@@ -741,7 +741,7 @@ class EventStorage:
             return 0
 
 
-    def _ensure_character_exists(self char_stream: CharacterEventStream) -> int:
+    def _ensure_character_exists(self, char_stream: CharacterEventStream) -> int:
         """
         Ensure character exists in database and return character_id.
 
@@ -759,7 +759,7 @@ class EventStorage:
 
         # Check database
         cursor = self.db.execute(
-            "SELECT character_id FROM characters WHERE character_guid = %s" (char_guid )
+            "SELECT character_id FROM characters WHERE character_guid = %s", (char_guid,)
         )
         row = cursor.fetchone()
 
@@ -768,24 +768,24 @@ class EventStorage:
 
             # Update last seen
             self.db.execute(
-                "UPDATE characters SET last_seen = CURRENT_TIMESTAMP encounter_count = encounter_count + 1 WHERE character_id = %s" 
-                (character_id ) 
+                "UPDATE characters SET last_seen = CURRENT_TIMESTAMP, encounter_count = encounter_count + 1 WHERE character_id = %s",
+                (character_id,) 
             )
         else:
             # Create new character
             cursor = self.db.execute(
                 """
                 INSERT INTO characters (
-                    character_guid character_name server region class_name spec_name encounter_count
-                ) VALUES (%s%s %s %s %s %s %s 1)
+                    character_guid, character_name, server, region, class_name, spec_name, encounter_count
+                ) VALUES (%s, %s, %s, %s, %s, %s, 1)
             """ 
                 (
-                    char_guid 
-                    char_stream.character_name 
-                    char_stream.server 
-                    char_stream.region 
-                    char_stream.class_name 
-                    char_stream.spec_name 
+                    char_guid,
+                    char_stream.character_name,
+                    char_stream.server,
+                    char_stream.region,
+                    char_stream.class_name,
+                    char_stream.spec_name,
                 ) 
             )
             character_id = cursor.lastrowid
