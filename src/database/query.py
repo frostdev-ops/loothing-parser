@@ -1892,10 +1892,10 @@ class QueryAPI:
             return None
 
         return {
-            "metric": metric 
-            "value": row[0] 
-            "percentile": 50  # Placeholder - would need actual calculation
-            "rank": 1  # Placeholder
+            "metric": metric,
+            "value": row[0],
+            "percentile": 50,  # Placeholder - would need actual calculation
+            "rank": 1,  # Placeholder
         }
 
     def get_character_gear(
