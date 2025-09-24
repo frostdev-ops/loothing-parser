@@ -490,19 +490,19 @@ class QueryAPI:
         metrics = []
         for row in cursor:
             metric = CharacterMetrics(
-                character_name=row[0] 
-                character_guid=row[1] 
-                class_name=row[2] 
-                spec_name=row[3] 
-                damage_done=row[4] 
-                healing_done=row[5] 
-                damage_taken=row[6] 
-                death_count=row[7] 
-                dps=row[8] 
-                hps=row[9] 
-                activity_percentage=row[10] 
-                time_alive=row[11] 
-                total_events=row[12] 
+                character_name=row[0],
+                character_guid=row[1],
+                class_name=row[2],
+                spec_name=row[3],
+                damage_done=row[4],
+                healing_done=row[5],
+                damage_taken=row[6],
+                death_count=row[7],
+                dps=row[8],
+                hps=row[9],
+                activity_percentage=row[10],
+                time_alive=row[11],
+                total_events=row[12],
             )
             metrics.append(metric)
 
