@@ -493,9 +493,9 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS character_metrics (
             metric_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id) 
-            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
-            character_id INTEGER NOT NULL REFERENCES characters(character_id) 
+            guild_id INTEGER NOT NULL REFERENCES guilds(guild_id),
+            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
+            character_id INTEGER NOT NULL REFERENCES characters(character_id),
             damage_done INTEGER DEFAULT 0,
             healing_done INTEGER DEFAULT 0,
             damage_taken INTEGER DEFAULT 0,
@@ -517,7 +517,7 @@ def create_tables(db: DatabaseManager) -> None:
             total_events INTEGER DEFAULT 0,
             cast_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(encounter_id character_id)
+            UNIQUE(encounter_id, character_id)
         )
     """
     )
