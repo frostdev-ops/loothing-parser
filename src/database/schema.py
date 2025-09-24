@@ -666,14 +666,14 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS character_talent_selections (
             talent_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            snapshot_id INTEGER NOT NULL REFERENCES character_talent_snapshots(snapshot_id) 
+            snapshot_id INTEGER NOT NULL REFERENCES character_talent_snapshots(snapshot_id),
             talent_slot INTEGER NOT NULL,
             talent_spell_id INTEGER NOT NULL,
             talent_tier INTEGER DEFAULT 0,
             talent_column INTEGER DEFAULT 0,
             is_selected BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(snapshot_id talent_slot)
+            UNIQUE(snapshot_id, talent_slot)
         )
     """
     )
