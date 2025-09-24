@@ -1920,7 +1920,7 @@ class QueryAPI:
 
             if encounter_id:
                 # Get gear for specific encounter
-                snapshot = gear_parser.get_character_gear_by_encounter(self.db character_id encounter_id)
+                snapshot = gear_parser.get_character_gear_by_encounter(self.db, character_id, encounter_id)
             else:
                 # Get most recent gear snapshot
                 cursor = self.db.execute(
