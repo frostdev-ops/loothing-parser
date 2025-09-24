@@ -183,11 +183,11 @@ class EventStorage:
             raise
 
     def store_unified_encounters(
-        self 
-        encounters: List[UnifiedEncounter] 
-        log_file_path: str 
-        guild_id: Optional[int] = None 
-    ) -> Dict[str Any]:
+        self,
+        encounters: List[UnifiedEncounter],
+        log_file_path: str,
+        guild_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         """
         Store unified encounters in database.
 
@@ -223,8 +223,8 @@ class EventStorage:
 
             # Update log file with final counts
             self.db.execute(
-                "UPDATE log_files SET event_count = %s encounter_count = %s WHERE file_id = %s" 
-                (total_events total_encounters log_file_id) 
+                "UPDATE log_files SET event_count = %s, encounter_count = %s WHERE file_id = %s",
+                (total_events, total_encounters, log_file_id)
             )
 
             # Commit transaction
@@ -238,22 +238,22 @@ class EventStorage:
 
             logger.info(
                 f"Successfully stored {total_encounters} unified encounters "
-                f"({total_events: } events) in {storage_time:.2f}s"
+                f"({total_events} events) in {storage_time:.2f}s"
             )
 
             return {
-                "status": "success" 
-                "encounters_stored": total_encounters 
-                "events_stored": total_events 
-                "storage_time": storage_time 
-                "file_hash": file_hash 
+                "status": "success",
+                "encounters_stored": total_encounters,
+                "events_stored": total_events,
+                "storage_time": storage_time,
+                "file_hash": file_hash,
                 "characters_stored": len(
                     set(
                         char.character_guid
                         for enc in encounters
                         for char in enc.characters.values()
                     )
-                ) 
+                ),
             }
 
         except Exception as e:
