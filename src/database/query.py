@@ -2237,7 +2237,7 @@ class QueryAPI:
             "comparisons": comparisons,
         }
 
-    def get_database_stats(self) -> Dict[str Any]:
+    def get_database_stats(self) -> Dict[str, Any]:
         """Get comprehensive database and query statistics."""
         cursor = self.db.execute(
             """
