@@ -2412,11 +2412,11 @@ class QueryAPI:
             return {}
 
     def define_encounter_time_window(
-        self 
-        start_time: datetime 
-        end_time: datetime 
-        encounter_name: str 
-        guild_id: Optional[int] = None
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        encounter_name: str,
+        guild_id: Optional[int] = None,
     ) -> Optional[int]:
         """
         Define a new encounter as a time window and return its ID.
