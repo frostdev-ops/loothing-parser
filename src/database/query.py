@@ -2371,11 +2371,11 @@ class QueryAPI:
             return []
 
     def aggregate_encounter_metrics(
-        self 
-        encounter_id: int 
-        metric_types: Optional[List[str]] = None 
-        group_by_character: bool = True
-    ) -> Dict[str Any]:
+        self,
+        encounter_id: int,
+        metric_types: Optional[List[str]] = None,
+        group_by_character: bool = True,
+    ) -> Dict[str, Any]:
         """
         Aggregate metrics for an encounter using InfluxDB time-series functions.
 
