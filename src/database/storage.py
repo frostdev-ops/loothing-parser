@@ -143,7 +143,7 @@ class EventStorage:
 
             # Store M+ runs
             for mplus in mythic_plus:
-                encounter_id = self._store_encounter(mplus log_file_id "mythic_plus")
+                encounter_id = self._store_encounter(mplus, log_file_id, "mythic_plus")
                 total_events += self._store_character_streams(
                     encounter_id mplus.overall_characters
                 )
