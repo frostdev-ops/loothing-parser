@@ -954,21 +954,21 @@ class EventStorage:
                 ) 
             )
 
-    def _register_log_file(self file_path: str file_hash: str encounter_count: int guild_id: Optional[int] = None) -> int:
+    def _register_log_file(self, file_path: str, file_hash: str, encounter_count: int, guild_id: Optional[int] = None) -> int:
         """Register log file and return file_id."""
         file_size = Path(file_path).stat().st_size
 
         cursor = self.db.execute(
             """
-            INSERT INTO log_files (file_path file_hash file_size encounter_count guild_id)
-            VALUES (%s%s %s %s %s %s)
+            INSERT INTO log_files (file_path, file_hash, file_size, encounter_count, guild_id)
+            VALUES (%s, %s, %s, %s, %s)
         """ 
             (
-                safe_param(file_path) 
-                safe_param(file_hash) 
-                safe_param(file_size) 
-                safe_param(encounter_count) 
-                safe_param(guild_id) 
+                safe_param(file_path),
+                safe_param(file_hash),
+                safe_param(file_size),
+                safe_param(encounter_count),
+                safe_param(guild_id),
             ) 
         )
 
@@ -976,11 +976,11 @@ class EventStorage:
         self.file_cache.add(file_hash)
         return file_id
 
-    def _calculate_file_hash(self file_path: str) -> str:
+    def _calculate_file_hash(self, file_path: str) -> str:
         """Calculate MD5 hash of file for duplicate detection."""
         hash_md5 = hashlib.md5()
         try:
-            with open(file_path "rb") as f:
+            with open(file_path, "rb") as f:
                 # Hash first 1MB for speed
                 chunk = f.read(1024 * 1024)
                 hash_md5.update(chunk)
