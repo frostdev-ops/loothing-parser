@@ -601,7 +601,7 @@ class EventStorage:
             ) 
         )
 
-    def _store_mythic_plus_metadata_unified(self encounter_id: int encounter: UnifiedEncounter):
+    def _store_mythic_plus_metadata_unified(self, encounter_id: int, encounter: UnifiedEncounter):
         """Store M+ specific metadata for unified encounter."""
         self.db.execute(
             """
