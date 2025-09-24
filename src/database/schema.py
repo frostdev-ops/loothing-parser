@@ -691,13 +691,13 @@ def create_tables(db: DatabaseManager) -> None:
 
     # Encounters indices (multi-tenant aware - guild_id first for row-level security)
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id start_time DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_time ON encounters(guild_id, start_time DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id boss_name difficulty start_time DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_boss ON encounters(guild_id, boss_name, difficulty, start_time DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id encounter_type success start_time DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_encounter_guild_type ON encounters(guild_id, encounter_type, success, start_time DESC)"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_encounter_guild_instance ON encounters(guild_id instance_name difficulty)"
