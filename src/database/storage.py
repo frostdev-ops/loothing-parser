@@ -436,7 +436,7 @@ class EventStorage:
                 success, combat_length, raid_size,
                 created_at
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """ 
+            """,
             params 
         )
 
