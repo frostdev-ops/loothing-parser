@@ -2077,14 +2077,14 @@ class QueryAPI:
 
             if not snapshot:
                 return {
-                    "character_name": character_name 
-                    "specialization": "" 
-                    "talent_loadout": "" 
-                    "talents": [] 
-                    "total_talents": 0 
-                    "snapshot_time": None 
-                    "source": None 
-                    "recommendations": [] 
+                    "character_name": character_name,
+                    "specialization": "",
+                    "talent_loadout": "",
+                    "talents": [],
+                    "total_talents": 0,
+                    "snapshot_time": None,
+                    "source": None,
+                    "recommendations": [], 
                 }
 
             # Convert talent selections to dictionary format
