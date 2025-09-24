@@ -2332,13 +2332,13 @@ class QueryAPI:
             return []
 
     def query_time_window_events(
-        self 
-        start_time: datetime 
-        end_time: datetime 
-        character_ids: Optional[List[int]] = None 
-        event_types: Optional[List[str]] = None 
-        guild_id: Optional[int] = None
-    ) -> List[Dict[str Any]]:
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        character_ids: Optional[List[int]] = None,
+        event_types: Optional[List[str]] = None,
+        guild_id: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Query events within a specific time window using InfluxDB.
 
