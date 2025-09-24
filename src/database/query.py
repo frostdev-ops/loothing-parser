@@ -2007,15 +2007,15 @@ class QueryAPI:
                         })
 
             return {
-                "character_name": character_name 
-                "gear": gear_items 
-                "item_level": snapshot.average_item_level  # Legacy field
-                "average_item_level": snapshot.average_item_level 
-                "equipped_item_level": snapshot.equipped_item_level 
-                "total_items": snapshot.total_items 
-                "snapshot_time": snapshot.snapshot_time 
-                "source": snapshot.source 
-                "recommendations": recommendations 
+                "character_name": character_name,
+                "gear": gear_items,
+                "item_level": snapshot.average_item_level,  # Legacy field
+                "average_item_level": snapshot.average_item_level,
+                "equipped_item_level": snapshot.equipped_item_level,
+                "total_items": snapshot.total_items,
+                "snapshot_time": snapshot.snapshot_time,
+                "source": snapshot.source,
+                "recommendations": recommendations,
             }
 
         except Exception as e:
