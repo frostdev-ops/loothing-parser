@@ -336,7 +336,7 @@ class EventStorage:
         return cursor.lastrowid
 
     def _store_character_streams(
-        self encounter_id: int characters: Dict[str CharacterEventStream]
+        self, encounter_id: int, characters: Dict[str, CharacterEventStream]
     ) -> int:
         """
         Store character event streams for an encounter using time-series database.
@@ -350,7 +350,7 @@ class EventStorage:
         """
         total_events = 0
 
-        for char_guid char_stream in characters.items():
+        for char_guid, char_stream in characters.items():
             if not char_stream.all_events:
                 continue
 
@@ -358,15 +358,15 @@ class EventStorage:
             character_id = self._ensure_character_exists(char_stream)
 
             # Store character metrics in PostgreSQL
-            self._store_character_metrics(encounter_id character_id char_stream)
+            self._store_character_metrics(encounter_id, character_id, char_stream)
 
             # Store spell usage summary in PostgreSQL
-            self._store_spell_summary(encounter_id character_id char_stream)
+            self._store_spell_summary(encounter_id, character_id, char_stream)
 
             # Stream events to InfluxDB if available
             if self.influxdb_manager:
                 events_streamed = self._stream_character_events_to_influxdb(
-                    encounter_id character_id char_stream
+                    encounter_id, character_id, char_stream
                 )
                 total_events += events_streamed
             else:
