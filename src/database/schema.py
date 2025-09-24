@@ -246,14 +246,14 @@ def _migrate_character_schema(db: DatabaseManager) -> None:
                 if len(parts) == 2:
                     server, region = parts
                     db.execute(
-                        "UPDATE characters SET server = %s, region = %s WHERE character_id = %s",
+                        "UPDATE characters SET server = ?, region = ? WHERE character_id = ?",
                         (server, region, char_id),
                         fetch_results=False 
                     )
                 else:
                     # Just use as server
                     db.execute(
-                        "UPDATE characters SET server = %s WHERE character_id = %s",
+                        "UPDATE characters SET server = ? WHERE character_id = ?",
                         (realm, char_id),
                         fetch_results=False 
                     )
@@ -305,13 +305,13 @@ def _migrate_to_v2_guilds(db: DatabaseManager) -> None:
         # Create default guild for existing data
         db.execute(
             """
-            INSERT INTO guilds (guild_id guild_name server region faction)
-            VALUES (%s1 'Default Guild' 'Unknown' 'US' NULL)
+            INSERT INTO guilds (guild_id, guild_name, server, region, faction)
+            VALUES (1, 'Default Guild', 'Unknown', 'US', NULL)
         """
         )
 
     # Add guild_id columns to existing tables
-    tables_to_migrate = ["log_files" "encounters" "characters" "character_metrics"]
+    tables_to_migrate = ["log_files", "encounters", "characters", "character_metrics"]
 
     for table in tables_to_migrate:
         if db.table_exists(table):
