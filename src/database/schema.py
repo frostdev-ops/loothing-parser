@@ -548,10 +548,10 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS mythic_plus_runs (
             run_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            encounter_id INTEGER UNIQUE REFERENCES encounters(encounter_id) 
+            encounter_id INTEGER UNIQUE REFERENCES encounters(encounter_id),
             dungeon_id INTEGER NOT NULL,
             keystone_level INTEGER NOT NULL,
-            affixes TEXT  -- JSON array of affix IDs,
+            affixes TEXT,  -- JSON array of affix IDs
             time_limit_seconds INTEGER NOT NULL,
             actual_time_seconds REAL NOT NULL,
             completed BOOLEAN DEFAULT FALSE,
@@ -559,7 +559,7 @@ def create_tables(db: DatabaseManager) -> None:
             time_remaining REAL DEFAULT 0.0,
             num_deaths INTEGER DEFAULT 0,
             death_penalties REAL DEFAULT 0.0,
-            enemy_forces_percent REAL DEFAULT 0.0,
+            enemy_forces_percent REAL DEFAULT 0.0
         )
     """
     )
