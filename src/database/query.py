@@ -2023,8 +2023,8 @@ class QueryAPI:
             return None
 
     def get_character_talents(
-        self character_name: str encounter_id: Optional[int] = None
-    ) -> Optional[Dict[str Any]]:
+        self, character_name: str, encounter_id: Optional[int] = None
+    ) -> Optional[Dict[str, Any]]:
         """Get character talent information."""
         try:
             # Get character ID
