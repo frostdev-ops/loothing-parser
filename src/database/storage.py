@@ -9,16 +9,16 @@ import hashlib
 import logging
 import json
 import time
-from typing import List, Dict, Any, Optional, Tuple, Set, Union
+from typing import List, Dict, Any, Optional, Set, Union
 from pathlib import Path
 from datetime import datetime
 from dataclasses import asdict
 
 from .schema import DatabaseManager
 from .influxdb_direct_manager import InfluxDBDirectManager
-from src.models.character_events import CharacterEventStream, TimestampedEvent
+from src.models.character_events import CharacterEventStream
 from src.models.encounter_models import RaidEncounter, MythicPlusRun
-from src.models.unified_encounter import UnifiedEncounter, EncounterType
+from src.models.unified_encounter import UnifiedEncounter
 
 logger = logging.getLogger(__name__)
 
@@ -544,7 +544,6 @@ class EventStorage:
     ):
         """Store character metrics from unified encounter."""
         # Extract metrics from character and encounter metrics
-        metrics = encounter.metrics if hasattr(encounter, "metrics") else None
 
         self.db.execute(
             """
@@ -807,7 +806,7 @@ class EventStorage:
                 activity_percentage, time_alive, dps, hps, dtps,
                 total_events, cast_count
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """ 
+        """,
             (
                 encounter_id,
                 character_id,
@@ -910,7 +909,7 @@ class EventStorage:
                 in_time, time_remaining, num_deaths, death_penalties,
                 enemy_forces_percent
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """ 
+        """,
             (
                 encounter_id,
                 mplus.dungeon_id,
@@ -962,7 +961,7 @@ class EventStorage:
             """
             INSERT INTO log_files (file_path, file_hash, file_size, encounter_count, guild_id)
             VALUES (%s, %s, %s, %s, %s)
-        """ 
+        """,
             (
                 safe_param(file_path),
                 safe_param(file_hash),
@@ -1013,38 +1012,6 @@ class EventStorage:
             f"{len(self.file_cache)} processed files"
         )
 
-    def _store_mythic_plus_metadata_unified(self, encounter_id: int, encounter: UnifiedEncounter):
-        """Store mythic+ specific metadata for unified encounter."""
-        if not encounter.keystone_level:
-            return
-
-        # Store mythic+ run data
-        self.db.execute(
-            """
-            INSERT INTO mythic_plus_runs (
-                encounter_id, dungeon_id, keystone_level, affixes,
-                time_limit_seconds, actual_time_seconds, completed,
-                in_time, time_remaining, num_deaths, death_penalties
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                safe_param(encounter_id),
-                safe_param(getattr(encounter, "dungeon_id", 0)),
-                safe_param(encounter.keystone_level),
-                safe_param(
-                    json.dumps(encounter.affixes)
-                    if hasattr(encounter, "affixes") and encounter.affixes
-                    else "[]"
-                ),
-                safe_param(getattr(encounter, "time_limit", 0)),
-                safe_param(encounter.combat_duration),
-                safe_param(encounter.success),
-                safe_param(encounter.success),  # in_time same as success for now
-                safe_param(0.0),  # time_remaining
-                safe_param(0),  # num_deaths
-                safe_param(0.0),  # death_penalties
-            ) 
-        )
 
     def get_storage_stats(self) -> Dict[str, Any]:
         """Get storage layer statistics."""
