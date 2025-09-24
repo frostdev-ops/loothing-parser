@@ -708,15 +708,15 @@ def create_tables(db: DatabaseManager) -> None:
 
     # Legacy single-tenant indexes (for backward compatibility during migration)
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_time ON encounters(start_time, end_time)")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name difficulty)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_boss ON encounters(boss_name, difficulty)")
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type success)"
+        "CREATE INDEX IF NOT EXISTS idx_encounter_type ON encounters(encounter_type, success)"
     )
     db.execute("CREATE INDEX IF NOT EXISTS idx_encounter_instance ON encounters(instance_id)")
 
     # Characters indices (multi-tenant aware)
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_character_guild_name ON characters(guild_id character_name server)"
+        "CREATE INDEX IF NOT EXISTS idx_character_guild_name ON characters(guild_id, character_name, server)"
     )
     db.execute(
         "CREATE INDEX IF NOT EXISTS idx_character_guild_class ON characters(guild_id class_name spec_name)"
