@@ -662,7 +662,7 @@ class InfluxDBDirectManager:
         }
         return health
 
-    def get_stats(self) -> Dict[str Any]:
+    def get_stats(self) -> Dict[str, Any]:
         """Get streaming statistics."""
         return {
             **self.stats,
