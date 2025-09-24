@@ -2066,8 +2066,8 @@ class QueryAPI:
                         "specialization": "", 
                         "talent_loadout": "",
                         "talents": [], 
-                        "total_talents": 0 
-                        "snapshot_time": None 
+                        "total_talents": 0,
+                        "snapshot_time": None, 
                         "source": None 
                         "recommendations": [] 
                     }
