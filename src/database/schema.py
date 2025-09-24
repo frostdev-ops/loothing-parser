@@ -753,13 +753,13 @@ def create_tables(db: DatabaseManager) -> None:
         "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_dps ON character_metrics(guild_id, combat_dps DESC) WHERE combat_dps > 0"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_hps ON character_metrics(guild_id combat_hps DESC) WHERE combat_hps > 0"
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_combat_hps ON character_metrics(guild_id, combat_hps DESC) WHERE combat_hps > 0"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_character ON character_metrics(guild_id character_id created_at DESC)"
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_character ON character_metrics(guild_id, character_id, created_at DESC)"
     )
     db.execute(
-        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_encounter ON character_metrics(guild_id encounter_id)"
+        "CREATE INDEX IF NOT EXISTS idx_metrics_guild_encounter ON character_metrics(guild_id, encounter_id)"
     )
 
     # Legacy metrics indices (for backward compatibility)
