@@ -900,57 +900,57 @@ class EventStorage:
                 ) 
             )
 
-    def _store_mythic_plus_metadata(self encounter_id: int mplus: MythicPlusRun):
+    def _store_mythic_plus_metadata(self, encounter_id: int, mplus: MythicPlusRun):
         """Store M+ specific metadata."""
         self.db.execute(
             """
             INSERT INTO mythic_plus_runs (
-                encounter_id dungeon_id keystone_level affixes 
-                time_limit_seconds actual_time_seconds completed 
-                in_time time_remaining num_deaths death_penalties 
+                encounter_id, dungeon_id, keystone_level, affixes,
+                time_limit_seconds, actual_time_seconds, completed,
+                in_time, time_remaining, num_deaths, death_penalties,
                 enemy_forces_percent
-            ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """ 
             (
-                encounter_id 
-                mplus.dungeon_id 
-                mplus.keystone_level 
-                json.dumps(mplus.affixes) 
-                mplus.time_limit_seconds 
-                mplus.actual_time_seconds 
-                mplus.completed 
-                mplus.in_time 
-                mplus.time_remaining 
-                mplus.num_deaths 
-                sum(mplus.death_penalties) 
-                0.0  # enemy_forces_percent placeholder
+                encounter_id,
+                mplus.dungeon_id,
+                mplus.keystone_level,
+                json.dumps(mplus.affixes),
+                mplus.time_limit_seconds,
+                mplus.actual_time_seconds,
+                mplus.completed,
+                mplus.in_time,
+                mplus.time_remaining,
+                mplus.num_deaths,
+                sum(mplus.death_penalties),
+                0.0,  # enemy_forces_percent placeholder
             ) 
         )
 
         # Store combat segments
         run_id = self.db.execute("SELECT last_insert_rowid()").fetchone()[0]
 
-        for i segment in enumerate(mplus.segments):
+        for i, segment in enumerate(mplus.segments):
             self.db.execute(
                 """
                 INSERT INTO combat_segments (
-                    run_id segment_index segment_type segment_name 
-                    start_time end_time duration mob_count 
-                    enemy_forces_start enemy_forces_end enemy_forces_gained
-                ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s)
+                    run_id, segment_index, segment_type, segment_name,
+                    start_time, end_time, duration, mob_count,
+                    enemy_forces_start, enemy_forces_end, enemy_forces_gained
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """ 
                 (
-                    run_id 
-                    i 
-                    segment.segment_type.value 
-                    segment.segment_name 
-                    segment.start_time.timestamp() if segment.start_time else None 
-                    segment.end_time.timestamp() if segment.end_time else None 
-                    segment.duration 
-                    segment.mob_count 
-                    segment.enemy_forces_start 
-                    segment.enemy_forces_end 
-                    segment.enemy_forces_gained 
+                    run_id,
+                    i,
+                    segment.segment_type.value,
+                    segment.segment_name,
+                    segment.start_time.timestamp() if segment.start_time else None,
+                    segment.end_time.timestamp() if segment.end_time else None,
+                    segment.duration,
+                    segment.mob_count,
+                    segment.enemy_forces_start,
+                    segment.enemy_forces_end,
+                    segment.enemy_forces_gained,
                 ) 
             )
 
