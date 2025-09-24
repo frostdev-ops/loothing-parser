@@ -463,7 +463,7 @@ def create_tables(db: DatabaseManager) -> None:
             spec_name TEXT,
             first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            encounter_count INTEGER DEFAULT 0,
+            encounter_count INTEGER DEFAULT 0
         )
     """
     )
@@ -473,8 +473,8 @@ def create_tables(db: DatabaseManager) -> None:
         """
         CREATE TABLE IF NOT EXISTS event_blocks (
             block_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id) 
-            character_id INTEGER NOT NULL REFERENCES characters(character_id) 
+            encounter_id INTEGER NOT NULL REFERENCES encounters(encounter_id),
+            character_id INTEGER NOT NULL REFERENCES characters(character_id),
             block_index INTEGER NOT NULL,
             start_time REAL NOT NULL,
             end_time REAL NOT NULL,
@@ -483,7 +483,7 @@ def create_tables(db: DatabaseManager) -> None:
             uncompressed_size INTEGER NOT NULL,
             compressed_size INTEGER NOT NULL,
             compression_ratio REAL NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """
     )
