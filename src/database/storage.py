@@ -796,34 +796,34 @@ class EventStorage:
         return character_id
 
     def _store_character_metrics(
-        self encounter_id: int character_id: int char_stream: CharacterEventStream
+        self, encounter_id: int, character_id: int, char_stream: CharacterEventStream
     ):
         """Store pre-computed character metrics."""
         self.db.execute(
             """
             INSERT OR REPLACE INTO character_metrics (
-                encounter_id character_id damage_done healing_done 
-                damage_taken healing_received overhealing death_count 
-                activity_percentage time_alive dps hps dtps 
-                total_events cast_count
-            ) VALUES (%s%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s)
+                encounter_id, character_id, damage_done, healing_done,
+                damage_taken, healing_received, overhealing, death_count,
+                activity_percentage, time_alive, dps, hps, dtps,
+                total_events, cast_count
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """ 
             (
-                encounter_id 
-                character_id 
-                char_stream.total_damage_done 
-                char_stream.total_healing_done 
-                char_stream.total_damage_taken 
-                char_stream.total_healing_received 
-                char_stream.total_overhealing 
-                char_stream.death_count 
-                char_stream.activity_percentage 
-                char_stream.time_alive 
-                char_stream.get_dps(char_stream.time_alive if char_stream.time_alive > 0 else 1) 
-                char_stream.get_hps(char_stream.time_alive if char_stream.time_alive > 0 else 1) 
-                char_stream.get_dtps(char_stream.time_alive if char_stream.time_alive > 0 else 1) 
-                len(char_stream.all_events) 
-                len(char_stream.casts_succeeded) 
+                encounter_id,
+                character_id,
+                char_stream.total_damage_done,
+                char_stream.total_healing_done,
+                char_stream.total_damage_taken,
+                char_stream.total_healing_received,
+                char_stream.total_overhealing,
+                char_stream.death_count,
+                char_stream.activity_percentage,
+                char_stream.time_alive,
+                char_stream.get_dps(char_stream.time_alive if char_stream.time_alive > 0 else 1),
+                char_stream.get_hps(char_stream.time_alive if char_stream.time_alive > 0 else 1),
+                char_stream.get_dtps(char_stream.time_alive if char_stream.time_alive > 0 else 1),
+                len(char_stream.all_events),
+                len(char_stream.casts_succeeded),
             ) 
         )
 
